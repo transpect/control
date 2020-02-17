@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<i18n>
+  <entry name="actions">
+    <locale lang="de">Aktionen</locale>
+    <locale lang="en">Actions</locale>
+  </entry>
+  <entry name="create-dir">
+    <locale lang="de">Verzeichnis erstellen</locale>
+    <locale lang="en">Create directory</locale>
+  </entry>
+  <entry name="new-file">
+    <locale lang="de">Neue Datei</locale>
+    <locale lang="en">New file</locale>
+  </entry>
+  <entry name="download">
+    <locale lang="de">Download</locale>
+    <locale lang="en">Download</locale>
+  </entry>
+</i18n>

@@ -1,0 +1,52 @@
+@import url('font/roboto/Roboto.css');
+
+body { background-color:#fafafa; padding:0; margin:0 }
+
+* { font-family: 'Roboto', 'Fira Sans', sans-serif !important; }
+
+#logo { text-align:right }
+#logo img { width:80px; padding:1rem }
+header { display:grid; grid-template-columns: 10% 80% 10%; background-color:#24292e; }
+header h1 { margin:0; padding-top:2.5rem;font-weight:300; font-size:4em; color:#fff; line-height: 50% }
+.thin { font-weight:200 }
+main { margin-top:1rem; display:grid; grid-template-columns: 10% 80% 10%; }
+
+a, a:hover, a:focus, a:active, a:checked, a:visited { text-decoration:none; color:#367bf0 }
+ 
+/* responsive table classes */
+.table { display:table; width:100% }
+.table-body { display:table-row-group }
+.table-row { display:table-row }
+.table-cell { display:table-cell; padding:0.25em 1em; border-top:1px solid #eee; vertical-align:middle; font-size:.9em; font-weight:400 }
+
+/* buttons */
+.btn {
+  display:inline-block;
+  font-weight:500;
+  font-size:0.75em;
+  height:1.75rem;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  background-color:#ddd;
+  color:#333;
+  margin:0
+}
+
+/* directory listing */
+
+.directory-list-wrapper { max-width:100%; color:#24292e }
+.directory-actions { margin: 1rem 0 }
+.directory-actions .small-icon { height:0.6rem }
+.directory-entry .table-cell { height:2.25em; }
+.directory-entry div.header { width:100% }
+.directory-entry div.name { font-weight:500; }
+.directory-entry div.icon { width:1%; }
+.directory-entry div.name { width:30%; }
+.directory-entry div.author { width:10%; }
+.directory-entry div.date {  }
+.directory-entry div.revision { width:5%; }
+.directory-entry div.size { width:5%; }
+.directory-entry div.action { text-align:right }
+
+.file-icon { width: 2em }
