@@ -2,27 +2,36 @@
 
 body { background-color:#fafafa; padding:0; margin:0 }
 
-* { font-family: 'Roboto', 'Fira Sans', sans-serif !important; }
+* { font-family: 'Roboto', 'Fira Sans', sans-serif; font-weight:300;}
 
 #logo { text-align:right }
-#logo img { width:80px; padding:1rem }
+#logo img { width:70px; padding:1rem }
 header { display:grid; grid-template-columns: 10% 80% 10%; background-color:#24292e; }
-header h1 { margin:0; padding-top:2.5rem;font-weight:300; font-size:4em; color:#fff; line-height: 50% }
+header h1 { margin:0; padding-top:2.75rem;font-weight:300; font-size:3em; color:#fff; line-height: 50% }
 .thin { font-weight:200 }
 main { margin-top:1rem; display:grid; grid-template-columns: 10% 80% 10%; }
 
 a, a:hover, a:focus, a:active, a:checked, a:visited { text-decoration:none; color:#367bf0 }
- 
+a:hover { text-decoration:underline; }
+
+#message, #message-background { top:30%; position:absolute; margin: 1rem 10%; padding: 0.5rem 1rem 1rem 1rem; width:45%;}
+#message-background.error { background-color:#ffb6c1 }
+#message-background.warning { background-color:#fafad2}
+#message{ z-index:2; text-align:center; font-weight:400 }
+#message button { margin-left:1rem }
+#message-background{ z-index:1; opacity:0.9;background-color:#ffffff; border:1px solid #ccc; height:3rem}
+#message-background * { visibility:hidden }
+
 /* responsive table classes */
 .table { display:table; width:100% }
 .table-body { display:table-row-group }
 .table-row { display:table-row }
-.table-cell { display:table-cell; padding:0.25em 1em; border-top:1px solid #eee; vertical-align:middle; font-size:.9em; font-weight:400 }
+.table-cell { display:table-cell; padding:0.25em 1em; border-top:1px solid #eee; vertical-align:middle; font-size:.9em; }
 
 /* buttons */
 .btn {
   display:inline-block;
-  font-weight:500;
+  font-weight:400;
   font-size:0.75em;
   height:1.75rem;
   border:0;
@@ -30,7 +39,7 @@ a, a:hover, a:focus, a:active, a:checked, a:visited { text-decoration:none; colo
   box-shadow:none;
   background-color:#ddd;
   color:#333;
-  margin:0
+  margin:0 0.1rem
 }
 
 /* directory listing */
@@ -40,7 +49,8 @@ a, a:hover, a:focus, a:active, a:checked, a:visited { text-decoration:none; colo
 .directory-actions .small-icon { height:0.6rem }
 .directory-entry .table-cell { height:2.25em; }
 .directory-entry div.header { width:100% }
-.directory-entry div.name { font-weight:500; }
+.directory-entry div.name a { color:#24292e; font-weight:400; }
+.directory-entry div.name.parentdir a { font-weight:500;  }
 .directory-entry div.icon { width:1%; }
 .directory-entry div.name { width:30%; }
 .directory-entry div.author { width:10%; }
@@ -50,3 +60,9 @@ a, a:hover, a:focus, a:active, a:checked, a:visited { text-decoration:none; colo
 .directory-entry div.action { text-align:right }
 
 .file-icon { width: 2em }
+
+#create-dir-form-wrapper { display:flex; visibility: hidden; }
+#create-dir-form { margin:0 }
+.svnurl { display:flex; }
+.svnurl .path { margin: 0.25rem 0.25rem 0 0.25rem}
+#create-dir-form-wrapper button.btn { margin-left:0.25rem }

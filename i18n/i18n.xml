@@ -12,8 +12,28 @@
     <locale lang="de">Neue Datei</locale>
     <locale lang="en">New file</locale>
   </entry>
+  <entry name="upload">
+    <locale lang="de">Upload</locale>
+    <locale lang="en">Upload</locale>
+  </entry>
   <entry name="download">
     <locale lang="de">Download</locale>
     <locale lang="en">Download</locale>
+  </entry>
+  <entry name="dir-exists">
+    <locale lang="de">Verzeichnis existiert bereits!</locale>
+    <locale lang="en">Directory already exists!</locale>
+  </entry>
+  <entry name="dir-created">
+    <locale lang="de">Verzeichnis wurde erstellt!</locale>
+    <locale lang="en">Directory created!</locale>
+  </entry>
+  <entry name="cannot-create-dir">
+    <locale lang="de">Verzeichnis konnt nicht erstellt werden!</locale>
+    <locale lang="en">Cannot create directory!</locale>
+  </entry>
+  <entry name="empty-value">
+    <locale lang="de">Kein Wert eingegeben!</locale>
+    <locale lang="en">No value entered!</locale>
   </entry>
 </i18n>

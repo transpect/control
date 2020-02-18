@@ -3,8 +3,9 @@
  :)
 module namespace control = 'control';
 import module namespace svn = 'io.transpect.basex.extensions.subversion.XSvnApi';
-import module namespace control-util = 'control-util' at 'util/control-util.xq';
 import module namespace control-i18n = 'control-i18n' at 'util/control-i18n.xq';
+import module namespace control-rest = 'control-rest' at 'util/control-rest.xq';
+import module namespace control-util = 'control-util' at 'util/control-util.xq';
 
 declare variable $control:locale := 'de';
 declare variable $control:host := 'localhost';
@@ -13,40 +14,36 @@ declare variable $control:dir := 'control';
 declare variable $control:name := concat('http://', $control:host, ':', $control:port, '/', $control:dir);
 declare variable $control:svnusername := 'username';
 declare variable $control:svnpassword := 'password';
-declare variable $control:svnurl := replace(request:query(), '^url=', '');
+declare variable $control:queries := map:merge(for $query in tokenize(request:query(), '\?') 
+                                               return map:entry(tokenize($query, '=')[1], tokenize($query, '=')[last()])) ;
+declare variable $control:svnurl := map:get($control:queries, 'url');
+declare variable $control:msg := map:get($control:queries, 'msg');
+declare variable $control:msgtype := map:get($control:queries, 'msgtype');
 
 declare
 %rest:path('/control')
 %output:method('html')
 function control:control() as element() {
-  control:main()
+  control:main($control:svnurl)
 };
 (:
  : this is where the fun starts...
  :)
-declare function control:main() as element(html) {
+declare function control:main($svnurl as xs:string) as element(html) {
   <html>
     <head>
-      <meta charset="utf-8"></meta>
-      <title>control</title>
-      <link rel="stylesheet" type="text/css" href="{$control:dir || '/static/style.css'}"></link>
+      {control-util:get-html-head($control:dir)}
     </head>
     <body>
-      <header>
-        <div id="logo">
-          <img src="{$control:dir || '/static/icons/transpect.svg'}" alt="transpect logo"/>
-        </div>
-        <h1><span class="thin">transpect</span>control</h1>
-        <div class="wrapper"/>        
-      </header>
+      {control-util:get-page-header($control:dir)}
       <main>
         <div class="col1">
         </div>
         <div class="col2">
-          {if(normalize-space($control:svnurl))
-           then control:get-dir-list($control:svnurl, $control:svnusername, $control:svnpassword)
-           else 'URL parameter empty!'
-          }
+          {control:get-message($control:msg, $control:msgtype)}
+          {if(normalize-space($svnurl))
+           then control:get-dir-list($svnurl, $control:svnusername, $control:svnpassword)
+           else 'URL parameter empty!'}
         </div>
         <div class="col3">
         </div>
@@ -61,17 +58,20 @@ declare function control:main() as element(html) {
 :)
 declare function control:get-dir-list($svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string) as element(div) {
   <div class="directory-list-wrapper">
-    <div class="svnurl">      
-      <a href="{ concat($control:name,
-                        '?url=',
-                        svn:info("https://subversion.le-tex.de/customers/suhrkamp/transpect/trunk", $svnusername, $svnpassword)/*:param[@name eq 'root-url']/@value
-                        ) }">
-        <button class="create-dir action btn">
-          <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/home.svg'}" alt="home"/>
-        </button>
-      </a>
-      <span class="spacer"/>
-      {$svnurl}
+    
+    <div class="svnurl">
+      <div class="home">
+        <a href="{ concat($control:name,
+                          '?url=',
+                          svn:info("https://subversion.le-tex.de/customers/suhrkamp/transpect/trunk", $svnusername, $svnpassword)/*:param[@name eq 'root-url']/@value
+                          ) }">
+          <button class="create-dir action btn">
+            <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/home.svg'}" alt="home"/>
+          </button>
+        </a>
+      </div>
+      <div class="path">{tokenize($svnurl, '/')[last()]}</div>
+      {control:create-dir-form($svnurl, $svnusername, $svnpassword)}
     </div>
     {control:get-dir-actions($svnurl, $svnusername, $svnpassword)}
     <div class="directory-list table">
@@ -86,17 +86,39 @@ declare function control:get-dir-list($svnurl as xs:string, $svnusername as xs:s
  :)
 declare function control:get-dir-actions($svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string) as element(div)* {
   <div class="directory-actions">
-    <button class="new-file action btn">
-      <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/file.svg'}" alt="new-file"/><span class="spacer"/>
-      {control-i18n:localize('new-file', $control:locale)}
-    </button>
-    <button class="create-dir action btn">
+    <a href="/control/new-file?svnurl={$svnurl}?svnusername={$svnusername}?svnpassword={$svnpassword}?locale={$control:locale}">
+      <button class="new-file action btn">
+        <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/file.svg'}" alt="new-file"/><span class="spacer"/>
+        {control-i18n:localize('new-file', $control:locale)}
+      </button>
+    </a>
+    <button class="create-dir action btn" onclick="reveal('create-dir-form-wrapper')">
       <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/folder.svg'}" alt="new-file"/><span class="spacer"/>
         {control-i18n:localize('create-dir', $control:locale)}
     </button>
     <button class="download action btn">
       <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/data-transfer-download.svg'}" alt="new-file"/><span class="spacer"/>
         {control-i18n:localize('download', $control:locale)}
+    </button>
+  </div>
+};
+declare function control:create-dir-form($svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string) {
+  <div id="create-dir-form-wrapper">
+    <form id="create-dir-form" action="/control/create-dir?url={$svnurl}" method="POST">
+      <label>/</label>
+      <input type="text" id="dirname" name="dirname"/>
+      <input type="hidden" name="svnurl" value="{$svnurl}" />
+      <input type="hidden" name="svnusername" value="{$svnusername}"/>
+      <input type="hidden" name="svnpassword" value="{$svnpassword}" />
+      <input type="hidden" name="locale" value="{$control:locale}"/>
+      <button class="btn ok" value="ok">
+        OK
+        <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/check.svg'}" alt="ok"/>
+      </button>
+    </form>
+    <button class="btn cancel" value="cancel" onclick="hide('create-dir-form-wrapper')">
+      Cancel
+      <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/ban.svg'}" alt="cancel"/>
     </button>
   </div>
 };
@@ -109,7 +131,7 @@ declare function control:get-dir-parent($svnurl as xs:string, $svnusername as xs
   return 
     <div class="table-row directory-entry {local-name($files)}">
       <div class="icon table-cell"/>
-      <div class="name table-cell">
+      <div class="name parentdir table-cell">
         <a href="{concat(
                          $control:name,
                          '?url=',
@@ -133,15 +155,23 @@ declare function control:list-dir-entries($svnurl, $svnusername, $svnpassword as
   return
     <div class="table-row directory-entry {local-name($files)}">
       <div class="table-cell icon">
-        <img src="{(concat($control:dir,
-                           '/',
-                           control:get-mimetype-url(
-                                     if($files/local-name() eq 'directory') 
-                                     then 'folder'
-                                     else tokenize($files/@name, '\.')[last()]
-                                     )
-                    )
-             )}" alt="" class="file-icon"/>
+        <a href="{concat(
+                   $control:name,
+                   '?url=',
+                   $svnurl,
+                   '/',
+                   $files/@name
+            )}">
+          <img src="{(concat($control:dir,
+                             '/',
+                             control:get-mimetype-url(
+                                       if($files/local-name() eq 'directory') 
+                                       then 'folder'
+                                       else tokenize($files/@name, '\.')[last()]
+                                       )
+                      )
+               )}" alt="" class="file-icon"/>
+        </a>
       </div>
       <div class="name table-cell">
         <a href="{concat(
@@ -182,6 +212,24 @@ declare function control:ext-to-mimetype($ext as xs:string) as xs:string {
 else if ($ext eq 'text')             then 'text-plain'
 else if ($ext = ('Makefile', 'bat')) then 'text-x'
 else                                      'text-plain'
+};
+
+declare function control:get-message($message as xs:string?, $messagetype as xs:string?) as element(div)?{
+  if($message)
+  then
+    <div id="message-wrapper">
+      <div id="message">
+        <p>{control-util:decode-uri($message)}
+          <button class="btn" onclick="hide('message-wrapper')">
+            OK
+            <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/check.svg'}" alt="ok"/>
+          </button>
+        </p>
+      </div>
+      <div id="message-background" class="{$messagetype}">
+      </div>
+    </div>
+  else()
 };
 (:~
  : Returns a file.
