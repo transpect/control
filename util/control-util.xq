@@ -15,11 +15,13 @@ declare function control-util:get-html-head( $control-dir as xs:string ) as elem
  :)
 declare function control-util:get-page-header( $control-dir as xs:string ) as element(header) {
   <header>
-    <div id="logo">
-      <img src="{$control-dir || '/static/icons/transpect.svg'}" alt="transpect logo"/>
+    <div class="header-wrapper">
+      <div id="logo">
+        <img src="{$control-dir || '/static/icons/transpect.svg'}" alt="transpect logo"/>
+      </div>
+      <h1><span class="thin">transpect</span>control</h1>
+      <div class="wrapper"/>
     </div>
-    <h1><span class="thin">transpect</span>control</h1>
-    <div class="wrapper"/>        
   </header>
 };
 (: 

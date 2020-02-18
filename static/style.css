@@ -6,7 +6,17 @@ body { background-color:#fafafa; padding:0; margin:0 }
 
 #logo { text-align:right }
 #logo img { width:70px; padding:1rem }
-header { display:grid; grid-template-columns: 10% 80% 10%; background-color:#24292e; }
+header { 
+  padding-bottom:2px;
+  background: /* gradient can be an image */
+    linear-gradient(
+      to left, 
+      rgba(243,146,0,1) 0%,
+      rgba(189,29,29,1) 100%
+    ) left bottom #777 no-repeat; 
+  background-size:100% 2px ;/* if linear-gradient, we need to resize it */
+}
+header div.header-wrapper { display:grid; grid-template-columns: 10% 80% 10%; background-color:#24292e; }
 header h1 { margin:0; padding-top:2.75rem;font-weight:300; font-size:3em; color:#fff; line-height: 50% }
 .thin { font-weight:200 }
 main { margin-top:1rem; display:grid; grid-template-columns: 10% 80% 10%; }
@@ -41,6 +51,7 @@ a:hover { text-decoration:underline; }
   color:#333;
   margin:0 0.1rem
 }
+.btn:hover{ background-color:#bbb; }
 
 /* directory listing */
 
