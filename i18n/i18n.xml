@@ -21,19 +21,31 @@
     <locale lang="en">Download</locale>
   </entry>
   <entry name="dir-exists">
-    <locale lang="de">Verzeichnis existiert bereits!</locale>
-    <locale lang="en">Directory already exists!</locale>
+    <locale lang="de">Verzeichnis existiert bereits</locale>
+    <locale lang="en">Directory already exists</locale>
   </entry>
   <entry name="dir-created">
-    <locale lang="de">Verzeichnis wurde erstellt!</locale>
-    <locale lang="en">Directory created!</locale>
+    <locale lang="de">Verzeichnis wurde erstellt</locale>
+    <locale lang="en">Directory created</locale>
   </entry>
   <entry name="cannot-create-dir">
-    <locale lang="de">Verzeichnis konnt nicht erstellt werden!</locale>
-    <locale lang="en">Cannot create directory!</locale>
+    <locale lang="de">Verzeichnis konnt nicht erstellt werden</locale>
+    <locale lang="en">Cannot create directory</locale>
   </entry>
   <entry name="empty-value">
-    <locale lang="de">Kein Wert eingegeben!</locale>
-    <locale lang="en">No value entered!</locale>
+    <locale lang="de">Kein Wert eingegeben</locale>
+    <locale lang="en">No value entered</locale>
+  </entry>
+  <entry name="svn-checkout-error">
+    <locale lang="de">Fehler beim SVN Checkout</locale>
+    <locale lang="en">Error during SVN checkout occurred</locale>
+  </entry>
+  <entry name="svn-add-error">
+    <locale lang="de">Fehler beim Hinzufügen zur SVN Arbeitskopie</locale>
+    <locale lang="en">Error during SVN add occurred</locale>
+  </entry>
+  <entry name="svn-commit-error">
+    <locale lang="de">Fehler beim Senden der SVN Änderungen</locale>
+    <locale lang="en">Error during SVN commit occurred</locale>
   </entry>
 </i18n>

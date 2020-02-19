@@ -13,7 +13,7 @@ declare function control-util:get-html-head( $control-dir as xs:string ) as elem
 (:
  : get the fancy page head
  :)
-declare function control-util:get-page-header( $control-dir as xs:string ) as element(header) {
+declare function control-util:get-page-header( $control-dir as xs:string ) as element(header ) {
   <header>
     <div class="header-wrapper">
       <div id="logo">
@@ -41,7 +41,7 @@ declare function control-util:path-parent-dir( $path as xs:string ) as xs:string
  :)
 declare function control-util:decode-uri( $uri as xs:string ) {
   for $i in analyze-string($uri, '%\d{2}')/*
-  return string-join(if($i/self::fn:match)
+  return string-join(if($i/self::fn:match )
                      then codepoints-to-string(convert:integer-from-base(replace($i, '%(\d{2})', '$1'), 16))
                      else $i, 
                      '')
