@@ -11,12 +11,13 @@ declare variable $control:locale := 'de';
 declare variable $control:host := 'localhost';
 declare variable $control:port := '8984';
 declare variable $control:dir := 'control';
-declare variable $control:name := concat('http://', $control:host, ':', $control:port, '/', $control:dir );
+declare variable $control:siteurl := concat('http://', $control:host, ':', $control:port, '/', $control:dir );
 declare variable $control:svnusername := 'username';
 declare variable $control:svnpassword := 'password';
+declare variable $control:max-upload-size := '20'; (: MB :)
 declare variable $control:queries := map:merge(for $query in tokenize(request:query(), '\?') 
                                                return map:entry(tokenize( $query, '=')[1], tokenize( $query, '=')[last()])) ;
-declare variable $control:svnurl := map:get( $control:queries, 'url');
+declare variable $control:svnurl := map:get( $control:queries, 'svnurl');
 declare variable $control:msg := map:get( $control:queries, 'msg');
 declare variable $control:msgtype := map:get( $control:queries, 'msgtype');
 
@@ -37,19 +38,12 @@ declare function control:main( $svnurl as xs:string ) as element(html ) {
     <body>
       {control-util:get-page-header( $control:dir )}
       <main>
-        <div class="col1">
-        </div>
-        <div class="col2">
-          {control:get-message( $control:msg, $control:msgtype )}
-          {if(normalize-space( $svnurl ))
-           then control:get-dir-list( $svnurl )
-           else 'URL parameter empty!'}
-        </div>
-        <div class="col3">
-        </div>
+        {control:get-message( $control:msg, $control:msgtype )}
+        {if(normalize-space( $svnurl ))
+         then control:get-dir-list( $svnurl )
+         else 'URL parameter empty!'}
       </main>
-      <footer>
-      </footer>
+      {control-util:get-page-footer()}
     </body>
   </html>
 };
@@ -60,25 +54,14 @@ declare function control:get-dir-list( $svnurl as xs:string ) as element(div ) {
   <div class="directory-list-wrapper">
     
     <div class="svnurl">
-      <div class="home">
-        <a href="{ concat( $control:name,
-                          '?url=',
-                          svn:info("https://subversion.le-tex.de/customers/suhrkamp/transpect/trunk", 
-                                   $control:svnusername, 
-                                   $control:svnpassword )/*:param[@name eq 'root-url']/@value
-                          ) }">
-          <button class="create-dir action btn">
-            <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/home.svg'}" alt="home"/>
-          </button>
-        </a>
-      </div>
+      {control-util:get-svnhome-button( $svnurl, $control:dir )}
       <div class="path">{tokenize( $svnurl, '/')[last()]}</div>
       {control:create-dir-form( $svnurl )}
     </div>
     {control:get-dir-actions( $svnurl )}
     <div class="directory-list table">
       <div class="table-body">
-        {control:list-dir-entries( $control:svnurl )}
+        {control:list-dir-entries( $svnurl )}
       </div>
     </div>
   </div>
@@ -132,8 +115,8 @@ declare function control:get-dir-parent( $svnurl as xs:string ) as element(div )
       <div class="icon table-cell"/>
       <div class="name parentdir table-cell">
         <a href="{concat(
-                         $control:name,
-                         '?url=',
+                         $control:siteurl,
+                         '?svnurl=',
                          control-util:path-parent-dir( $svnurl )
                          )}">..</a></div>
       <div class="author table-cell"/>
@@ -155,8 +138,8 @@ declare function control:list-dir-entries( $svnurl ) as element(div )* {
     <div class="table-row directory-entry {local-name( $files )}">
       <div class="table-cell icon">
         <a href="{concat(
-                   $control:name,
-                   '?url=',
+                   $control:siteurl,
+                   '?svnurl=',
                    $svnurl,
                    '/',
                    $files/@name
@@ -174,8 +157,8 @@ declare function control:list-dir-entries( $svnurl ) as element(div )* {
       </div>
       <div class="name table-cell">
         <a href="{concat(
-                         $control:name,
-                         '?url=',
+                         $control:siteurl,
+                         '?svnurl=',
                          $svnurl,
                          '/',
                          $files/@name

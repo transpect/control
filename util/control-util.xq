@@ -1,28 +1,47 @@
 module namespace control-util = 'control-util';
+import module namespace svn = 'io.transpect.basex.extensions.subversion.XSvnApi';
+import module namespace control = 'control' at '../control.xq';
+import module namespace control-i18n = 'control-i18n' at 'control-i18n.xq';
 (: 
  : gets the html head
  :)
 declare function control-util:get-html-head( $control-dir as xs:string ) as element()+ {
-<head>
-  <meta charset="utf-8"></meta>
-  <title>control</title>
-  <script src="{$control-dir || '/static/js/control.js'}" type="text/javascript"></script>
+  <meta charset="utf-8"></meta>,
+  <title>control</title>,
+  <script src="{$control-dir || '/static/js/control.js'}" type="text/javascript"></script>,
   <link rel="stylesheet" type="text/css" href="{$control-dir || '/static/style.css'}"></link>
-</head>
+};
+declare function control-util:get-page-footer( ) as element(footer) {
+  <footer>
+    
+  </footer>
 };
 (:
  : get the fancy page head
  :)
-declare function control-util:get-page-header( $control-dir as xs:string ) as element(header ) {
+declare function control-util:get-page-header( $control-dir as xs:string ) as element(header) {
   <header>
     <div class="header-wrapper">
       <div id="logo">
         <img src="{$control-dir || '/static/icons/transpect.svg'}" alt="transpect logo"/>
       </div>
       <h1><span class="thin">transpect</span>control</h1>
-      <div class="wrapper"/>
     </div>
   </header>
+};
+declare function control-util:get-svnhome-button( $svnurl as xs:string, $control-dir as xs:string ) as element(div){
+  <div class="home">
+    <a href="{concat($control-dir,
+                     '?svnurl=',
+                     svn:info($svnurl, 
+                              $control:svnusername, 
+                              $control:svnpassword )/*:param[@name eq 'root-url']/@value
+                              )}">
+      <button class="create-dir action btn">
+        <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/home.svg'}" alt="home"/>
+      </button>
+    </a>
+  </div>
 };
 (: 
  : prints the parent directory of a path,

@@ -48,4 +48,8 @@
     <locale lang="de">Fehler beim Senden der SVN Änderungen</locale>
     <locale lang="en">Error during SVN commit occurred</locale>
   </entry>
+  <entry name="drop-files">
+    <locale lang="de">Zum Hochladen Dateien in diesen Bereich ziehen.</locale>
+    <locale lang="en">Drop and drop files here to upload</locale>
+  </entry>
 </i18n>

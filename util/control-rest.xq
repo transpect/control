@@ -20,16 +20,16 @@ function control-rest:create-dir( $dirname as xs:string?, $svnurl as xs:string )
   (: check if dir already exists :)
   if(normalize-space( $dirname ))
   then if(svn:info(concat( $svnurl, '/', $dirname ), $control:svnusername, $control:svnpassword )/local-name() ne 'errors')
-       then web:redirect(concat( '/control?url=', 
+       then web:redirect(concat( '/control?svnurl=', 
                                  $svnurl, '?msgtype=warning?msg=', 
                                  encode-for-uri(control-i18n:localize('dir-exists', $control:locale )))
                                  )
        else for $i in svn:mkdir( $svnurl, $control:svnusername, $control:svnpassword, $dirname, true(), 'control: create dir')
             return if( $i/local-name() ne 'errors' )
-                   then web:redirect('/control?url=' || $svnurl )
-                   else web:redirect(concat('/control?url=', $svnurl, '?msgtype=error?msg=',
+                   then web:redirect('/control?svnurl=' || $svnurl )
+                   else web:redirect(concat('/control?svnurl=', $svnurl, '?msgtype=error?msg=',
                                             encode-for-uri(control-i18n:localize('cannot-create-dir', $control:locale ))))
-  else web:redirect('/control?url=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('empty-value', $control:locale )) || '?msgtype=warning' )
+  else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('empty-value', $control:locale )) || '?msgtype=warning' )
 };
 declare
   %rest:path("/control/new-file")
@@ -38,15 +38,38 @@ declare
 function control-rest:new-file( $svnurl as xs:string ) {
   <html>
     <head>
+      {control-util:get-html-head( $control:dir || '/../')}
+        <script src="{$control:dir || '/../static/lib/dropzone/dropzone.min.js'}" type="text/javascript"></script>
+        <link rel="stylesheet" href="{$control:dir || '/../static/lib/dropzone/dropzone.min.css'}"></link>
     </head>
     <body>
-      
-      <form action="/upload" method="POST" enctype="multipart/form-data">
-        <input type="file" name="files"  multiple="multiple"/>
-        <input type="hidden" name="svnurl" value="{$svnurl}"/>
-        <input type="submit"/>
-</form>
-      
+      {control-util:get-page-header( $control:dir || '/../' )}
+      <div class="directory-list-wrapper">
+        <div class="svnurl">
+          {control-util:get-svnhome-button( $svnurl, $control:dir || '/../' )}
+        <div class="path">{tokenize( $svnurl, '/')[last()]}</div>
+          {control:create-dir-form( $svnurl )}
+        </div>
+      </div>
+      <main>
+        <form action="/upload"
+              class="dropzone"
+              id="dropzone" method="post" enctype="multipart/form-data">
+          <div class="fallback">
+            <input name="file" type="file" multiple="multiple">Or select file</input>
+            <input type="hidden" name="svnurl" value="{$svnurl}"/>
+          </div>
+        </form>        
+      </main>
+      {control-util:get-page-footer()}
+      <!--<script src="{$control:dir || '/../static/js/control.js'}" type="text/javascript"></script>-->
+        <script>
+          Dropzone.options.dropzone = 
+            {{ maxFilesize: {$control:max-upload-size}, // MB
+               dictDefaultMessage:"{control-i18n:localize('drop-files', $control:locale )}",
+               params:{{svnurl:"{$svnurl}"}}
+            }};
+      </script>
     </body>
   </html>
 };
@@ -56,11 +79,11 @@ function control-rest:new-file( $svnurl as xs:string ) {
 declare
   %rest:POST
   %rest:path("/upload")
-  %rest:form-param("files", "{$files}")
+  %rest:form-param("file", "{$file}")
   %rest:form-param("svnurl", "{$svnurl}")
-function control-rest:upload($files, $svnurl) {
-  for $name    in map:keys($files)
-  let $content := $files($name)
+function control-rest:upload($file, $svnurl) {
+  for $name    in map:keys($file)
+  let $content := $file($name)
   let $path    := file:temp-dir() || $name
   return 
     let $checkoutdir := ( file:temp-dir() || random:uuid() || file:dir-separator() )
@@ -72,11 +95,11 @@ function control-rest:upload($files, $svnurl) {
                   if(svn:add($checkoutdir, $control:svnusername, $control:svnpassword, $name, false()))
                   then if( svn:commit($control:svnusername, $control:svnpassword, $checkoutdir, $name || ' added by ' || $control:svnusername )/local-name() ne 'errors' )
                        then (file:delete($checkoutdir, true()),
-                             web:redirect('/control?url=' || $svnurl )
+                             web:redirect('/control?svnurl=' || $svnurl )
                              )
-                       else web:redirect('/control?url=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-commit-error', $control:locale )) || '?msgtype=error' )
-                  else web:redirect('/control?url=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-add-error', $control:locale )) || '?msgtype=error' )                  
+                       else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-commit-error', $control:locale )) || '?msgtype=error' )
+                  else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-add-error', $control:locale )) || '?msgtype=error' )                  
                   )
-            else web:redirect('/control?url=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
+            else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
             )
 };
