@@ -52,4 +52,20 @@
     <locale lang="de">Zum Hochladen Dateien in diesen Bereich ziehen.</locale>
     <locale lang="en">Drop and drop files here to upload</locale>
   </entry>
+  <entry name="rename">
+    <locale lang="de">Umbenennen</locale>
+    <locale lang="en">Rename</locale>
+  </entry>
+  <entry name="copy">
+    <locale lang="de">Kopieren</locale>
+    <locale lang="en">Copy</locale>
+  </entry>
+  <entry name="move">
+    <locale lang="de">Verschieben</locale>
+    <locale lang="en">Move</locale>
+  </entry>
+  <entry name="delete">
+    <locale lang="de">Löschen</locale>
+    <locale lang="en">Delete</locale>
+  </entry>
 </i18n>
