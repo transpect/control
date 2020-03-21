@@ -1,83 +1,314 @@
 @import url('font/roboto/Roboto.css');
+@import url('normalize.css');
 
-body { background-color:#fafafa; padding:0; margin:0 }
-
-* { font-family: 'Roboto', 'Fira Sans', sans-serif; font-weight:300;}
-
-#logo { text-align:right; }
-#logo img { width:70px; padding:1rem 1rem 1rem 2.25rem }
-header { 
-  padding-bottom:2px;
-  background: /* gradient can be an image */
-    linear-gradient(
-      to left, 
-      rgba(243,146,0,1) 0%,
-      rgba(189,29,29,1) 100%
-    ) left bottom #777 no-repeat; 
-  background-size:100% 2px ;/* if linear-gradient, we need to resize it */
+body, div.window-fg {
+  background-color: #fafafa;
+  padding: 0;
+  margin: 0
 }
-header div.header-wrapper { display:flex; background-color:#24292e; }
-header h1 { margin:0; padding-top:2.75rem;font-weight:300; font-size:3em; color:#fff; line-height: 50% }
-.thin { font-weight:200 }
-main { margin:1rem 10%; }
-
-a, a:hover, a:focus, a:active, a:checked, a:visited { text-decoration:none; color:#367bf0 }
-a:hover { text-decoration:underline; }
-
-#message, #message-background { top:30%; position:absolute; margin: 1rem 10%; padding: 0.5rem 1rem 1rem 1rem; width:45%;}
-#message-background.error { background-color:#ffb6c1 }
-#message-background.warning { background-color:#fafad2}
-#message{ z-index:2; text-align:center; font-weight:400 }
-#message button { margin-left:1rem }
-#message-background{ z-index:1; opacity:0.9;background-color:#ffffff; border:1px solid #ccc; height:3rem}
-#message-background * { visibility:hidden }
-
-/* responsive table classes */
-.table { display:table; width:100% }
-.table-body { display:table-row-group }
-.table-row { display:table-row }
-.table-cell { display:table-cell; padding:0.25em 1em; border-top:1px solid #eee; vertical-align:middle; font-size:.9em; }
-
-/* buttons */
+* {
+  font-family: 'Roboto', 'Fira Sans', sans-serif;
+  font-weight: 300;
+}
+/* 
+ * brand header
+ */
+#logo {
+  text-align: right;
+}
+#logo img {
+  width: 70px;
+  padding: 1rem 1rem 1rem 2.25rem
+}
+header {
+  padding-bottom: 2px;
+  background: /* gradient can be an image */ 
+linear-gradient(
+to left, 
+rgba(243, 146, 0, 1) 0%, 
+rgba(189, 29, 29, 1) 100%
+) left bottom #777 no-repeat;
+  background-size: 100% 2px; /* if linear-gradient, we need to resize it */
+}
+header div.header-wrapper {
+  display: flex;
+  background-color: #24292e;
+}
+header h1 {
+  margin: 0;
+  padding-top: 2.75rem;
+  font-weight: 300;
+  font-size: 3em;
+  color: #fff;
+  line-height: 50%
+}
+.thin {
+  font-weight: 200
+}
+/* 
+ * main content
+ */
+main, .transparent-fg, .transparent-bg {
+  width:100%;
+}
+/* 
+ * links
+ */
+a,
+a:hover,
+a:focus,
+a:active,
+a:checked,
+a:visited,
+.dropdown summary:hover, 
+.dropdown li a.btn:hover {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+/* 
+ * messages
+ */
+#message,
+#message-background {
+  top: 30%;
+  position: absolute;
+  margin: 1rem 10%;
+  padding: 0.5rem 1rem 1rem 1rem;
+  width: 45%;
+}
+#message-background.error {
+  background-color: #ffb6c1
+}
+#message-background.warning {
+  background-color: #fafad2
+}
+#message {
+  z-index: 2;
+  text-align: center;
+  font-weight: 400
+}
+#message button {
+  margin-left: 1rem
+}
+#message-background {
+  z-index: 1;
+  opacity: 0.9;
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  height: 3rem
+}
+#message-background * {
+  visibility: hidden
+}
+/* 
+ * responsive tables
+ */
+.table {
+  display: table;
+  width: 100%
+}
+.table-body {
+  display: table-row-group
+}
+.table-row {
+  display: table-row
+}
+.table-cell {
+  display: table-cell;
+  padding: 0.25em 1em;
+  border-top: 1px solid #eee;
+  vertical-align: middle;
+  font-size: .9em;
+}
+/* 
+ * buttons
+ */
 .btn {
-  display:inline-block;
-  font-weight:400;
-  font-size:0.75em;
-  height:1.75rem;
-  border:0;
-  border-radius:0;
-  box-shadow:none;
-  background-color:#ddd;
-  color:#333;
-  margin:0 0.1rem
+  display: inline-block;
+  min-height: 1.75rem;
+  line-height: 1.75rem;
+  font-weight: 400;
+  font-size: 0.75rem;
+  border-radius: 0;
+  box-shadow: none;
+  color: #333;
+  margin: 0 0.1rem;
+  border: none;
+  background-color: #ededed;
+  border:none;
+  vertical-align: middle;
 }
-.btn:hover{ background-color:#bbb; }
+.btn:hover {
+  background-color: #e8e8e8;
+  border:none;
+}
+.btn.ok {
+  min-width: 3rem
+}
+.btn.cancel {
+  min-width: 4.5rem
+}
+/* 
+ * dropdown menu
+ */
+.dropdown {
+  position: relative;
+  display: block;
+  width: 6rem
+}
+.dropdown-wrapper {
+  position: absolute;
+}
+.dropdown-wrapper ul {
+  margin:0;
+}
+.dropdown summary, .dropdown li a.btn {
+  list-style: none;
+  width:6rem;
+  text-align:center;
+  border:none;
+}
+.dropdown summary:hover, .dropdown li a.btn:hover {
+  text-decoration:none
+}
+ 
+/*details[open] .dropdown-wrapper {
+  animation: fade-in 0.5s forwards;
+}*/
+details:not([open]) > .dropdown-wrapper {
+  display: none;
+}
+details[open] > .dropdown-wrapper {
+  display: block;
+  z-index: 2;
+}
+.dropdown ul {
+  list-style: none;
+  padding: 0
+}
+.dropdown li {
+  line-height:1.75em;
+  text-align: center;
+}
+/* 
+ * form fields
+ */
+input {
+  border: 1px solid #ddd
+}
+/* 
+ * directory browser
+ */
 
-/* directory listing */
-
-.directory-list-wrapper { max-width:100%; color:#24292e }
-.directory-actions { margin: 1rem 0 }
-.directory-actions .small-icon { height:0.6rem }
-.directory-entry .table-cell { height:2.25em; }
-.directory-entry div.header { width:100% }
-.directory-entry div.name a { color:#24292e; font-weight:400; }
-.directory-entry div.name.parentdir a { font-weight:500;  }
-.directory-entry div.icon { width:1%; }
-.directory-entry div.name { width:30%; }
-.directory-entry div.author { width:10%; }
-.directory-entry div.date {  }
-.directory-entry div.revision { width:5%; }
-.directory-entry div.size { width:5%; }
-.directory-entry div.action { text-align:right }
-
-.file-icon { width: 2em }
-
-#create-dir-form-wrapper { display:flex; visibility: hidden; }
-#create-dir-form { margin:0 }
-.svnurl { display:flex; }
-.svnurl .path { margin: 0.25rem 0.25rem 0 0.25rem}
-#create-dir-form-wrapper button.btn { margin-left:0.25rem }
-
-/* dropzone */
-#dropzone { width:100%; height:50%; border: 1px solid #24292e }
-#dropzone button { font-size:1.4rem; }
+.small-icon {
+  height: 0.6rem
+}
+.directory-list-wrapper {
+  max-width: 100%;
+  color: #24292e
+}
+.directory-entry .table-cell {
+  height: 2.25em;
+}
+.directory-entry div.header {
+  width: 100%
+}
+.directory-entry div.name a {
+  color: #24292e;
+  font-weight: 400;
+}
+.directory-entry div.name.parentdir a {
+  font-weight: 500;
+}
+.directory-entry div.icon {
+  width: 1%;
+}
+.directory-entry div.name {
+  width: 30%;
+}
+.directory-entry div.author {
+  width: 10%;
+}
+.directory-entry div.date {
+}
+.directory-entry div.revision {
+  width: 5%;
+}
+.directory-entry div.size {
+  width: 5%;
+}
+.file-icon {
+  width: 2em
+}
+/* 
+ * create dir form
+ */
+#create-dir-form-wrapper {
+  display: flex;
+  visibility: hidden;
+}
+#create-dir-form {
+  margin: 0;
+  display: flex;
+}
+.dir-menu {
+  display: flex;
+  margin: 1rem
+}
+.dir-menu-left {
+  display: flex;
+}
+.dir-menu-left .path {
+  margin: 0.25rem 0.25rem 0 0.25rem
+}
+.dir-menu-right {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%
+}
+#create-dir-form-wrapper button.btn {
+  margin-left: 0.25rem
+}
+/* 
+ * dropzone 
+ */
+#dropzone {
+  width: 100%;
+  height: 50%;
+  border: 1px solid #ddd;
+  padding: 4rem 0 2rem 0;
+  background-image: url('icons/flat-remix/Flat-Remix-Blue-Dark/places/scalable/folder-black-cloud.svg');
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-origin: content-box;
+  background-size: 125px auto;
+}
+#dropzone.dz-started {
+  background: none
+}
+#dropzone img {
+  width: 100px;
+}
+#dropzone button {
+  font-size: 1.4rem;
+  margin-top: 6rem
+}
+.transparent-bg, .transparent-fg {
+  position:absolute;
+  height:100%;
+}
+div.transparent-bg {
+  background-color: #000;
+  opacity:0.4;
+  z-index:5;
+}
+div.transparent-fg {
+  position:absolute;
+  z-index:10;
+}
+div.transparent-fg div.window-fg {
+  margin:2rem auto;
+  width:50%;
+}

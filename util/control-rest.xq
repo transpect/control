@@ -3,11 +3,12 @@
  : and redirect to the main function with web:redirect()
  : messages and their status are returned with $msg and $msgtype
  :)
-module namespace control-rest = 'control-rest';
-import module namespace svn = 'io.transpect.basex.extensions.subversion.XSvnApi';
-import module namespace control = 'control' at '../control.xq';
-import module namespace control-i18n = 'control-i18n' at 'control-i18n.xq';
-import module namespace control-util = 'control-util' at 'control-util.xq';
+module namespace control-rest           = 'control-rest';
+import module namespace svn             = 'io.transpect.basex.extensions.subversion.XSvnApi';
+import module namespace control         = 'control' at '../control.xq';
+import module namespace control-i18n    = 'control-i18n' at 'control-i18n.xq';
+import module namespace control-util    = 'control-util' at 'control-util.xq';
+import module namespace control-widgets = 'control-widgets' at 'control-widgets.xq';
 (:
  : create dir
  :)
@@ -38,20 +39,21 @@ declare
 function control-rest:new-file( $svnurl as xs:string ) {
   <html>
     <head>
-      {control-util:get-html-head( $control:dir || '/../')}
+      {control-widgets:get-html-head( $control:dir || '/../')}
         <script src="{$control:dir || '/../static/lib/dropzone/dropzone.min.js'}" type="text/javascript"></script>
         <link rel="stylesheet" href="{$control:dir || '/../static/lib/dropzone/dropzone.min.css'}"></link>
     </head>
     <body>
-      {control-util:get-page-header( $control:dir || '/../' )}
-      <div class="directory-list-wrapper">
-        <div class="svnurl">
-          {control-util:get-svnhome-button( $svnurl, $control:dir || '/../' )}
-        <div class="path">{tokenize( $svnurl, '/')[last()]}</div>
-          {control:create-dir-form( $svnurl )}
-        </div>
-      </div>
+      {control-widgets:get-page-header( $control:dir || '/../' )}
       <main>
+        <div class="directory-list-wrapper">
+          <div class="svnurl">
+            {control-widgets:get-svnhome-button( $svnurl, $control:dir || '/..' ),
+             control-widgets:get-back-to-svndir-button($svnurl, $control:dir || '/..' )}
+          <div class="path">{tokenize( $svnurl, '/')[last()]}</div>
+            {control-widgets:create-dir-form( $svnurl, $control:dir || '/../' )}
+          </div>
+        </div>
         <form action="/upload"
               class="dropzone"
               id="dropzone" method="post" enctype="multipart/form-data">
@@ -61,7 +63,7 @@ function control-rest:new-file( $svnurl as xs:string ) {
           </div>
         </form>        
       </main>
-      {control-util:get-page-footer()}
+      {control-widgets:get-page-footer()}
       <!--<script src="{$control:dir || '/../static/js/control.js'}" type="text/javascript"></script>-->
         <script>
           Dropzone.options.dropzone = 
@@ -102,4 +104,60 @@ function control-rest:upload($file, $svnurl) {
                   )
             else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
             )
+};
+(:
+ : download as zip
+ :)
+declare
+  %rest:path("/control/download")
+  %rest:query-param("svnurl", "{$svnurl}")
+function control-rest:download-as-zip( $svnurl as xs:string ) {
+  for $name    in tokenize($svnurl, '/')[last()]
+  let $temp    := file:temp-dir() || file:dir-separator()  || random:uuid() || file:dir-separator() 
+  let $checkoutdir := $temp || $name
+  let $zip-name := $name || '.zip' 
+  let $zip-path := $temp || $zip-name 
+  return (
+          if( svn:checkout($svnurl, $control:svnusername, $control:svnpassword, $checkoutdir, 'HEAD')/local-name() ne 'errors' )
+          then (zip:zip-file(
+                         <file xmlns="http://expath.org/ns/zip" href="{$zip-path}">
+                          {for $file in file:list($checkoutdir)[not(starts-with(., '.svn'))]
+                           return <entry src="{$checkoutdir || file:dir-separator() || $file}"/>
+                           }
+                         </file>
+                         ),
+                         web:response-header(map { 'media-type': web:content-type( $zip-path )},
+                                             map { 'content-disposition': concat('attachement;filename=', $zip-name)}
+                                             )
+                )
+          else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
+         )
+};
+(:
+ : copy files
+ :)
+declare
+  %rest:path("/control/copy")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("file", "{$file}")
+  %output:method('html')
+function control-rest:copy( $svnurl as xs:string, $file as xs:string ) {
+<html>
+  <head>
+    {control-widgets:get-html-head( $control:dir || '/../')}
+  </head>
+  <body>
+    {control-widgets:get-page-header( $control:dir || '/../' ),
+     if( normalize-space($control:action) and normalize-space($control:file) )
+     then control-widgets:manage-file-actions( $svnurl, ($control:alt-svnurl, $svnurl)[1], $control:action, $control:file )
+     else ()}
+    <main>
+      {control:get-message( $control:msg, $control:msgtype ),
+       if(normalize-space( $svnurl ))
+       then control-widgets:get-dir-list( $svnurl, $control:dir || '/../' )
+       else 'URL parameter empty!'}
+    </main>
+    {control-widgets:get-page-footer()}
+  </body>
+</html>
 };
