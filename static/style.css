@@ -141,7 +141,12 @@ a:hover {
   vertical-align: middle;
 }
 .btn:hover {
-  background-color: #e8e8e8;
+  color:#fff;
+  background-color: #33b4ff;/* #e8e8e8;*/
+  border:none;
+}
+.btn:focus {
+  outline:none;
   border:none;
 }
 .btn.ok {
@@ -310,5 +315,9 @@ div.transparent-fg {
 }
 div.transparent-fg div.window-fg {
   margin:2rem auto;
+  padding: 1rem 2rem;
   width:50%;
+  box-shadow: 5px 5px 5px 0px rgba(0,0,0,0.75);
 }
+div.window-actions { text-align:right }
+a.window-action { text-decoration:none }
