@@ -8,6 +8,10 @@
     <locale lang="de">Verzeichnis erstellen</locale>
     <locale lang="en">Create directory</locale>
   </entry>
+  <entry name="choose-dir">
+    <locale lang="de">Verzeichnis auswählen</locale>
+    <locale lang="en">Choose directory</locale>
+  </entry>  
   <entry name="new-file">
     <locale lang="de">Neue Datei</locale>
     <locale lang="en">New file</locale>
@@ -67,5 +71,9 @@
   <entry name="delete">
     <locale lang="de">Löschen</locale>
     <locale lang="en">Delete</locale>
+  </entry>
+  <entry name="select">
+    <locale lang="de">Auswählen</locale>
+    <locale lang="en">Select</locale>
   </entry>
 </i18n>
