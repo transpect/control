@@ -80,20 +80,39 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
   </details>
 };
 (:
- : use request parameter and perform file action
+ : use request parameter and perform file action.
  :)
-declare function control-widgets:manage-file-actions( $svnurl as xs:string, $alt-svnurl as xs:string?, $action as xs:string, $file as xs:string ) as element(div)+ {
+declare function control-widgets:manage-actions( $svnurl as xs:string, $dest-svnurl as xs:string?, $action as xs:string, $file as xs:string ) {
+  if($action = ('copy', 'move')) 
+      then control-widgets:display-window( $svnurl, $dest-svnurl, $action, $file )
+    else if( $action = 'do-copy' )
+      then svn:copy( $svnurl, 
+                     $control:svnusername, $control:svnpassword, 
+                     substring-after( $file, $svnurl ), substring-after( $dest-svnurl, $svnurl ), 'copy' )
+    else () (: tbd :)
+};
+(:
+ : display window
+ :)
+declare function control-widgets:display-window( $svnurl as xs:string, $dest-svnurl as xs:string?, $action as xs:string, $file as xs:string ) as element(div)+ {
   <div class="transparent-bg"></div>,
   <div class="transparent-fg">
     <div class="window-fg">
-      { control-widgets:choose-directory( $svnurl, $alt-svnurl, $action, $file ) }
+        { if($action = ('copy', 'move')) 
+          then control-widgets:choose-directory( $svnurl, $dest-svnurl, 'do-' || $action, $file )
+          else()
+        }
     </div>
   </div>
 };
 
-declare function control-widgets:choose-directory( $svnurl as xs:string, $alt-svnurl as xs:string?, $action as xs:string, $file as xs:string ) as element(div) {
+(:
+ : displays window to choose directory, usually needed for performing copy or delete actions 
+ :)
+declare function control-widgets:choose-directory( $svnurl as xs:string, $dest-svnurl as xs:string?, $action as xs:string, $file as xs:string ) as element(div) {
   <div class="choose-directory">
-    <h2>Choose directory</h2>
+    <div class="window-actions"><a class="window-action close" href="{ $control:siteurl || '?svnurl=' || $svnurl }">&#x2a2f;</a></div>
+    <h2>{ control-i18n:localize('choose-dir', $control:locale) }</h2>
     <div class="directory-list table">
       <div class="table-body">
       { for $files in svn:list(control-util:path-parent-dir( $svnurl ), $control:svnusername, $control:svnpassword, false())[local-name() ne 'errors']
@@ -101,12 +120,12 @@ declare function control-widgets:choose-directory( $svnurl as xs:string, $alt-sv
             <div class="table-row directory-entry {local-name( $files )}">
               <div class="icon table-cell"/>
               <div class="name parentdir table-cell">
-                <a href="{$control:siteurl || '?svnurl=' || $svnurl || '&amp;alt-svnurl=' || control-util:path-parent-dir( $alt-svnurl ) || '&amp;action=' || $action || '&amp;file=' || $file }">..</a></div>
+                <a href="{$control:siteurl || '/' || $action || '?svnurl=' || $svnurl || '&amp;dest-svnurl=' || control-util:path-parent-dir( $dest-svnurl ) || '&amp;action=' || $action || '&amp;file=' || $file }">..</a></div>
               </div>,
-              for $files in svn:list( $alt-svnurl, $control:svnusername, $control:svnpassword, false())/*
+              for $files in svn:list( $dest-svnurl, $control:svnusername, $control:svnpassword, false())/*
               order by lower-case( $files/@name )
               order by $files/local-name()
-              let $href := $control:siteurl || '?svnurl=' || $svnurl || '&amp;alt-svnurl=' || $alt-svnurl || '/' || $files/@name || '&amp;action=' || $action || '&amp;file=' || $file
+              let $href := $control:siteurl || '/' || $action || '?svnurl=' || $svnurl || '&amp;dest-svnurl=' || $dest-svnurl || '/' || $files/@name || '&amp;action=' || $action || '&amp;file=' || $file
               return
                 if( $files/local-name() eq 'directory' )
                 then 
@@ -114,19 +133,21 @@ declare function control-widgets:choose-directory( $svnurl as xs:string, $alt-sv
                     <div class="table-cell icon">
                       <a href="{$href}">
                         <img src="{(concat( $control:dir,
-                                           '/../',
-                                           control-util:get-mimetype-url(
-                                                     if( $files/local-name() eq 'directory') 
-                                                     then 'folder'
-                                                     else tokenize( $files/@name, '\.')[last()]
-                                                     )
+                                            '/../',
+                                            control-util:get-mimetype-url(
+                                                                          if( $files/local-name() eq 'directory') 
+                                                                          then 'folder'
+                                                                          else tokenize( $files/@name, '\.')[last()]
+                                                                         )
                                     )
                              )}" alt="" class="file-icon"/>
                       </a>
                     </div>
                     <div class="name table-cell">
                       <a href="{$href}">{xs:string( $files/@name )}</a></div>
-                    <div class="action table-cell">{control-widgets:get-select-directory-button( $svnurl, 'svn-copy', $file, $files/@name)}</div>
+                    <div class="action table-cell">
+                      { control-widgets:get-choose-directory-button( $svnurl, 'do-copy', $file, $dest-svnurl || '/' || $files/@name ) }
+                    </div>
                   </div>
               else ()
       }
@@ -134,11 +155,12 @@ declare function control-widgets:choose-directory( $svnurl as xs:string, $alt-sv
     </div>
   </div>
 };
-declare function control-widgets:get-select-directory-button( $svnurl as xs:string, $action as xs:string, $source as xs:string, $target as xs:string) as element(div){
+declare function control-widgets:get-choose-directory-button( $svnurl as xs:string, $action as xs:string, $file as xs:string, $dest-svnurl as xs:string) as element(div){
   <div class="home">
-    <a href="{ $control:dir || '/../?svnurl=' || $svnurl || '&amp;action=' || $action || '&amp;source=' || $source || '&amp;target=' || $target }">
-      <button class="back action btn">
-        <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/check.svg'}" alt="back"/>
+    <a href="{ $control:dir || '/..?svnurl=' || $svnurl || '&amp;action=' || $action || '&amp;file=' || $file || '&amp;dest-svnurl=' || $dest-svnurl }">
+      <button class="select action btn">
+        <img class="small-icon" src="{$control:dir || '/../static/icons/open-iconic/svg/check.svg'}" alt="select"/>
+        <span class="spacer"/>{control-i18n:localize('select', $control:locale )}
       </button>
     </a>
   </div>
