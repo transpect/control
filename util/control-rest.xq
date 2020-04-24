@@ -149,7 +149,7 @@ function control-rest:copy( $svnurl as xs:string, $file as xs:string ) {
   <body>
     {control-widgets:get-page-header( $control:dir || '/../' ),
      if( normalize-space($control:action) and normalize-space($control:file) )
-     then control-widgets:manage-file-actions( $svnurl, ($control:alt-svnurl, $svnurl)[1], $control:action, $control:file )
+     then control-widgets:manage-actions( $svnurl, ($control:dest-svnurl, $svnurl)[1], $control:action, $control:file )
      else ()}
     <main>
       {control:get-message( $control:msg, $control:msgtype ),
