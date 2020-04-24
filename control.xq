@@ -21,7 +21,7 @@ declare variable $control:msg             := request:parameter('msg');
 declare variable $control:msgtype         := request:parameter('msgtype');
 declare variable $control:action          := request:parameter('action');
 declare variable $control:file            := request:parameter('file');
-declare variable $control:alt-svnurl      := request:parameter('alt-svnurl');
+declare variable $control:dest-svnurl     := request:parameter('dest-svnurl');
 
 declare
 %rest:path('/control')
@@ -30,7 +30,7 @@ function control:control() as element() {
   control:main( $control:svnurl )
 };
 (:
- : this is where the fun starts...
+ : this is where the "fun" starts...
  :)
 declare function control:main( $svnurl as xs:string ) as element(html) {
   <html>
@@ -40,7 +40,7 @@ declare function control:main( $svnurl as xs:string ) as element(html) {
     <body>
       {control-widgets:get-page-header( $control:dir ),
        if( normalize-space($control:action) and normalize-space($control:file) )
-       then control-widgets:manage-file-actions( $svnurl, ($control:alt-svnurl, $svnurl)[1], $control:action, $control:file )
+       then control-widgets:manage-actions( $svnurl, ($control:dest-svnurl, $svnurl)[1], $control:action, $control:file )
        else ()}
       <main>
         {control:get-message( $control:msg, $control:msgtype ),
