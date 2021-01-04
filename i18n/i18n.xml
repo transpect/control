@@ -68,6 +68,18 @@
     <locale lang="de">Verschieben</locale>
     <locale lang="en">Move</locale>
   </entry>
+  <entry name="projects">
+    <locale lang="de">Projekte</locale>
+    <locale lang="en">Projects</locale>
+  </entry>
+  <entry name="files">
+    <locale lang="de">Dateien</locale>
+    <locale lang="en">Files</locale>
+  </entry>
+  <entry name="configuration">
+    <locale lang="de">Konfiguration</locale>
+    <locale lang="en">Configuration</locale>
+  </entry>
   <entry name="delete">
     <locale lang="de">Löschen</locale>
     <locale lang="en">Delete</locale>
