@@ -30,11 +30,11 @@ rgba(189, 29, 29, 1) 100%
 ) left bottom #777 no-repeat;
   background-size: 100% 2px; /* if linear-gradient, we need to resize it */
 }
-header div.header-wrapper {
+header.page-header div.header-wrapper, header div.nav-wrapper  {
   display: flex;
   background-color: #24292e;
 }
-header h1 {
+header.page-header div.header-wrapper h1 {
   margin: 0;
   padding-top: 2.75rem;
   font-weight: 300;
@@ -42,6 +42,23 @@ header h1 {
   color: #fff;
   line-height: 50%
 }
+header.page-header a,
+header.page-header a:hover,
+header.page-header a:focus,
+header.page-header a:active,
+header.page-header a:checked,
+header.page-header a:visited {
+  text-decoration:none;
+  text-decoration-line:none;
+  color:#fff
+}
+
+header div.nav-wrapper {
+  color:#fff;
+}
+ol.nav-ol { margin: 0.5em 0 0 0 }
+li.nav-tab { display:inline-block; padding: 1em 0.75em; margin:0 }
+
 .thin {
   font-weight: 200
 }
@@ -67,6 +84,7 @@ a:visited,
 a:hover {
   text-decoration: underline;
 }
+header a { text-decoration: underline; color:inherit }
 /* 
  * messages
  */
@@ -139,6 +157,7 @@ a:hover {
   background-color: #ededed;
   border:none;
   vertical-align: middle;
+  cursor:pointer;
 }
 .btn:hover {
   color:#fff;
