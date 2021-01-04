@@ -1,7 +1,7 @@
-module namespace control-util        = 'control-util';
+module namespace control-util        = 'http://transpect.io/control/util/control-util';
 import module namespace svn          = 'io.transpect.basex.extensions.subversion.XSvnApi';
-import module namespace control      = 'control' at '../control.xq';
-import module namespace control-i18n = 'control-i18n' at 'control-i18n.xq';
+import module namespace control      = 'http://transpect.io/control' at '../control.xq';
+import module namespace control-i18n = 'http://transpect.io/control/util/control-i18n' at 'control-i18n.xq';
 (: 
  : prints the parent directory of a path,
  : e.g. /home/parentdir/mydir/ => /home/parentdir/ 
@@ -42,4 +42,13 @@ declare function control-util:ext-to-mimetype( $ext as xs:string ) as xs:string 
 else if ( $ext eq 'text')             then 'text-plain'
 else if ( $ext = ('Makefile', 'bat')) then 'text-x'
 else                                      'text-plain'
+};
+declare function control-util:normalize-repo-url( $url as xs:string ) as xs:string {
+  replace($url, '\p{P}', '_')
+};
+declare function control-util:get-checkout-dir($svnusername as xs:string, $svnurl as xs:string, $svnpassword as xs:string) as xs:string {
+  let $svninfo := svn:info($svnurl, $svnusername, $svnpassword)
+  let $repo := control-util:normalize-repo-url($svninfo/*:param[@name eq 'root-url']/@value)
+  let $path := $svninfo/*:param[@name eq 'path']/@value
+  return $control:datadir || file:dir-separator() || $svnusername || file:dir-separator() || $repo || file:dir-separator() || $path
 };
