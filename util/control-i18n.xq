@@ -1,4 +1,4 @@
-module namespace control-i18n = 'control-i18n';
+module namespace control-i18n = 'http://transpect.io/control/util/control-i18n';
 (: 
  : prints the parent directory of a path , 
  : e.g. /home/parentdir/mydir/ => /home/parentdir/ 
