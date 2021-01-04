@@ -74,7 +74,7 @@ function control-api:copy( $svnurl as xs:string, $svnusername as xs:string, $svn
   return svn:copy($checkoutdir, $svnusername, $svnpassword, $path, $target, ())/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
 };
 (:
- :  control-api:delete
+ :  control-api:delete()
  :    
  :  delete a file or directory
 :)
@@ -99,7 +99,7 @@ function control-api:delete( $svnurl as xs:string, $svnusername as xs:string, $s
 (:
  :  control-api:move
  :    
- :  delete a file or directory
+ :  move or rename a file or directory
 :)
 declare
   %rest:GET
@@ -111,7 +111,7 @@ declare
   %rest:query-param("target", "{$target}")
   %output:method('xml')
 function control-api:move( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $path as xs:string, $target as xs:string ) {
-  let $commitmsg := '[control] ' || $svnusername || ': copy ' || $path || ' => ' || $target
+  let $commitmsg := '[control] ' || $svnusername || ': move ' || $path || ' => ' || $target
   let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
   let $revision := 'HEAD'
   let $checkout-or-update := if(file:exists($checkoutdir)) 
