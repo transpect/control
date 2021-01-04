@@ -1,16 +1,16 @@
-module namespace control-widgets = 'control-widgets';
+module namespace control-widgets = 'http://transpect.io/control/util/control-widgets';
 import module namespace svn = 'io.transpect.basex.extensions.subversion.XSvnApi';
-import module namespace control = 'control' at '../control.xq';
-import module namespace control-i18n = 'control-i18n' at 'control-i18n.xq';
-import module namespace control-util = 'control-util' at 'control-util.xq';
+import module namespace control = 'http://transpect.io/control' at '../control.xq';
+import module namespace control-i18n = 'http://transpect.io/control/util/control-i18n' at 'control-i18n.xq';
+import module namespace control-util = 'http://transpect.io/control/util/control-util' at 'control-util.xq';
 (: 
  : gets the html head
  :)
-declare function control-widgets:get-html-head( $control-dir as xs:string ) as element()+ {
+declare function control-widgets:get-html-head( ) as element()+ {
   <meta charset="utf-8"></meta>,
   <title>control</title>,
-  <script src="{$control-dir || '/static/js/control.js'}" type="text/javascript"></script>,
-  <link rel="stylesheet" type="text/css" href="{$control-dir || '/static/style.css'}"></link>
+  <script src="{ $control:siteurl || '/static/js/control.js'}" type="text/javascript"></script>,
+  <link rel="stylesheet" type="text/css" href="{ $control:siteurl || '/static/style.css'}"></link>
 };
 declare function control-widgets:get-page-footer( ) as element(footer) {
   <footer>
@@ -20,13 +20,24 @@ declare function control-widgets:get-page-footer( ) as element(footer) {
 (:
  : get the fancy page head
  :)
-declare function control-widgets:get-page-header( $control-dir as xs:string ) as element(header) {
-  <header>
+declare function control-widgets:get-page-header(  ) as element(header) {
+  <header class="page-header">
     <div class="header-wrapper">
       <div id="logo">
-        <img src="{$control-dir || '/static/icons/transpect.svg'}" alt="transpect logo"/>
+        <a href="{ $control:siteurl }">
+          <img src="{ $control:siteurl || '/static/icons/transpect.svg'}" alt="transpect logo"/>
+        </a>
       </div>
-      <h1><span class="thin">transpect</span>control</h1>
+      <h1><a href="{ $control:siteurl }"><span class="thin">transpect</span>control</a></h1>
+    </div>
+    <div class="nav-wrapper">
+      <nav class="nav">
+        <ol class="nav-ol">
+          <li class="nav-tab"><a href="{ 'control/projects?svnurl=' || $control:svnurl   }">{control-i18n:localize('projects', $control:locale)}</a></li>
+          <li class="nav-tab"><a>{control-i18n:localize('files', $control:locale)}</a></li>
+          <li class="nav-tab"><a>{control-i18n:localize('configuration', $control:locale)}</a></li>
+        </ol>
+      </nav>
     </div>
   </header>
 };
@@ -64,16 +75,16 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
     <div class="dropdown-wrapper">
 	    <ul>
 	      <li>
-	       <a class="btn" href="{$control:dir || '/rename?svnurl=' || $svnurl || '&amp;action=rename&amp;file=' || $file }">{control-i18n:localize('rename', $control:locale)}</a>
+	       <a class="btn" href="{$control:path || '/rename?svnurl=' || $svnurl || '&amp;action=rename&amp;file=' || $file }">{control-i18n:localize('rename', $control:locale)}</a>
 	      </li>
 	      <li>
-	        <a class="btn" href="{$control:dir || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
+	        <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
 	      </li>
     		<li>
-    		  <a class="btn" href="{$control:dir || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
+    		  <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
     		</li>
     		<li>
-    		  <a class="btn" href="{$control:dir || '/delete?svnurl=' || $svnurl || '&amp;action=delete&amp;file=' || $file }">{control-i18n:localize('delete', $control:locale)}</a>
+    		  <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;action=delete&amp;file=' || $file }">{control-i18n:localize('delete', $control:locale)}</a>
     		</li>
       </ul>
 	  </div>
@@ -132,7 +143,7 @@ declare function control-widgets:choose-directory( $svnurl as xs:string, $dest-s
                   <div class="table-row directory-entry {local-name( $files )}">
                     <div class="table-cell icon">
                       <a href="{$href}">
-                        <img src="{(concat( $control:dir,
+                        <img src="{(concat( $control:path,
                                             '/../',
                                             control-util:get-mimetype-url(
                                                                           if( $files/local-name() eq 'directory') 
@@ -157,9 +168,9 @@ declare function control-widgets:choose-directory( $svnurl as xs:string, $dest-s
 };
 declare function control-widgets:get-choose-directory-button( $svnurl as xs:string, $action as xs:string, $file as xs:string, $dest-svnurl as xs:string) as element(div){
   <div class="home">
-    <a href="{ $control:dir || '/..?svnurl=' || $svnurl || '&amp;action=' || $action || '&amp;file=' || $file || '&amp;dest-svnurl=' || $dest-svnurl }">
+    <a href="{ $control:path || '/..?svnurl=' || $svnurl || '&amp;action=' || $action || '&amp;file=' || $file || '&amp;dest-svnurl=' || $dest-svnurl }">
       <button class="select action btn">
-        <img class="small-icon" src="{$control:dir || '/../static/icons/open-iconic/svg/check.svg'}" alt="select"/>
+        <img class="small-icon" src="{$control:path || '/../static/icons/open-iconic/svg/check.svg'}" alt="select"/>
         <span class="spacer"/>{control-i18n:localize('select', $control:locale )}
       </button>
     </a>
