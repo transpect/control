@@ -1,20 +1,24 @@
 (:
  : transpect control
  :)
-module namespace        control         = 'control';
+module namespace        control         = 'http://transpect.io/control';
+import module namespace session         = "http://basex.org/modules/session";
 import module namespace svn             = 'io.transpect.basex.extensions.subversion.XSvnApi';
-import module namespace control-i18n    = 'control-i18n'    at 'util/control-i18n.xq';
-import module namespace control-rest    = 'control-rest'    at 'util/control-rest.xq';
-import module namespace control-util    = 'control-util'    at 'util/control-util.xq';
-import module namespace control-widgets = 'control-widgets' at 'util/control-widgets.xq';
+import module namespace control-api     = 'http://transpect.io/control/util/control-api'     at 'util/control-api.xq';
+import module namespace control-i18n    = 'http://transpect.io/control/util/control-i18n'    at 'util/control-i18n.xq';
+import module namespace control-forms   = 'http://transpect.io/control/util/control-forms'   at 'util/control-forms.xq';
+import module namespace control-util    = 'http://transpect.io/control/util/control-util'    at 'util/control-util.xq';
+import module namespace control-widgets = 'http://transpect.io/control/util/control-widgets' at 'util/control-widgets.xq';
 
-declare variable $control:locale          := 'de';
-declare variable $control:host            := 'localhost';
-declare variable $control:port            := '8984';
-declare variable $control:dir             := 'control';
-declare variable $control:siteurl         := 'http://' || $control:host || ':' || $control:port || '/' || $control:dir;
-declare variable $control:svnusername     := 'username';
-declare variable $control:svnpassword     := 'password';
+declare variable $control:locale          := doc('config.xml')/control:config/control:locale;
+declare variable $control:host            := doc('config.xml')/control:config/control:host;
+declare variable $control:port            := doc('config.xml')/control:config/control:port;
+declare variable $control:path            := doc('config.xml')/control:config/control:path;
+declare variable $control:datadir         := doc('config.xml')/control:config/control:datadir;
+declare variable $control:db              := doc('config.xml')/control:config/control:db;
+declare variable $control:siteurl         := 'http://' || $control:host || ':' || $control:port || '/' || $control:path;
+declare variable $control:svnusername     := '';
+declare variable $control:svnpassword     := '';
 declare variable $control:max-upload-size := '20'; (: MB :)
 declare variable $control:svnurl          := request:parameter('svnurl');
 declare variable $control:msg             := request:parameter('msg');
@@ -35,17 +39,18 @@ function control:control() as element() {
 declare function control:main( $svnurl as xs:string ) as element(html) {
   <html>
     <head>
-      {control-widgets:get-html-head( $control:dir )}
+      {control-widgets:get-html-head( )}
     </head>
     <body>
-      {control-widgets:get-page-header( $control:dir ),
+      {control-widgets:get-page-header( ),
        if( normalize-space($control:action) and normalize-space($control:file) )
        then control-widgets:manage-actions( $svnurl, ($control:dest-svnurl, $svnurl)[1], $control:action, $control:file )
        else ()}
       <main>
-        {control:get-message( $control:msg, $control:msgtype ),
+        {
+         control:get-message( $control:msg, $control:msgtype ),
          if(normalize-space( $svnurl ))
-         then control-widgets:get-dir-list( $svnurl, $control:dir )
+         then control-widgets:get-dir-list( $svnurl, $control:path )
          else 'URL parameter empty!'}
       </main>
       {control-widgets:get-page-footer()}
@@ -63,7 +68,7 @@ declare function control:get-message( $message as xs:string?, $messagetype as xs
         <p>{control-util:decode-uri( $message )}
           <button class="btn" onclick="hide('message-wrapper')">
             OK
-            <img class="small-icon" src="{$control:dir || '/static/icons/open-iconic/svg/check.svg'}" alt="ok"/>
+            <img class="small-icon" src="{$control:path || '/static/icons/open-iconic/svg/check.svg'}" alt="ok"/>
           </button>
         </p>
       </div>
