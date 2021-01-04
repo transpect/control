@@ -26,9 +26,10 @@ function control-api:list( $svnurl as xs:string?, $svnusername as xs:string?, $s
   let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
   let $svninfo := svn:info($checkoutdir, $svnusername, $svnpassword)
   let $path := $svninfo/*:param[@name eq 'path']/@value
+  let $revision := 'HEAD'
   let $checkout-or-update := if(file:exists($checkoutdir)) 
-                             then svn:update($svnusername, $svnpassword, $checkoutdir, 'HEAD')
-                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, 'HEAD') 
+                             then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
   return svn:list( $checkoutdir, $svnusername, $svnpassword, false())
 };
 (:
@@ -45,8 +46,9 @@ declare
   %rest:query-param("svnpassword", "{$svnpassword}")
   %output:method('xml')
 function control-api:checkout( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string ) as element(c:param-set) {
-  let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword) 
-  return svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, 'HEAD')  
+  let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
+  let $revision := 'HEAD'
+  return svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision)  
 };
 (:
  :  control-api:copy()
@@ -65,9 +67,10 @@ declare
 function control-api:copy( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $path as xs:string, $target as xs:string ) {
   let $commitmsg := '[control] ' || $svnusername || ': copy ' || $path || ' => ' || $target
   let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
+  let $revision := 'HEAD'
   let $checkout-or-update := if(file:exists($checkoutdir)) 
-                             then svn:update($svnusername, $svnpassword, $checkoutdir, 'HEAD')
-                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, 'HEAD') 
+                             then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
   return svn:copy($checkoutdir, $svnusername, $svnpassword, $path, $target, ())/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
 };
 (:
@@ -84,12 +87,14 @@ declare
   %rest:query-param("path", "{$path}")
   %output:method('xml')
 function control-api:delete( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $path as xs:string ) {
+  let $force := true()
   let $commitmsg := '[control] ' || $svnusername || ': delete ' || $path
   let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
+  let $revision := 'HEAD'
   let $checkout-or-update := if(file:exists($checkoutdir)) 
-                             then svn:update($svnusername, $svnpassword, $checkoutdir, 'HEAD')
-                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, 'HEAD') 
-  return svn:delete($checkoutdir, $svnusername, $svnpassword, $path, true(), ())/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
+                             then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
+  return svn:delete($checkoutdir, $svnusername, $svnpassword, $path, $force, ())/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
 };
 (:
  :  control-api:move
@@ -108,8 +113,9 @@ declare
 function control-api:move( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $path as xs:string, $target as xs:string ) {
   let $commitmsg := '[control] ' || $svnusername || ': copy ' || $path || ' => ' || $target
   let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
+  let $revision := 'HEAD'
   let $checkout-or-update := if(file:exists($checkoutdir)) 
-                             then svn:update($svnusername, $svnpassword, $checkoutdir, 'HEAD')
-                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, 'HEAD') 
+                             then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
   return svn:move($checkoutdir, $svnusername, $svnpassword, $path, $target, ())/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
 };
