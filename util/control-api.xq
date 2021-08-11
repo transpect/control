@@ -119,3 +119,20 @@ function control-api:move( $svnurl as xs:string, $svnusername as xs:string, $svn
                              else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
   return svn:move($checkoutdir, $svnusername, $svnpassword, $path, $target, ())/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
 };
+(:
+ :  control-api:mkdir
+ :    
+ :  create a directory
+:)
+declare
+  %rest:GET
+  %rest:path("/control/api/mkdir")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("svnusername", "{$svnusername}")
+  %rest:query-param("svnpassword", "{$svnpassword}")
+  %rest:query-param("dir", "{$dir}")
+  %output:method('xml')
+function control-api:mkdir( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $dir as xs:string ) {
+  let $commitmsg := '[control] ' || $svnusername || ': mkdir ' || $dir 
+  return svn:mkdir($svnurl, $svnusername, $svnpassword, $dir, true(), $commitmsg)
+};
