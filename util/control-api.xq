@@ -136,3 +136,18 @@ function control-api:mkdir( $svnurl as xs:string, $svnusername as xs:string, $sv
   let $commitmsg := '[control] ' || $svnusername || ': mkdir ' || $dir 
   return svn:mkdir($svnurl, $svnusername, $svnpassword, $dir, true(), $commitmsg)
 };
+(:
+ :  control-api:info
+ :    
+ :  shows information about an object
+:)
+declare
+  %rest:GET
+  %rest:path("/control/api/info")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("svnusername", "{$svnusername}")
+  %rest:query-param("svnpassword", "{$svnpassword}")
+  %output:method('xml')
+function control-api:info( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string ) {
+  svn:info($svnurl, $svnusername, $svnpassword)
+};
