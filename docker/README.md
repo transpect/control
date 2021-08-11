@@ -35,3 +35,14 @@ docker exec -it svn-server bash
 
 If the container isn’t running, there is an error and you can inspect the messages in Docker Desktop.
 
+# See whether BaseX is working
+
+Go to http://localhost:9080/basex/ in your browser.
+
+It currently exposes the default landing page from which you can launch the DBA web app.
+We will later restrict it to a webapp subdirectory that is specific to transpect-control.
+
+# See whether svn is working
+
+Go to http://testi:popesti@localhost:9080/content/works/testwork/ in your browser.
+
