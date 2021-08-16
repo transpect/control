@@ -22,4 +22,4 @@ cp -r control $(BaseX)/webapp/
 5. Start BaseX service
 6. Open control in your browser and pass your Subversion repository URL.
 
-http://localhost:8984/control?url=https://mysvnrepo
+http://localhost:8984/control?svnurl=https://mysvnrepo
