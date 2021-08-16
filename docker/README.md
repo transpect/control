@@ -13,9 +13,15 @@ BaseX will optionally modify the files in these directories (create repos, add/m
 
 # Building the container
 
+From the parent directory:
+
 ```
-docker build -t svn-server .
+docker build -t svn-server -f docker/Dockerfile .
 ```
+
+This is because we need to copy stuff from the parent directory into the container,
+and we don't want to clone this repo again during the build process.
+
 
 # Running the container
 
