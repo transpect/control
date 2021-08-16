@@ -184,7 +184,7 @@ declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-di
   {control-widgets:get-dir-menu( $svnurl, $control-dir )}        
     <div class="directory-list table">
       <div class="table-body">
-        {control-widgets:list-dir-entries( $svnurl, $control-dir, (), false(), () )}
+        {control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': true()} )}
       </div>
     </div>
   </div>
@@ -232,10 +232,13 @@ declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control
  :)
 declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                                            $control-dir as xs:string,
-                                           $filename-filter-regex as xs:string?, 
-                                           $dirs-only as xs:boolean,
-                                           $add-query-params as xs:string?) as element(div )* {
+                                           $options as map(xs:string, item()*)? ) as element(div )* {
   control-widgets:get-dir-parent( $svnurl, $control-dir ),
+  let $filename-filter-regex as xs:string? := $options?filename-filter-regex,
+      $dirs-only as xs:boolean? := $options?dirs-only = true(),
+      $add-query-params as xs:string? := $options?add-query-params,
+      $show-externals as xs:boolean? := $options?show-externals = true()
+  return
   for $files in svn:list( $svnurl, $control:svnusername, $control:svnpassword, false())/*
   order by lower-case( $files/@name )
   order by $files/local-name()
