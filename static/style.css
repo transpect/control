@@ -180,7 +180,7 @@ header a { text-decoration: underline; color:inherit }
 .dropdown {
   position: relative;
   display: block;
-  width: 6rem
+  width: 10rem
 }
 .dropdown-wrapper {
   position: absolute;
@@ -190,9 +190,12 @@ header a { text-decoration: underline; color:inherit }
 }
 .dropdown summary, .dropdown li a.btn {
   list-style: none;
-  width:6rem;
+  width:10rem;
   text-align:center;
   border:none;
+}
+.dropdown li a.btn {
+  line-height: 1.4em;
 }
 .dropdown summary:hover, .dropdown li a.btn:hover {
   text-decoration:none

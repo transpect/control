@@ -56,13 +56,13 @@
     <locale lang="de">Zum Hochladen Dateien in diesen Bereich ziehen.</locale>
     <locale lang="en">Drop and drop files here to upload</locale>
   </entry>
-  <entry name="remove">
-    <locale lang="de">Entfernen</locale>
-    <locale lang="en">Remove</locale>
+  <entry name="remove-external">
+    <locale lang="de">External Entfernen</locale>
+    <locale lang="en">Remove external</locale>
   </entry>
   <entry name="change-url">
-    <locale lang="de">URL ändern</locale>
-    <locale lang="en">Change URL</locale>
+    <locale lang="de">Ziel-URL ändern</locale>
+    <locale lang="en">Change target URL</locale>
   </entry>
   <entry name="change-mountpoint">
     <locale lang="de">Einhängepunkt umbenennen</locale>

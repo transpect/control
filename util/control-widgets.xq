@@ -77,7 +77,7 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
         if (name($file) = 'mount')
         then (
           <li>
-           <a class="btn" href="{$control:path || '/external/remove?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('remove', $control:locale)}</a>
+           <a class="btn" href="{$control:path || '/external/remove?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('remove-external', $control:locale)}</a>
           </li>,
           <li>
            <a class="btn" href="{$control:path || '/external/change-url?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('change-url', $control:locale)}</a>
@@ -262,8 +262,13 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
   )
   order by lower-case( $files/(@name | @mount) )
   order by $files/local-name()
-  let $href := $control:siteurl || '?svnurl=' || (if ($files/self::external) then $files/@url
-                                                 else ($svnurl || '/' || $files/@name || $add-query-params))
+  let $href := if ($files/self::external)
+               then 
+                 if (starts-with($files/@url, 'https://github.com/'))
+                 then replace($files/@url, '/[^/]+/?$', '/')
+                 else $control:siteurl || '?svnurl=' || (if ($files/self::external) 
+                                                         then $files/@url
+                                                         else ($svnurl || '/' || $files/@name || $add-query-params))
   return
     if(    not($dirs-only and $files/local-name() eq 'file')
        or  not(matches($files/@name, ($filename-filter-regex, '')[1])))
