@@ -67,27 +67,40 @@ declare function control-widgets:get-back-to-svndir-button( $svnurl as xs:string
 (:
  : get file action dropdown button
  :)
-declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $file as xs:string ) as element(details){
+declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $file as attribute(*) ) as element(details){
   <details class="file action dropdown">
     <summary class="btn">
       {control-i18n:localize('actions', $control:locale)}<span class="spacer"/>▼
     </summary>
     <div class="dropdown-wrapper">
-	    <ul>
-	      <li>
-	       <a class="btn" href="{$control:path || '/rename?svnurl=' || $svnurl || '&amp;action=rename&amp;file=' || $file }">{control-i18n:localize('rename', $control:locale)}</a>
-	      </li>
-	      <li>
-	        <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
-	      </li>
-    		<li>
-    		  <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
-    		</li>
-    		<li>
-    		  <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;action=delete&amp;file=' || $file }">{control-i18n:localize('delete', $control:locale)}</a>
-    		</li>
-      </ul>
-	  </div>
+      <ul>{
+        if (name($file) = 'mount')
+        then (
+          <li>
+           <a class="btn" href="{$control:path || '/external/remove?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('remove', $control:locale)}</a>
+          </li>,
+          <li>
+           <a class="btn" href="{$control:path || '/external/change-url?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('change-url', $control:locale)}</a>
+          </li>,
+          <li>
+           <a class="btn" href="{$control:path || '/external/change-mountpoint?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('change-mountpoint', $control:locale)}</a>
+          </li>
+        ) else (
+          <li>
+           <a class="btn" href="{$control:path || '/rename?svnurl=' || $svnurl || '&amp;action=rename&amp;file=' || $file }">{control-i18n:localize('rename', $control:locale)}</a>
+          </li>,
+          <li>
+            <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
+          </li>,
+          <li>
+            <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
+          </li>,
+          <li>
+            <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;action=delete&amp;file=' || $file }">{control-i18n:localize('delete', $control:locale)}</a>
+          </li>
+        )
+      }</ul>
+    </div>
   </details>
 };
 (:
@@ -239,10 +252,18 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
       $add-query-params as xs:string? := $options?add-query-params,
       $show-externals as xs:boolean? := $options?show-externals = true()
   return
-  for $files in svn:list( $svnurl, $control:svnusername, $control:svnpassword, false())/*
-  order by lower-case( $files/@name )
+  (:<div>{svn:list( $svnurl, $control:svnusername, $control:svnpassword, false()), 
+  control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))}</div>:)
+  for $files in (
+    svn:list( $svnurl, $control:svnusername, $control:svnpassword, false())/*,
+    if ($show-externals) then
+      control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))
+    else ()
+  )
+  order by lower-case( $files/(@name | @mount) )
   order by $files/local-name()
-  let $href := $control:siteurl || '?svnurl=' || $svnurl || '/' || $files/@name || $add-query-params
+  let $href := $control:siteurl || '?svnurl=' || (if ($files/self::external) then $files/@url
+                                                 else ($svnurl || '/' || $files/@name || $add-query-params))
   return
     if(    not($dirs-only and $files/local-name() eq 'file')
        or  not(matches($files/@name, ($filename-filter-regex, '')[1])))
@@ -255,19 +276,21 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                              control-util:get-mimetype-url(
                                        if( $files/local-name() eq 'directory') 
                                        then 'folder'
-                                       else tokenize( $files/@name, '\.')[last()]
+                                       else if ($files/self::external)
+                                            then 'external'
+                                            else tokenize( $files/@name, '\.')[last()]
                                        )
                       )
                )}" alt="" class="file-icon"/>
         </a>
       </div>
       <div class="name table-cell">
-        <a href="{$href}">{xs:string( $files/@name )}</a></div>
+        <a href="{$href}">{xs:string( $files/(@name | @mount) )}</a></div>
       <div class="author table-cell">{xs:string( $files/@author )}</div>
       <div class="date table-cell">{xs:string( $files/@date )}</div>
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>
       <div class="size table-cell">{$files/@size[$files/local-name() eq 'file']/concat(., '&#x202f;KB')}</div>
-      <div class="action table-cell">{control-widgets:get-file-action-dropdown( $svnurl, $files/@name )}</div>
+      <div class="action table-cell">{control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files/(@name | @mount) )}</div>
     </div> 
     else()
 };

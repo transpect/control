@@ -2,6 +2,9 @@ module namespace control-util        = 'http://transpect.io/control/util/control
 import module namespace svn          = 'io.transpect.basex.extensions.subversion.XSvnApi';
 import module namespace control      = 'http://transpect.io/control' at '../control.xq';
 import module namespace control-i18n = 'http://transpect.io/control/util/control-i18n' at 'control-i18n.xq';
+
+declare namespace c = 'http://www.w3.org/ns/xproc-step';
+
 (: 
  : prints the parent directory of a path,
  : e.g. /home/parentdir/mydir/ => /home/parentdir/ 
@@ -30,9 +33,9 @@ declare function control-util:decode-uri( $uri as xs:string ) {
 declare function control-util:get-mimetype-url( $ext as xs:string? ) as xs:string {
   if (( $ext ) eq 'folder')
   then 'static/icons/flat-remix/Flat-Remix-Blue-Dark/places/scalable/folder-black.svg'
-  else concat('static/icons/flat-remix/Flat-Remix-Blue-Dark/mimetypes/scalable/',
-              control-util:ext-to-mimetype( $ext ),
-              '.svg' )
+    else if ($ext = 'external')
+    then 'static/icons/flat-remix/Flat-Remix-Blue-Dark/places/scalable/folder-black-arrow.svg'
+    else 'static/icons/flat-remix/Flat-Remix-Blue-Dark/mimetypes/scalable/' || control-util:ext-to-mimetype( $ext ) || '.svg' 
 };
 (:
  : get mimetype for file extension
@@ -51,4 +54,19 @@ declare function control-util:get-checkout-dir($svnusername as xs:string, $svnur
   let $repo := control-util:normalize-repo-url($svninfo/*:param[@name eq 'root-url']/@value)
   let $path := $svninfo/*:param[@name eq 'path']/@value
   return $control:datadir || file:dir-separator() || $svnusername || file:dir-separator() || $repo || file:dir-separator() || $path
+};
+declare function control-util:parse-externals-property($prop as element(*)) as element(external)* {
+  for $line in 
+    ($prop/self::c:param-set[c:param[@name='property'][@value='svn:externals']]/c:param[@name='value']/@value
+     => tokenize('[&#xa;&#xd;]+'))[normalize-space()]
+  return <external> {
+    let $tokens as xs:string+ := $line => tokenize('\s+'),
+        $url-plus-rev := $tokens[matches(., '^https?:')],
+        $mount as xs:string* := $tokens[not(matches(., '^https?:'))],
+        $rev as xs:string* := ($url-plus-rev[contains(., '@')] => tokenize('@'))[last()],
+        $url := replace($url-plus-rev, '^(.+)(@.*)?$', '$1')
+    return (attribute url { $url },
+            if(exists($rev)) then attribute rev { $rev } else (),
+            attribute mount { $mount })
+  }</external>
 };
