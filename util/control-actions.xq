@@ -22,7 +22,7 @@ function control-actions:upload($file, $svnurl) {
   let $content := $file($name)
   let $path    := file:temp-dir() || $name
   let $checkoutdir := ( file:temp-dir() || random:uuid() || file:dir-separator() )
-  let $commitpath := ( $checkoutdir || $name )  
+  let $commitpath := ( $checkoutdir || $name )
     return (
             file:write-binary($path, $content),
             if( svn:checkout($svnurl, $control:svnusername, $control:svnpassword, $checkoutdir, 'HEAD')/local-name() ne 'errors' )
@@ -66,6 +66,9 @@ function control-actions:download-as-zip( $svnurl as xs:string ) {
           else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
          )
 };
+(:
+ : choose target path and copy file
+ :)
 declare
   %rest:path("/control/copy")
   %rest:query-param("svnurl", "{$svnurl}")
@@ -83,11 +86,22 @@ function control-actions:copy( $svnurl as xs:string, $file as xs:string ) {
      else ()}
     <main>
       {control:get-message( $control:msg, $control:msgtype ),
-       if(normalize-space( $svnurl ))
-       then control-widgets:get-dir-list( $svnurl, $control:path || '/../' )
-       else 'URL parameter empty!'}
+       control-widgets:get-dir-list( $svnurl, $control:path || '/../' )}
     </main>
     {control-widgets:get-page-footer()}
   </body>
 </html>
+};
+(:
+ : deletes quietly a file
+ :)
+declare
+  %rest:path("/control/delete")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("file", "{$file}")
+  %output:method('html')
+function control-actions:delete( $svnurl as xs:string, $file as xs:string ) {
+if(svn:delete($svnurl, $control:svnusername, $control:svnpassword, $file, true(), 'deleted by' || $control:svnusername )/local-name() ne 'errors' )
+then web:redirect('/control?svnurl=' || $svnurl )
+else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-delete-error', $control:locale )) || '?msgtype=error' )
 };

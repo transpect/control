@@ -58,7 +58,7 @@ declare function control:main( $svnurl as xs:string ) as element(html) {
   </html>
 };
 (:
- : returns each entry of the directory as single html row
+ : displays a message
 :)
 declare function control:get-message( $message as xs:string?, $messagetype as xs:string?) as element(div )?{
   if( $message )
