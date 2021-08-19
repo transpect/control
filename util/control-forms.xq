@@ -68,7 +68,7 @@ function control-forms:new-file( $svnurl as xs:string ) {
     <body>
       {control-widgets:get-page-header()}
       <main>
-        <div class="directory-list-wrapper">
+        <div class="upload-form">
           <dir class="dir-menu">
             <div class="dir-menu-left">
                 {control-widgets:get-svnhome-button( $svnurl, $control:path || '/..' ),
@@ -77,7 +77,6 @@ function control-forms:new-file( $svnurl as xs:string ) {
                 {control-widgets:create-dir-form( $svnurl, $control:path || '/../' )}
               </div>
           </dir>
-        </div>
         <form action="/upload"
               class="dropzone"
               id="dropzone" method="post" enctype="multipart/form-data">
@@ -85,7 +84,8 @@ function control-forms:new-file( $svnurl as xs:string ) {
             <input name="file" type="file" multiple="multiple">Or select file</input>
             <input type="hidden" name="svnurl" value="{$svnurl}"/>
           </div>
-        </form>        
+        </form> 
+        </div>
       </main>
       {control-widgets:get-page-footer()}
       <!--<script src="{$control:path || '/../static/js/control.js'}" type="text/javascript"></script>-->
