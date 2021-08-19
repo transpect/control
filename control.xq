@@ -4,6 +4,7 @@
 module namespace        control         = 'http://transpect.io/control';
 import module namespace session         = "http://basex.org/modules/session";
 import module namespace svn             = 'io.transpect.basex.extensions.subversion.XSvnApi';
+import module namespace control-actions = 'http://transpect.io/control/util/control-actions' at 'util/control-actions.xq';
 import module namespace control-api     = 'http://transpect.io/control/util/control-api'     at 'util/control-api.xq';
 import module namespace control-i18n    = 'http://transpect.io/control/util/control-i18n'    at 'util/control-i18n.xq';
 import module namespace control-util    = 'http://transpect.io/control/util/control-util'    at 'util/control-util.xq';
