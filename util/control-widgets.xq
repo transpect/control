@@ -56,7 +56,7 @@ declare function control-widgets:get-svnhome-button( $svnurl as xs:string, $cont
   </div>
 };
 declare function control-widgets:get-back-to-svndir-button( $svnurl as xs:string, $control-dir as xs:string ) as element(div){
-  <div class="home">
+  <div class="back">
     <a href="{$control-dir || '?svnurl=' || $svnurl}">
       <button class="back action btn">
         <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/chevron-left.svg'}" alt="back"/>
