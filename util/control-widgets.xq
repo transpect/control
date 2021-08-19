@@ -87,7 +87,7 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
           </li>
         ) else (
           <li>
-           <a class="btn" href="{$control:path || '/rename?svnurl=' || $svnurl || '&amp;action=rename&amp;file=' || $file }">{control-i18n:localize('rename', $control:locale)}</a>
+           <a class="btn" href="#" onclick="{'createRenameForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('rename', $control:locale)}</a>
           </li>,
           <li>
             <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
@@ -168,7 +168,8 @@ declare function control-widgets:choose-directory( $svnurl as xs:string, $dest-s
                       </a>
                     </div>
                     <div class="name table-cell">
-                      <a href="{$href}">{xs:string( $files/@name )}</a></div>
+                      <a href="{$href}">{xs:string( $files/@name )}</a>
+                    </div>
                     <div class="action table-cell">
                       { control-widgets:get-choose-directory-button( $svnurl, 'do-copy', $file, $dest-svnurl || '/' || $files/@name ) }
                     </div>
@@ -289,7 +290,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
         </a>
       </div>
       <div class="name table-cell">
-        <a href="{$href}">{xs:string( $files/(@name | @mount) )}</a></div>
+        <a href="{$href}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a></div>
       <div class="author table-cell">{xs:string( $files/@author )}</div>
       <div class="date table-cell">{xs:string( $files/@date )}</div>
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>

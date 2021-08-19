@@ -1,9 +1,49 @@
+/* 
+ * Functions
+ */
+
 function reveal(id) {
   document.getElementById(id).style.visibility  = "visible"; 
 }
 function hide(id) {
   document.getElementById(id).style.visibility  = "hidden"; 
 }
+function createRenameForm(svnurl, file, controlPath) {
+  const id = 'direntry-' + file
+  const form = '<div id="rename-form-wrapper">'
+    + '  <form id="rename-form" action="/control/rename?file=' + file + '" method="POST">'
+    + '    <input type="text" value="'+ file + '" id="rename-target" name="rename-target"/>'
+    + '    <input type="hidden" name="svnurl" value="' + svnurl + '"/>'
+    + '    <button class="btn ok" value="ok">'
+    + '      OK'
+    + '      <span class="spacer"/><img class="small-icon" src="' + controlPath + '/static/icons/open-iconic/svg/check.svg" alt="ok"/>'
+    + '    </button>'
+    + '  </form>'
+    + '  <button class="btn cancel" value="cancel" onclick="cancelRenameForm(\'' + svnurl + '\', \'' + file + '\', \'' + controlPath + '\')">'
+    + '    Cancel'
+    + '    <span class="spacer"/><img class="small-icon" src="' + controlPath + '/static/icons/open-iconic/svg/ban.svg" alt="cancel"/>'
+    + '  </button>'
+    + '</div>'
+    const formWrapper = document.createElement("div");
+    formWrapper.setAttribute("id", "renameform-" + file);
+    anchor = document.getElementById(id);
+    anchor.replaceWith( formWrapper );
+    formWrapper.innerHTML = form;
+}
+function cancelRenameForm(svnurl, file, controlPath) {
+  const id = "renameform-" + file;
+  const txt = document.createTextNode(file);
+  var formWrapper = document.getElementById(id);
+  var anchor = document.createElement("a");
+  anchor.setAttribute("id", "direntry-" + file);
+  anchor.setAttribute("href", controlPath + "?svnurl=" + svnurl);
+  anchor.appendChild(txt);
+  formWrapper.replaceWith( anchor );
+}
+/* 
+ * Register event listener
+ */
+
 let details = document.querySelector("details");
 let summary = document.querySelector("summary");
 

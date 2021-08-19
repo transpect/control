@@ -1,7 +1,10 @@
 @import url('font/roboto/Roboto.css');
 @import url('normalize.css');
 
-html,body { height:100%; }
+html,
+body {
+  height: 100%;
+}
 
 body,
 div.window-fg {
@@ -158,7 +161,8 @@ header a {
 /* 
  * buttons
  */
-.btn, .dropzone .dz-button {
+.btn,
+.dropzone .dz-button {
   display: inline-block;
   min-height: 1.75rem;
   line-height: 1.75rem;
@@ -287,7 +291,7 @@ input {
   width: 2em
 }
 .directory-entry .action.table-cell .file.action.dropdown {
-  float:right
+  float: right
 }
 
 /* 
@@ -320,6 +324,13 @@ input {
 #create-dir-form-wrapper button.btn {
   margin-left: 0.25rem
 }
+/* 
+ * rename dir form
+ */
+#rename-form{
+  display: inline-block;
+  margin: 0;
+}
 .btn.back,
 .btn.home {
   width: 1.75rem;
@@ -335,15 +346,15 @@ input {
 
 .dropzone {
   position: relative;
-  padding:1rem;
-  background-color:#eee;
+  padding: 1rem;
+  background-color: #eee;
   background-image: url('icons/flat-remix/Flat-Remix-Blue-Dark/places/scalable/folder-black-cloud.svg');
   background-repeat: no-repeat;
   background-position: center;
-  background-size: contain; 
+  background-size: contain;
   margin: auto 1rem;
-  height:65%
-  
+  height: 65%
+
 }
 .dropzone .dz-preview {
   position: relative;
@@ -383,4 +394,91 @@ input {
   height: 58px;
   left: 50%;
   margin-left: -27px;
+}
+
+.loader-wrapper{
+  position:absolute; 
+  width:100%;
+}
+.loader {
+  margin: 0 auto;
+  position: relative;
+  z-index:10000;
+  color: #fb5800;
+  font-size: 90px;
+  text-indent: -9999em;
+  overflow: hidden;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  margin: 72px auto;
+  -webkit-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-animation: load6 1.7s infinite ease, round 1.7s infinite ease;
+  animation: load6 1.7s infinite ease, round 1.7s infinite ease;
+}
+@-webkit-keyframes load6 {
+  0% {
+    box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+  }
+  5%,
+  95% {
+    box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+  }
+  10%,
+  59% {
+    box-shadow: 0 -0.83em 0 -0.4em, -0.087em -0.825em 0 -0.42em, -0.173em -0.812em 0 -0.44em, -0.256em -0.789em 0 -0.46em, -0.297em -0.775em 0 -0.477em;
+  }
+  20% {
+    box-shadow: 0 -0.83em 0 -0.4em, -0.338em -0.758em 0 -0.42em, -0.555em -0.617em 0 -0.44em, -0.671em -0.488em 0 -0.46em, -0.749em -0.34em 0 -0.477em;
+  }
+  38% {
+    box-shadow: 0 -0.83em 0 -0.4em, -0.377em -0.74em 0 -0.42em, -0.645em -0.522em 0 -0.44em, -0.775em -0.297em 0 -0.46em, -0.82em -0.09em 0 -0.477em;
+  }
+  100% {
+    box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+  }
+}
+@keyframes load6 {
+  0% {
+    box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+  }
+  5%,
+  95% {
+    box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+  }
+  10%,
+  59% {
+    box-shadow: 0 -0.83em 0 -0.4em, -0.087em -0.825em 0 -0.42em, -0.173em -0.812em 0 -0.44em, -0.256em -0.789em 0 -0.46em, -0.297em -0.775em 0 -0.477em;
+  }
+  20% {
+    box-shadow: 0 -0.83em 0 -0.4em, -0.338em -0.758em 0 -0.42em, -0.555em -0.617em 0 -0.44em, -0.671em -0.488em 0 -0.46em, -0.749em -0.34em 0 -0.477em;
+  }
+  38% {
+    box-shadow: 0 -0.83em 0 -0.4em, -0.377em -0.74em 0 -0.42em, -0.645em -0.522em 0 -0.44em, -0.775em -0.297em 0 -0.46em, -0.82em -0.09em 0 -0.477em;
+  }
+  100% {
+    box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+  }
+}
+@-webkit-keyframes round {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+@keyframes round {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
 }
