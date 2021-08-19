@@ -34,7 +34,7 @@ declare function control-util:get-mimetype-url( $ext as xs:string? ) as xs:strin
   if (( $ext ) eq 'folder')
   then 'static/icons/flat-remix/Flat-Remix-Blue-Dark/places/scalable/folder-black.svg'
     else if ($ext = 'external')
-    then 'static/icons/flat-remix/Flat-Remix-Blue-Dark/places/scalable/folder-black-arrow.svg'
+    then 'static/icons/flat-remix/Flat-Remix-Blue-Dark/places/scalable/folder-black-documents.svg'
     else 'static/icons/flat-remix/Flat-Remix-Blue-Dark/mimetypes/scalable/' || control-util:ext-to-mimetype( $ext ) || '.svg' 
 };
 (:
