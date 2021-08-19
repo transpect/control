@@ -134,7 +134,13 @@ declare
   %output:method('xml')
 function control-api:mkdir( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $dir as xs:string ) {
   let $commitmsg := '[control] ' || $svnusername || ': mkdir ' || $dir 
-  return svn:mkdir($svnurl, $svnusername, $svnpassword, $dir, true(), $commitmsg)
+  let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
+  let $path := $checkoutdir || '/' || $dir
+  let $revision := 'HEAD'
+  let $checkout-or-update := if(file:exists($checkoutdir)) 
+                             then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
+  return svn:mkdir($checkoutdir, $svnusername, $svnpassword, $dir, true(), $commitmsg)/svn:commit($svnusername, $svnpassword, $path, $commitmsg)
 };
 (:
  :  control-api:info
@@ -150,4 +156,21 @@ declare
   %output:method('xml')
 function control-api:info( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string ) {
   svn:info($svnurl, $svnusername, $svnpassword)
+};
+(:
+ :  control-api:propget
+ :    
+ :  shows information about the properties of an object
+:)
+declare
+  %rest:GET
+  %rest:path("/control/api/propget")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("svnusername", "{$svnusername}")
+  %rest:query-param("svnpassword", "{$svnpassword}")
+  %rest:query-param("property", "{$property}")
+  %rest:query-param("revision", "{$revision}")
+  %output:method('xml')
+function control-api:propget( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $property as xs:string, $revision as xs:string ) {
+  svn:propget($svnurl, $svnusername, $svnpassword, $property, $revision)
 };
