@@ -266,7 +266,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                then 
                  if (starts-with($files/@url, 'https://github.com/'))
                  then replace($files/@url, '/[^/]+/?$', '/')
-                 else $control:siteurl || '?svnurl=' || $svnurl || '/' || $files/@url || $add-query-params
+                 else $control:siteurl || '?svnurl=' || $files/@url || $add-query-params
                else $control:siteurl || '?svnurl=' || $svnurl || '/' || $files/@name || $add-query-params
   return
     if(    not($dirs-only and $files/local-name() eq 'file')
