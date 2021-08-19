@@ -91,7 +91,7 @@ function control-forms:new-file( $svnurl as xs:string ) {
       <!--<script src="{$control:path || '/../static/js/control.js'}" type="text/javascript"></script>-->
         <script>
           Dropzone.options.dropzone = 
-            {{ maxFilesize: {$control:max-upload-size}, // MB
+            {{ maxFilesize: {xs:string($control:max-upload-size)}, 
                dictDefaultMessage:"{control-i18n:localize('drop-files', $control:locale )}",
                params:{{svnurl:"{$svnurl}"}}
             }};
@@ -111,9 +111,8 @@ function control-forms:upload($file, $svnurl) {
   for $name    in map:keys($file)
   let $content := $file($name)
   let $path    := file:temp-dir() || $name
-  return 
-    let $checkoutdir := ( file:temp-dir() || random:uuid() || file:dir-separator() )
-    let $commitpath := ( $checkoutdir || $name )
+  let $checkoutdir := ( file:temp-dir() || random:uuid() || file:dir-separator() )
+  let $commitpath := ( $checkoutdir || $name )  
     return (
             file:write-binary($path, $content),
             if( svn:checkout($svnurl, $control:svnusername, $control:svnpassword, $checkoutdir, 'HEAD')/local-name() ne 'errors' )
@@ -127,7 +126,7 @@ function control-forms:upload($file, $svnurl) {
                   else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-add-error', $control:locale )) || '?msgtype=error' )                  
                   )
             else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
-            )
+           )
 };
 (:
  : download as zip
