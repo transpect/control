@@ -52,6 +52,10 @@
     <locale lang="de">Fehler beim Löschen der Datei. Stellen Sie sicher, dass die Datei nicht von einem anderen User mit einem Lock versehen wurde.</locale>
     <locale lang="en">Cannot delete file. Make sure the file is not locked by another user.</locale>
   </entry>
+  <entry name="svn-rename-error">
+    <locale lang="de">Fehler beim Umbenennen der Datei. Stellen Sie sicher, dass die Datei nicht von einem anderen User mit einem Lock versehen wurde.</locale>
+    <locale lang="en">Cannot rename file. Make sure the file is not locked by another user.</locale>
+  </entry>
   <entry name="svn-commit-error">
     <locale lang="de">Fehler beim Senden der SVN Änderungen</locale>
     <locale lang="en">Error during SVN commit occurred</locale>

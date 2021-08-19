@@ -11,9 +11,10 @@ function hide(id) {
 function createRenameForm(svnurl, file, controlPath) {
   const id = 'direntry-' + file
   const form = '<div id="rename-form-wrapper">'
-    + '  <form id="rename-form" action="/control/rename?file=' + file + '" method="POST">'
-    + '    <input type="text" value="'+ file + '" id="rename-target" name="rename-target"/>'
+    + '  <form id="rename-form" action="/control/rename" method="POST">'
+    + '    <input type="text" value="'+ file + '" id="target" name="target"/>'
     + '    <input type="hidden" name="svnurl" value="' + svnurl + '"/>'
+    + '    <input type="hidden" name="file" value="' + file + '"/>'
     + '    <button class="btn ok" value="ok">'
     + '      OK'
     + '      <span class="spacer"/><img class="small-icon" src="' + controlPath + '/static/icons/open-iconic/svg/check.svg" alt="ok"/>'
