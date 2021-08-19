@@ -286,6 +286,10 @@ input {
 .file-icon {
   width: 2em
 }
+.directory-entry .action.table-cell .file.action.dropdown {
+  float:right
+}
+
 /* 
  * create dir form
  */
