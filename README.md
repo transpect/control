@@ -8,7 +8,7 @@ git clone https://github.com/transpect/basex-svn-api.git
 ```
 2. copy lib and jar files to BaseX `custom` directory.
 ```bash
-cp basex-svn-api/jar/basexsvn.jar $(BaseX)/lib/custom
+cp basex-svn-api/jar/basex-svn-api.jar $(BaseX)/lib/custom
 cp basex-svn-api/lib/* $(BaseX)/lib/custom
 ```
 3. clone control
