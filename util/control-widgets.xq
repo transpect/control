@@ -3,6 +3,8 @@ import module namespace svn = 'io.transpect.basex.extensions.subversion.XSvnApi'
 import module namespace control = 'http://transpect.io/control' at '../control.xq';
 import module namespace control-i18n = 'http://transpect.io/control/util/control-i18n' at 'control-i18n.xq';
 import module namespace control-util = 'http://transpect.io/control/util/control-util' at 'control-util.xq';
+declare namespace c = 'http://www.w3.org/ns/xproc-step';
+
 (: 
  : gets the html head
  :)
@@ -267,9 +269,10 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                then 
                  if (starts-with($files/@url, 'https://github.com/'))
                  then replace($files/@url, '/[^/]+/?$', '/')
-                 else $control:siteurl || '?svnurl=' || $files/@url || $add-query-params
+                 else $control:siteurl || '?svnurl=' || $files/@url || '&amp;from=' || $svnurl || $add-query-params
                else if($files/local-name() eq 'directory')
-                    then $control:siteurl || '?svnurl=' || $svnurl || '/' || $files/@name || $add-query-params
+                    then $control:siteurl || '?svnurl=' || $svnurl || '/' || $files/@name 
+                      || '&amp;from='[request:parameter('from')] || request:parameter('from') || $add-query-params
                     else $svnurl || '/' || $files/@name
   return
     if(    not($dirs-only and $files/local-name() eq 'file')
@@ -305,17 +308,20 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
  : provides a row in the html direcory listing 
  : with the link to the parent directory
 :)
-declare function control-widgets:get-dir-parent( $svnurl as xs:string, $control-dir as xs:string ) as element(div )? {
-  for $files in svn:list(control-util:path-parent-dir( $svnurl ), $control:svnusername, $control:svnpassword, false())[local-name() ne 'errors']
+declare function control-widgets:get-dir-parent( $svnurl as xs:string, $control-dir as xs:string ) as element(div )* {
+  for $path in (
+                  request:parameter('from'),
+                  svn:list(
+                    control-util:path-parent-dir( $svnurl ), 
+                    $control:svnusername, $control:svnpassword, false()
+                  )/self::c:files/@*:base
+                )
   return 
-    <div class="table-row directory-entry {local-name( $files )}">
+    <div class="table-row directory-entry">
       <div class="icon table-cell"/>
       <div class="name parentdir table-cell">
-        <a href="{concat(
-                         $control-dir,
-                         '?svnurl=',
-                         control-util:path-parent-dir( $svnurl )
-                         )}">..</a></div>
+        <a href="{$control-dir || '?svnurl=' || $path}">{if (request:parameter('from') and $path/position() = 1) then '←' else '..'}</a>
+      </div>
       <div class="author table-cell"/>
       <div class="date table-cell"/>
       <div class="revision table-cell"/>
