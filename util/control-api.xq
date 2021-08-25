@@ -180,3 +180,29 @@ declare
 function control-api:propget( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $property as xs:string, $revision as xs:string ) {
   svn:propget($svnurl, $svnusername, $svnpassword, $property, $revision)
 };
+(:
+ :  control-api:propset
+ :    
+ :  sets properties for an object
+:)
+declare
+  %rest:GET
+  %rest:path("/control/api/propset")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("svnusername", "{$svnusername}")
+  %rest:query-param("svnpassword", "{$svnpassword}")
+  %rest:query-param("property", "{$property}")
+  %rest:query-param("value", "{$value}")
+  %output:method('xml')
+function control-api:propset( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $property as xs:string, $value as xs:string ) {
+  let $commitmsg := '[control] ' || $svnusername || ': set prop: ' || $property
+  let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
+  let $svninfo := svn:info($checkoutdir, $svnusername, $svnpassword)
+  let $path := $svninfo/*:param[@name eq 'path']/@value
+  let $revision := 'HEAD'
+  let $depth := 'empty'
+  let $checkout-or-update := if(file:exists($checkoutdir)) 
+                             then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision, $depth)  
+  return svn:propset($checkoutdir, $svnusername, $svnpassword, $property, $value)/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
+};
