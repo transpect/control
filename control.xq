@@ -17,7 +17,8 @@ declare variable $control:path            := doc('config.xml')/control:config/co
 declare variable $control:datadir         := doc('config.xml')/control:config/control:datadir;
 declare variable $control:db              := doc('config.xml')/control:config/control:db;
 declare variable $control:max-upload-size := doc('config.xml')/control:config/control:max-upload-size;
-declare variable $control:siteurl         := 'http://' || $control:host || ':' || $control:port || '/' || $control:path;
+declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
+declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || '/' || $control:path;
 declare variable $control:svnusername     := (request:parameter('svnusername'), xs:string(doc('config.xml')/control:config/control:svnusername))[1];
 declare variable $control:svnpassword     := (request:parameter('svnpassword'), xs:string(doc('config.xml')/control:config/control:svnpassword))[1];
 declare variable $control:svnurl          := (request:parameter('svnurl'), xs:string(doc('config.xml')/control:config/control:svnurl))[1];
