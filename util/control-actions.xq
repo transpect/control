@@ -23,9 +23,11 @@ function control-actions:upload($file, $svnurl) {
   let $path    := file:temp-dir() || $name
   let $checkoutdir := ( file:temp-dir() || random:uuid() || file:dir-separator() )
   let $commitpath := ( $checkoutdir || $name )
+  let $revision := 'HEAD'
+  let $depth := 'empty'
     return (
             file:write-binary($path, $content),
-            if( svn:checkout($svnurl, $control:svnusername, $control:svnpassword, $checkoutdir, 'HEAD')/local-name() ne 'errors' )
+            if( svn:checkout($svnurl, $control:svnusername, $control:svnpassword, $checkoutdir, $revision, $depth)/local-name() ne 'errors' )
             then (file:move($path, $checkoutdir), 
                   if(svn:add($checkoutdir, $control:svnusername, $control:svnpassword, $name, false()))
                   then if( svn:commit($control:svnusername, $control:svnpassword, $checkoutdir, $name || ' added by ' || $control:svnusername )/local-name() ne 'errors' )
@@ -51,7 +53,7 @@ function control-actions:download-as-zip( $svnurl as xs:string ) {
   let $zip-name := $name || '.zip' 
   let $zip-path := $temp || $zip-name 
   return (
-          if( svn:checkout($svnurl, $control:svnusername, $control:svnpassword, $checkoutdir, 'HEAD')/local-name() ne 'errors' )
+          if( svn:checkout($svnurl, $control:svnusername, $control:svnpassword, $checkoutdir, 'HEAD', 'infinity')/local-name() ne 'errors' )
           then (zip:zip-file(
                          <file xmlns="http://expath.org/ns/zip" href="{$zip-path}">
                           {for $file in file:list($checkoutdir)[not(starts-with(., '.svn'))]

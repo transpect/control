@@ -27,9 +27,10 @@ function control-api:list( $svnurl as xs:string?, $svnusername as xs:string?, $s
   let $svninfo := svn:info($checkoutdir, $svnusername, $svnpassword)
   let $path := $svninfo/*:param[@name eq 'path']/@value
   let $revision := 'HEAD'
+  let $depth := 'empty'
   let $checkout-or-update := if(file:exists($checkoutdir)) 
                              then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
-                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision, $depth) 
   return svn:list( $checkoutdir, $svnusername, $svnpassword, false())
 };
 (:
@@ -48,7 +49,8 @@ declare
 function control-api:checkout( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string ) as element(c:param-set) {
   let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
   let $revision := 'HEAD'
-  return svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision)  
+  let $depth := 'infinity'
+  return svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision, $depth)  
 };
 (:
  :  control-api:copy()
@@ -68,9 +70,10 @@ function control-api:copy( $svnurl as xs:string, $svnusername as xs:string, $svn
   let $commitmsg := '[control] ' || $svnusername || ': copy ' || $path || ' => ' || $target
   let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
   let $revision := 'HEAD'
+  let $depth := 'infinity'
   let $checkout-or-update := if(file:exists($checkoutdir)) 
                              then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
-                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision, $depth) 
   return svn:copy($checkoutdir, $svnusername, $svnpassword, $path, $target, ())/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
 };
 (:
@@ -91,9 +94,10 @@ function control-api:delete( $svnurl as xs:string, $svnusername as xs:string, $s
   let $commitmsg := '[control] ' || $svnusername || ': delete ' || $path
   let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
   let $revision := 'HEAD'
+  let $depth := 'infinity'
   let $checkout-or-update := if(file:exists($checkoutdir)) 
                              then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
-                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision, $depth) 
   return svn:delete($checkoutdir, $svnusername, $svnpassword, $path, $force, ())/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
 };
 (:
@@ -114,9 +118,10 @@ function control-api:move( $svnurl as xs:string, $svnusername as xs:string, $svn
   let $commitmsg := '[control] ' || $svnusername || ': move ' || $path || ' => ' || $target
   let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
   let $revision := 'HEAD'
+  let $depth := 'infinity'
   let $checkout-or-update := if(file:exists($checkoutdir)) 
                              then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
-                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision, $depth) 
   return svn:move($checkoutdir, $svnusername, $svnpassword, $path, $target, ())/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
 };
 (:
@@ -137,9 +142,10 @@ function control-api:mkdir( $svnurl as xs:string, $svnusername as xs:string, $sv
   let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
   let $path := $checkoutdir || '/' || $dir
   let $revision := 'HEAD'
+  let $depth := 'infinity'
   let $checkout-or-update := if(file:exists($checkoutdir)) 
                              then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
-                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision) 
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision, $depth) 
   return svn:mkdir($checkoutdir, $svnusername, $svnpassword, $dir, true(), $commitmsg)/svn:commit($svnusername, $svnpassword, $path, $commitmsg)
 };
 (:
@@ -173,4 +179,30 @@ declare
   %output:method('xml')
 function control-api:propget( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $property as xs:string, $revision as xs:string ) {
   svn:propget($svnurl, $svnusername, $svnpassword, $property, $revision)
+};
+(:
+ :  control-api:propset
+ :    
+ :  sets properties for an object
+:)
+declare
+  %rest:GET
+  %rest:path("/control/api/propset")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("svnusername", "{$svnusername}")
+  %rest:query-param("svnpassword", "{$svnpassword}")
+  %rest:query-param("property", "{$property}")
+  %rest:query-param("value", "{$value}")
+  %output:method('xml')
+function control-api:propset( $svnurl as xs:string, $svnusername as xs:string, $svnpassword as xs:string, $property as xs:string, $value as xs:string ) {
+  let $commitmsg := '[control] ' || $svnusername || ': set prop: ' || $property
+  let $checkoutdir := control-util:get-checkout-dir($svnusername, $svnurl, $svnpassword)
+  let $svninfo := svn:info($checkoutdir, $svnusername, $svnpassword)
+  let $path := $svninfo/*:param[@name eq 'path']/@value
+  let $revision := 'HEAD'
+  let $depth := 'empty'
+  let $checkout-or-update := if(file:exists($checkoutdir)) 
+                             then svn:update($svnusername, $svnpassword, $checkoutdir, $revision)
+                             else svn:checkout($svnurl, $svnusername, $svnpassword, $checkoutdir, $revision, $depth)  
+  return svn:propset($checkoutdir, $svnusername, $svnpassword, $property, $value)/svn:commit($svnusername, $svnpassword, $checkoutdir, $commitmsg)
 };
