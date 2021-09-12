@@ -34,10 +34,12 @@ declare function control-widgets:get-page-header(  ) as element(header) {
     </div>
     <div class="nav-wrapper">
       <nav class="nav">
-        <ol class="nav-ol">
-          <li class="nav-tab"><a href="{ 'control/projects?svnurl=' || $control:svnurl   }">{control-i18n:localize('projects', $control:locale)}</a></li>
-          <li class="nav-tab"><a>{control-i18n:localize('files', $control:locale)}</a></li>
-          <li class="nav-tab"><a>{control-i18n:localize('configuration', $control:locale)}</a></li>
+        <ol class="nav-ol">{(
+          <li class="nav-tab"><a href="{ 'control/projects?svnurl=' || $control:svnurl   }">{control-i18n:localize('projects', $control:locale)}</a></li>,
+          <li class="nav-tab"><a>{control-i18n:localize('files', $control:locale)}</a></li>,
+          <li class="nav-tab"><a>{control-i18n:localize('configuration', $control:locale)}</a></li>,
+	  <!--<li class="nav-tab"><form method="get" action="/search" id="ftsearch-form"></form></li>-->
+	  )}
         </ol>
       </nav>
     </div>
