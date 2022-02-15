@@ -209,7 +209,6 @@ declare function control-widgets:get-choose-directory-button( $svnurl as xs:stri
 :)
 declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-dir as xs:string ) as element(div) {
   <div class="directory-list-wrapper">
-  {control-forms:get-pw-change()}
   {control-widgets:get-dir-menu( $svnurl, $control-dir )}
     <div class="directory-list table">
       <div class="table-body">
