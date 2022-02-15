@@ -23,6 +23,13 @@ declare function control-widgets:get-page-footer( ) as element(footer) {
  : get the fancy page head
  :)
 declare function control-widgets:get-page-header(  ) as element(header) {
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1]
+return
   <header class="page-header">
     <div class="header-wrapper">
       <div id="logo">
@@ -40,6 +47,9 @@ declare function control-widgets:get-page-header(  ) as element(header) {
           <li class="nav-tab"><a>{control-i18n:localize('configuration', $control:locale)}</a></li>,
 	  <!--<li class="nav-tab"><form method="get" action="/search" id="ftsearch-form"></form></li>-->
 	  )}
+        </ol>
+        <ol class="username">
+          <li class="nav-tab"><a href="{ 'control/user'}">{$username}</a></li>
         </ol>
       </nav>
     </div>
@@ -199,7 +209,8 @@ declare function control-widgets:get-choose-directory-button( $svnurl as xs:stri
 :)
 declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-dir as xs:string ) as element(div) {
   <div class="directory-list-wrapper">
-  {control-widgets:get-dir-menu( $svnurl, $control-dir )}        
+  {control-forms:get-pw-change()}
+  {control-widgets:get-dir-menu( $svnurl, $control-dir )}
     <div class="directory-list table">
       <div class="table-body">
         {control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': true()} )}
@@ -345,5 +356,30 @@ declare function control-widgets:create-dir-form( $svnurl as xs:string, $control
       Cancel
       <span class="spacer"/><img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/ban.svg'}" alt="cancel"/>
     </button>
+  </div>
+};
+(:
+ : returns a form for changing the password
+:)
+declare function control-widgets:get-pw-change() as element(div) {
+  <div class="pwchangewrapper">
+    <form action="/basex/setpw" method="POST" enctype="application/x-www-form-urlencoded">
+      <div class="setpw">
+        <div class="form">
+          <label for="old-pwd">altes Password:</label>
+          <input type="password" id="old-pwd" name="oldpw"/>
+        </div>
+        <div class="form">
+          <label for="new-pwd">neues Password:</label>
+          <input type="password" id="new-pwd" name="newpw"/>
+        </div>
+        <div class="form">
+          <label for="new-pwd-re">neues Password wiederholen:</label>
+          <input type="password" id="new-pwd-re" name="newpwre"/>
+        </div>
+        <br/>
+        <input type="submit" name="Submit request"/>
+      </div>
+    </form>
   </div>
 };

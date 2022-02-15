@@ -101,4 +101,21 @@ $file as xs:string
     ),
     file:read-binary( $path )
     )
+};(:
+ : User can set their password.
+ : @return rest binary data
+ :)
+declare
+%rest:path("/control/user")
+%output:method('html')
+function control:resetpw() as element(html) {
+  <html>
+    <head>
+      {control-widgets:get-html-head()}
+    </head>
+    <body>
+      {control-widgets:get-page-header( ),
+       control-widgets:get-pw-change()}
+    </body>
+  </html>
 };

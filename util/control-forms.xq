@@ -54,6 +54,23 @@ function control-forms:create-dir( $dirname as xs:string?, $svnurl as xs:string 
                                             encode-for-uri(control-i18n:localize('cannot-create-dir', $control:locale ))))
   else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('empty-value', $control:locale )) || '?msgtype=warning' )
 };
+
+(:
+ : returns a form for changing the password
+:)
+declare function control-forms:get-pw-change() as element(div) {
+  <div class="pwchangewrapper">
+    <form action="/setpw" method="POST" enctype="application/x-www-form-urlencoded">
+      <label for="old-pwd">altes Password:</label>
+      <input type="password" id="old-pwd" name="oldpw"/>
+      <label for="new-pwd">neues Password:</label>
+      <input type="password" id="new-pwd" name="newpw"/>
+      <label for="new-pwd-re">neues Password wiederholen:</label>
+      <input type="password" id="new-pwd-re" name="newpwre"/>
+      <input type="submit" id="subit-btn" name="Submit"/>
+    </form>
+  </div>
+};
 declare
   %rest:path("/control/new-file")
   %rest:query-param("svnurl", "{$svnurl}")
