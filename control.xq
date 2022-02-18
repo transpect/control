@@ -1,5 +1,5 @@
 (:
- : transpect control
+ : transpect control 202202181307
  :)
 module namespace        control         = 'http://transpect.io/control';
 import module namespace session         = "http://basex.org/modules/session";
@@ -126,12 +126,9 @@ get pw set result
 :)
 declare
 %rest:path("/control/user/setpw")
-%rest:form-param("oldpw","{$oldpw}")
-%rest:form-param("newpw","{$newpw}")
-%rest:form-param("newpwre","{$newpwre}")
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
-function control:setpw($oldpw as xs:string?, $newpw as xs:string?, $newpwre as xs:string?, $svnurl as xs:string?) {
+function control:setpw($svnurl as xs:string) {
 
 let $credentials := request:header("Authorization")
                     => substring(6)
@@ -139,7 +136,10 @@ let $credentials := request:header("Authorization")
                     => bin:decode-string()
                     => tokenize(':'),
     $username := $credentials[1],
-    $password := $credentials[2],
+    $password := $credentials[2], 
+    $oldpw := request:parameter("oldpw"),
+    $newpw := request:parameter("newpw"),
+    $newpwre := request:parameter("newpwre"),
 
     (: checks if the user is logged in and provided the correct old password :)
     $iscorrectuser :=
@@ -158,7 +158,19 @@ let $credentials := request:header("Authorization")
         else
           (element result { element error {"The provided new passwords are not the same."}, element code {1}})
       )
-      else ($iscorrectuser)
+      else ($iscorrectuser),
+    $btntarget :=
+      if ($result/code = 0)
+      then
+        ($control:siteurl || '?svnurl=' || $svnurl)
+      else
+        ($control:siteurl || '/user?svnurl=' || $svnurl),
+    $btntext :=
+      if ($result/code = 0)
+      then
+        ("OK")
+      else
+        ("Zurück")
 return
   <html>
     <head>
@@ -168,8 +180,8 @@ return
       {control-widgets:get-page-header( )}
       <div class="result">
         {$result/error}
-         <a href="{'..' || '?svnurl=' || $svnurl }">
-          <input type="button" value="OK"/>
+         <a href="{$btntarget }">
+          <input type="button" value="{$btntext}"/>
         </a>
       </div>
     </body>
