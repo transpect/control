@@ -131,7 +131,7 @@ declare
 %rest:form-param("newpwre","{$newpwre}")
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
-function page:host($oldpw as xs:string?, $newpw as xs:string?, $newpwre as xs:string?, $svnurl as xs:string?) {
+function control:setpw($oldpw as xs:string?, $newpw as xs:string?, $newpwre as xs:string?, $svnurl as xs:string?) {
 
 let $credentials := request:header("Authorization")
                     => substring(6)

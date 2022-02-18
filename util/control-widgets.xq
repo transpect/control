@@ -22,7 +22,7 @@ declare function control-widgets:get-page-footer( ) as element(footer) {
 (:
  : get the fancy page head
  :)
-declare function control-widgets:get-page-header(  ) as element(header) {
+declare function control-widgets:get-page-header($svnurl as xs:string?) as element(header) {
 let $credentials := request:header("Authorization")
                     => substring(6)
                     => xs:base64Binary()
@@ -49,7 +49,7 @@ return
 	  )}
         </ol>
         <ol class="username">
-          <li class="nav-tab"><a href="{ 'control/user'}">{$username}</a></li>
+          <li class="nav-tab"><a href="{ 'control/user?svnurl=' || $svnurl'}">{$username}</a></li>
         </ol>
       </nav>
     </div>
