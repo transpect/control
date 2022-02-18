@@ -49,7 +49,7 @@ return
 	  )}
         </ol>
         <ol class="username">
-          <li class="nav-tab"><a href="{ 'control/user?svnurl=' || $svnurl'}">{$username}</a></li>
+          <li class="nav-tab"><a href="{ 'control/user?svnurl=' || $svnurl}">{$username}</a></li>
         </ol>
       </nav>
     </div>
