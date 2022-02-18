@@ -168,7 +168,7 @@ return
       {control-widgets:get-page-header( )}
       <div class="result">
         {$result/error}
-         <a href="{../.. || '?svnurl=' || $svnurl }">
+         <a href="{'..' || '?svnurl=' || $svnurl }">
           <input type="button" value="OK"/>
         </a>
       </div>

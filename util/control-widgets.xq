@@ -49,7 +49,7 @@ return
 	  )}
         </ol>
         <ol class="username">
-          <li class="nav-tab"><a href="{ 'control/user?svnurl=' || $svnurl}">{$username}</a></li>
+          <li class="nav-tab"><a href="{ 'control/user?svnurl=' || $control:svnurl}">{$username}</a></li>
         </ol>
       </nav>
     </div>
@@ -362,7 +362,7 @@ declare function control-widgets:create-dir-form( $svnurl as xs:string, $control
 :)
 declare function control-widgets:get-pw-change( $svnurl as xs:string ) as element(div) {
   <div class="pwchangewrapper">
-    <form action="/basex/setpw?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded">
+    <form action="/basex/control/user/setpw?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded">
       <div class="setpw">
         <div class="form">
           <label for="old-pwd">altes Password:</label>
