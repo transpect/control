@@ -101,21 +101,77 @@ $file as xs:string
     ),
     file:read-binary( $path )
     )
-};(:
- : User can set their password.
- : @return rest binary data
+};
+(:
+ : User Management main page
+ : For now contains only Reset Password
  :)
 declare
 %rest:path("/control/user")
+%rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
-function control:resetpw() as element(html) {
+function control:resetpw($svnurl as xs:string?) as element(html) {
   <html>
     <head>
       {control-widgets:get-html-head()}
     </head>
     <body>
       {control-widgets:get-page-header( ),
-       control-widgets:get-pw-change()}
+       control-widgets:get-pw-change($svnurl)}
+    </body>
+  </html>
+};
+(:
+get pw set result
+:)
+declare
+%rest:path("/control/user/setpw")
+%rest:form-param("oldpw","{$oldpw}")
+%rest:form-param("newpw","{$newpw}")
+%rest:form-param("newpwre","{$newpwre}")
+%rest:query-param("svnurl", "{$svnurl}")
+%output:method('html')
+function page:host($oldpw as xs:string?, $newpw as xs:string?, $newpwre as xs:string?, $svnurl as xs:string?) {
+
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2],
+
+    (: checks if the user is logged in and provided the correct old password :)
+    $iscorrectuser :=
+      if ($password = $oldpw)
+      then
+        proc:execute( 'htpasswd', ('-vb', '/etc/svn/default.htpasswd', $username, $password))
+      else
+        element result { element error {"The provided old passwort is not correct."}, element code {1}},
+    (: tries to set the new password and returns an error message if it fails :)
+    $result :=
+      if ($iscorrectuser/code = 0)
+      then (
+        if ($newpw = $newpwre)
+        then
+          (proc:execute('htpasswd', ('-b', '/etc/svn/default.htpasswd', $username, $newpw)))
+        else
+          (element result { element error {"The provided new passwords are not the same."}, element code {1}})
+      )
+      else ($iscorrectuser)
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <div class="result">
+        {$result/error}
+         <a href="{../.. || '?svnurl=' || $svnurl }">
+          <input type="button" value="OK"/>
+        </a>
+      </div>
     </body>
   </html>
 };

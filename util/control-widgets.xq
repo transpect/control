@@ -360,9 +360,9 @@ declare function control-widgets:create-dir-form( $svnurl as xs:string, $control
 (:
  : returns a form for changing the password
 :)
-declare function control-widgets:get-pw-change() as element(div) {
+declare function control-widgets:get-pw-change( $svnurl as xs:string ) as element(div) {
   <div class="pwchangewrapper">
-    <form action="/basex/setpw" method="POST" enctype="application/x-www-form-urlencoded">
+    <form action="/basex/setpw?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded">
       <div class="setpw">
         <div class="form">
           <label for="old-pwd">altes Password:</label>
