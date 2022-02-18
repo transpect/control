@@ -22,7 +22,7 @@ declare function control-widgets:get-page-footer( ) as element(footer) {
 (:
  : get the fancy page head
  :)
-declare function control-widgets:get-page-header($svnurl as xs:string?) as element(header) {
+declare function control-widgets:get-page-header() as element(header) {
 let $credentials := request:header("Authorization")
                     => substring(6)
                     => xs:base64Binary()
