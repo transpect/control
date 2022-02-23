@@ -264,6 +264,12 @@ div.form {
   margin-right: 15px;
   width: 140px;
 }
+.createuser div label {
+  float: left;
+  text-align: right;
+  margin-right: 15px;
+  width: 140px;
+}
 /* 
  * directory browser
  */

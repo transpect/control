@@ -358,23 +358,44 @@ declare function control-widgets:create-dir-form( $svnurl as xs:string, $control
   </div>
 };
 (:
+ : return a form for creating a new user
+ :)
+declare function control-widgets:create-new-user($svnurl as xs:string) as element(div) {
+  <div>
+    <form action="{$control:siteurl}/user/createuser?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <div class="createuser">
+        <div class="form">
+          <label for="newusername">Name des Nutzers:</label>
+          <input type="text" id="newusername" name="newusername" pattern="[A-Za-z0-9]+" title="Nutzen Sie nur Buchstaben und Zahlen"/>
+        </div>
+        <div class="form">
+          <label for="newpassword">Initiales Passwort:</label>
+          <input type="password" id="newpassword" name="newusername" autocomplete="new-password"/>
+        </div>
+        <br/>
+        <input type="submit" name="Submit request"/>
+      </div>
+    </form>
+  </div>
+};
+(:
  : returns a form for changing the password
-:)
+ :)
 declare function control-widgets:get-pw-change( $svnurl as xs:string ) as element(div) {
   <div class="pwchangewrapper">
-    <form action="{$control:siteurl}/user/setpw?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded">
+    <form action="{$control:siteurl}/user/setpw?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="setpw">
         <div class="form">
           <label for="old-pwd">altes Password:</label>
-          <input type="password" id="old-pwd" name="oldpw"/>
+          <input type="password" id="old-pwd" name="oldpw" autocomplete="new-password"/>
         </div>
         <div class="form">
           <label for="new-pwd">neues Password:</label>
-          <input type="password" id="new-pwd" name="newpw"/>
+          <input type="password" id="new-pwd" name="newpw" autocomplete="new-password"/>
         </div>
         <div class="form">
           <label for="new-pwd-re">neues Password wiederholen:</label>
-          <input type="password" id="new-pwd-re" name="newpwre"/>
+          <input type="password" id="new-pwd-re" name="newpwre" autocomplete="new-password"/>
         </div>
         <br/>
         <input type="submit" name="Submit request"/>

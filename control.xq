@@ -17,6 +17,7 @@ declare variable $control:path            := doc('config.xml')/control:config/co
 declare variable $control:datadir         := doc('config.xml')/control:config/control:datadir;
 declare variable $control:db              := doc('config.xml')/control:config/control:db;
 declare variable $control:max-upload-size := doc('config.xml')/control:config/control:max-upload-size;
+declare variable $control:admin-users     := doc('config.xml')/control:config/control:adminusers;
 declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || '/' || $control:path;
 declare variable $control:svnusername     := (request:parameter('svnusername'), xs:string(doc('config.xml')/control:config/control:svnusername))[1];
@@ -111,19 +112,30 @@ declare
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
 function control:resetpw($svnurl as xs:string?) as element(html) {
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2]
+return
   <html>
     <head>
       {control-widgets:get-html-head()}
     </head>
     <body>
       {control-widgets:get-page-header( ),
-       control-widgets:get-pw-change($svnurl)}
+       control-widgets:get-pw-change($svnurl),
+       if (matches($control:admin-users,concat('^|\s',$username,'$|\s')))
+       then control-widgets:create-new-user($svnurl)
+       else ''}
     </body>
   </html>
 };
 (:
-get pw set result
-:)
+ : get pw set result
+ :)
 declare
 %rest:path("/control/user/setpw")
 %rest:query-param("svnurl", "{$svnurl}")
@@ -159,6 +171,60 @@ let $credentials := request:header("Authorization")
           (element result { element error {"The provided new passwords are not the same."}, element code {1}})
       )
       else ($iscorrectuser),
+    $btntarget :=
+      if ($result/code = 0)
+      then
+        ($control:siteurl || '?svnurl=' || $svnurl)
+      else
+        ($control:siteurl || '/user?svnurl=' || $svnurl),
+    $btntext :=
+      if ($result/code = 0)
+      then
+        ("OK")
+      else
+        ("Zurück")
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <div class="result">
+        {$result/error}
+         <a href="{$btntarget }">
+          <input type="button" value="{$btntext}"/>
+        </a>
+      </div>
+    </body>
+  </html>
+};
+(:
+ : create new user
+ :)
+declare
+%rest:path("/control/user/createuser")
+%rest:query-param("svnurl", "{$svnurl}")
+%output:method('html')
+function control:createuser($svnurl as xs:string) {
+
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2],
+    $newusername := request:parameter("newusername"),
+    $newpassword := request:parameter("newpassword"),
+
+    (: Checks if the user is an admin ~ :)
+    $result :=
+      if (matches($control:admin-users,concat('^|\s',$username,'$|\s')))
+      then
+        proc:execute('htpasswd', ('-b', '/etc/svn/default.htpasswd', $newusername, $newpassword))
+      else
+        element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=
       if ($result/code = 0)
       then
