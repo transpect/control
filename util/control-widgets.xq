@@ -265,7 +265,13 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
   let $filename-filter-regex as xs:string? := $options?filename-filter-regex,
       $dirs-only as xs:boolean? := $options?dirs-only = true(),
       $add-query-params as xs:string? := $options?add-query-params,
-      $show-externals as xs:boolean? := $options?show-externals = true()
+      $show-externals as xs:boolean? := $options?show-externals = true(),
+      $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1]
   return
   (:<div>{svn:list( $svnurl, $control:svnusername, $control:svnpassword, false()), 
   control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))}</div>:)
@@ -312,7 +318,9 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
       <div class="date table-cell">{xs:string( $files/@date )}</div>
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>
       <div class="size table-cell">{$files/@size[$files/local-name() eq 'file']/concat(., '&#x202f;KB')}</div>
-      <div class="action table-cell">{control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files/(@name | @mount) )}</div>
+      <div class="action table-cell">{if (control-util:get-rights($username, xs:string($files/@name)) = "write") 
+                                      then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files/(@name | @mount) ) 
+                                      else ""}</div>
     </div> 
     else()
 };

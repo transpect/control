@@ -46,6 +46,27 @@ else if ( $ext eq 'text')             then 'text-plain'
 else if ( $ext = ('Makefile', 'bat')) then 'text-x'
 else                                      'text-plain'
 };
+(:
+ : is user admin
+ :)
+declare function control-util:is-admin( $username as xs:string) as xs:boolean {
+let $user := $control:access//*:users/*:user[*:name=$username],
+    $grouprels := $control:access//*:rels/*:rel[*:user][*:user=$user/*:name]
+ return "admin" = $grouprels/*:group
+};
+(:
+ : get read/write for username and repo
+ :)
+declare function control-util:get-rights( $username as xs:string, $repotitle as xs:string? ) as xs:string {
+let  $user := $control:access//*:users/*:user[*:name=$username],
+ $grouprel := $control:access//*:rels/*:rel[*:user][*:user=$user/*:name],
+    $group := $control:access//*:groups/*:group[*:name = $grouprel/*:group],
+     $rels := $control:access//*:rels/*:rel[*:repo][*:group=$group],
+    $repos := $control:access//*:repos/*:repo[matches(*:title,string-join($rels/*:repo/text(),"|"))]
+ return if ((control-util:is-admin($username)) or ($repotitle = $repos/*:title))
+        then "write"
+        else "read"
+};
 declare function control-util:normalize-repo-url( $url as xs:string ) as xs:string {
   replace($url, '\p{P}', '_')
 };

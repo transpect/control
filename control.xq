@@ -17,7 +17,7 @@ declare variable $control:path            := doc('config.xml')/control:config/co
 declare variable $control:datadir         := doc('config.xml')/control:config/control:datadir;
 declare variable $control:db              := doc('config.xml')/control:config/control:db;
 declare variable $control:max-upload-size := doc('config.xml')/control:config/control:max-upload-size;
-declare variable $control:admin-users     := doc('config.xml')/control:config/control:adminusers;
+declare variable $control:access          := doc('control.xml')/control:access;
 declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || '/' || $control:path;
 declare variable $control:svnusername     := (request:parameter('svnusername'), xs:string(doc('config.xml')/control:config/control:svnusername))[1];
@@ -127,7 +127,7 @@ return
     <body>
       {control-widgets:get-page-header( ),
        control-widgets:get-pw-change($svnurl),
-       if (matches($control:admin-users,concat('^|\s',$username,'$|\s')))
+       if (control-util:is-admin($username))
        then control-widgets:create-new-user($svnurl)
        else ''}
     </body>
@@ -220,7 +220,7 @@ let $credentials := request:header("Authorization")
 
     (: Checks if the user is an admin ~ :)
     $result :=
-      if (matches($control:admin-users,concat('^|\s',$username,'$|\s')))
+      if (control-util:is-admin($username))
       then
         proc:execute('htpasswd', ('-b', '/etc/svn/default.htpasswd', $newusername, $newpassword))
       else
