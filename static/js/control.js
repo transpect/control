@@ -31,6 +31,38 @@ function createRenameForm(svnurl, file, controlPath) {
     anchor.replaceWith( formWrapper );
     formWrapper.innerHTML = form;
 }
+function setUserGroupSelection(username, selectId){
+  console.log("http://localhost:9081//basex/control/user/getgroups?username=" + username);
+  fetch("http://localhost:9081//basex/control/user/getgroups?username=" + username)
+  .then(response => {return response.body})
+  .then(stream => {return new Response(stream, { headers: { "Content-Type": "text/html" } }).text()})
+  .then(result => {
+    groupoptions = document.querySelectorAll("#" + selectId + " option");
+    parser = new DOMParser();
+    xmlDoc = parser.parseFromString(result,"text/xml");
+    items = xmlDoc.getElementsByTagName("group");
+    for (let sel of groupoptions) {
+      sel.selected = false;
+    }
+    for (let item of items) {
+      document.querySelector("#" + selectId + " option[value='" + item.innerHTML + "']").selected = true;
+    }
+  })
+}
+function setGroupSelection(groupname, inputId){
+  console.log("http://localhost:9081//basex/control/group/getglob?groupname=" + groupname);
+  fetch("http://localhost:9081//basex/control/group/getglob?groupname=" + groupname)
+  .then(response => {return response.body})
+  .then(stream => {return new Response(stream, { headers: { "Content-Type": "text/html" } }).text()})
+  .then(result => {
+    grouprepo = document.querySelectorAll("#" + inputId + " text");
+    parser = new DOMParser();
+    xmlDoc = parser.parseFromString(result,"text/xml");
+    repo = xmlDoc.getElementsByTagName("repo");
+    grouprepo.value = repo;
+  })
+}
+
 function cancelRenameForm(svnurl, file, controlPath) {
   const id = "renameform-" + file;
   const txt = document.createTextNode(file);
@@ -44,46 +76,68 @@ function cancelRenameForm(svnurl, file, controlPath) {
 /* 
  * Register event listener
  */
-
-let details = document.querySelector("details");
-let summary = document.querySelector("summary");
-
-summary.addEventListener("click", function(event) {
-	// first a guard clause: don't do anything 
-	// if we're already in the middle of closing the menu.
-	if (details.classList.contains("summary-closing")) {
-		return;
-	}
-	// but, if the menu is open ...
-	if (details.open) {
-		// prevent default to avoid immediate removal of "open" attribute
-		event.preventDefault();
-		// add a CSS class that contains the animating-out code
-		details.classList.add("summary-closing");
-		// when enough time has passed (in this case, 500 milliseconds),
-		// remove both the "open" attribute, and the "summary-closing" CSS 
-		setTimeout(function() {
-			details.removeAttribute("open");
-			details.classList.remove("summary-closing");
-		}, 500);
-	}
-});
-
-// when user hovers over the summary element, 
-// add the open attribute to the details element
-summary.addEventListener("mouseenter", event => {
-	details.setAttribute("open", "open");
-});
-
-// when the user moves the mouse away from the details element,
-// perform the out-animation and delayed attribute-removal
-// just like in the click handler
-details.addEventListener("mouseleave", event => {
-	details.classList.add("summary-closing");
-	setTimeout(function() {
-		details.removeAttribute("open");
-		details.classList.remove("summary-closing");
-	}, 500);
-	details.setAttribute("open", "open");
-});
-Copy
+window.onload = function() {
+  var details = document.querySelector("details");
+  var summary = document.querySelector("summary");
+  var userselect = document.querySelector("#userselect");
+  var groupselect = document.querySelector("#groupselect");
+  
+  if (summary !== null) {
+    summary.addEventListener("click", function(event) {
+  	// first a guard clause: don't do anything 
+  	// if we're already in the middle of closing the menu.
+  	if (details.classList.contains("summary-closing")) {
+  		return;
+  	}
+  	// but, if the menu is open ...
+  	if (details.open) {
+  		// prevent default to avoid immediate removal of "open" attribute
+  		event.preventDefault();
+  		// add a CSS class that contains the animating-out code
+  		details.classList.add("summary-closing");
+  		// when enough time has passed (in this case, 500 milliseconds),
+  		// remove both the "open" attribute, and the "summary-closing" CSS 
+  		setTimeout(function() {
+  			details.removeAttribute("open");
+  			details.classList.remove("summary-closing");
+  		}, 500);
+  	}
+    });
+  
+  
+    // when user hovers over the summary element, 
+    // add the open attribute to the details element
+    summary.addEventListener("mouseenter", event => {
+    	details.setAttribute("open", "open");
+    });
+  }
+    // when the user moves the mouse away from the details element,
+    // perform the out-animation and delayed attribute-removal
+    // just like in the click handler
+  if (details !== null) {
+    details.addEventListener("mouseleave", event => {
+    	details.classList.add("summary-closing");
+    	setTimeout(function() {
+    		details.removeAttribute("open");
+    		details.classList.remove("summary-closing");
+    	}, 500);
+    	details.setAttribute("open", "open");
+    });
+  }
+  if (userselect !== null) {
+    userselect.addEventListener("change", event => {
+      setUserGroupSelection(userselect
+        .selectedOptions[0].value, "groups")
+    });
+    setUserGroupSelection(userselect
+      .selectedOptions[0].value, "groups")
+  }
+  if (groupselect !== null) {
+    groupselect.addEventListener("change", event => {
+      setGroupSelection(groupselect
+        .selectedOptions[0].value, "repoglob")
+    });
+    setGroupSelection(groupselect
+      .selectedOptions[0].value, "repoglob")
+  }
+}

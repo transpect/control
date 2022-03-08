@@ -258,17 +258,20 @@ input {
 div.form {
     margin: 5px;
 }
-.setpw div label {
-  float: left;
-  text-align: right;
-  margin-right: 15px;
-  width: 140px;
+.adminmgmt{
+  margin: 10px;
 }
-.createuser div label {
+.adminmgmt form div div label {
   float: left;
   text-align: right;
   margin-right: 15px;
-  width: 140px;
+  width: 200px;
+}
+.adminmgmt form div div input {
+  margin: 5px;
+}
+.adminmgmt form div div select {
+  margin: 5px 0 5px 0;
 }
 /* 
  * directory browser

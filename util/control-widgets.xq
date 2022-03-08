@@ -318,6 +318,10 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
       <div class="date table-cell">{xs:string( $files/@date )}</div>
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>
       <div class="size table-cell">{$files/@size[$files/local-name() eq 'file']/concat(., '&#x202f;KB')}</div>
+      <div>{svn:info($svnurl,
+                     $control:svnusername, 
+                     $control:svnpassword)/*:param[@name eq 'root-url']/@value
+                    }</div>
       <div class="action table-cell">{if (control-util:get-rights($username, xs:string($files/@name)) = "write") 
                                       then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files/(@name | @mount) ) 
                                       else ""}</div>
@@ -366,10 +370,11 @@ declare function control-widgets:create-dir-form( $svnurl as xs:string, $control
   </div>
 };
 (:
- : return a form for creating a new user
+ : return a form for creating a new user/overriding an existing one
  :)
 declare function control-widgets:create-new-user($svnurl as xs:string) as element(div) {
-  <div>
+  <div class="adminmgmt">
+    <h2>Neuen Nutzer erstellen</h2>
     <form action="{$control:siteurl}/user/createuser?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="createuser">
         <div class="form">
@@ -378,7 +383,7 @@ declare function control-widgets:create-new-user($svnurl as xs:string) as elemen
         </div>
         <div class="form">
           <label for="newpassword">Initiales Passwort:</label>
-          <input type="password" id="newpassword" name="newusername" autocomplete="new-password"/>
+          <input type="password" id="newpassword" name="newpassword" autocomplete="new-password"/>
         </div>
         <br/>
         <input type="submit" name="Submit request"/>
@@ -390,7 +395,8 @@ declare function control-widgets:create-new-user($svnurl as xs:string) as elemen
  : returns a form for changing the password
  :)
 declare function control-widgets:get-pw-change( $svnurl as xs:string ) as element(div) {
-  <div class="pwchangewrapper">
+  <div class="adminmgmt">
+    <h2>Eigenes Passwort ändern</h2>
     <form action="{$control:siteurl}/user/setpw?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="setpw">
         <div class="form">
@@ -410,4 +416,88 @@ declare function control-widgets:get-pw-change( $svnurl as xs:string ) as elemen
       </div>
     </form>
   </div>
+};
+(:
+ : returns a form for customizing groups
+ :)
+declare function control-widgets:create-new-group( $svnurl as xs:string ) as element(div) {
+  <div class="adminmgmt">
+    <h2>Neue Gruppe erstellen</h2>
+    <form action="{$control:siteurl}/group/creategroup?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <div class="createnewgroup">
+        <div class="form">
+          <label for="groupname">Name der Gruppe:</label>
+          <input type="text" id="groupname" name="newgroupname" autocomplete="new-password"/>
+        </div>
+        <br/>
+        <input type="submit" name="Submit request"/>
+      </div>
+    </form>
+  </div>
+};
+(:
+ : returns the selection for users
+ :)
+declare function control-widgets:customize-users( $svnurl as xs:string ) as element(div) {
+  <div class="adminmgmt">
+    <h2>Nutzer verwalten</h2>
+    <form action="{$control:siteurl}/user/setgroups?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <div class="manageuser">
+        <div>
+          <label for="users">Nutzer auswählen:</label>
+          <select name="users" id="userselect">
+            {control-widgets:get-users( $svnurl )}
+          </select>
+        </div>
+        <div>
+          <label for="groups">Gruppenzugehörigkeit:</label>
+          <select name="groups" id="groups" multiple="true">
+            {control-widgets:get-groups( $svnurl )}
+          </select>
+        </div>
+        <br/>
+        <input type="submit" name="Submit request"/>
+      </div>
+    </form>
+  </div>
+};
+(:
+ : returns the selection for groups
+ 
+declare function control-widgets:customize-groups( $svnurl as xs:string ) as element(div) {
+  <div class="adminmgmt">
+    <h2>Gruppe verwalten</h2>
+    <form action="{$control:siteurl}/group/setglob?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <div class="managegroup">
+        <div>
+          <label for="groups">Gruppe auswählen:</label>
+          <select name="groups" id="groupselect">
+            {control-widgets:get-groups( $svnurl )}
+          </select>
+        </div>
+        <div>
+          <label for="repoglob">Repo-Regex:</label>
+          <input type="text" id="repoglob" name="repoglob" autocomplete="new-password"/>
+        </div>
+        <br/>
+        <input type="submit" name="Submit request"/>
+      </div>
+    </form>
+  </div>
+};:)
+(:
+ : returns the selectionoptions for users
+ :)
+declare function control-widgets:get-users( $svnurl as xs:string ) as element(option)* {
+  for $user in $control:access//control:users/control:user
+  return
+    <option value="{$user/control:name}">{$user/control:name}</option>
+};
+(:
+ : returns the selectionoptions for groups
+ :)
+declare function control-widgets:get-groups( $svnurl as xs:string ) as element(option)* {
+  for $group in $control:access//control:groups/control:group
+  return
+    <option value="{$group/control:name}">{$group/control:name}</option>
 };
