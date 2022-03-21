@@ -28,6 +28,8 @@ declare variable $control:msgtype         := request:parameter('msgtype');
 declare variable $control:action          := request:parameter('action');
 declare variable $control:file            := request:parameter('file');
 declare variable $control:dest-svnurl     := request:parameter('dest-svnurl');
+declare variable $control:repos           := file:list('/data/svn/werke');
+declare variable $control:svnauth         := "/etc/svn/default.authz";
 
 declare
 %rest:path('/control')
@@ -265,7 +267,8 @@ let $credentials := request:header("Authorization")
       then
         ("OK")
       else
-        ("Zurück")
+        ("Zurück"),
+    $writetofile := control:writeauthtofile($updated-access)
 return
   <html>
     <head>
@@ -360,7 +363,7 @@ let $callres := element result { element error {"Group created."}, element code 
 return $callres
 };
 (:
- : create new user
+ : create new group
  :)
 declare
 %rest:path("/control/group/creategroup")
@@ -441,4 +444,33 @@ return
 <response>
   {$groupglob}
 </response>
+};
+
+declare 
+function control:writeauthtofile($access) {
+  file:write($control:svnauth,control:writetoauthz($access))
+};
+
+declare
+function control:writetoauthz($access) {
+concat('[groups]
+',string-join(
+  for $group in $access//*:groups/*:group (:groups:)
+  where $access//*:rels/*:rel[*:user][*:group=$group/*:name]
+  return concat($group/*:name,' = ',string-join(
+    for $rel in $access//*:rels/*:rel[*:user][*:group = $group/*:name] (:user:)
+    return $rel/*:user,', '),'
+'))
+,string-join(for $repo in $control:repos
+return 
+    concat('[', $repo,':/]
+admin = rw
+',string-join(
+  for $group in $access//*:groups/*:group (:groups:)
+  let $rels := $access//*:rels/*:rel[*:group = $group/*:name][*:repo]
+  return
+    for $rel in $rels
+    return if (matches($repo,$rel/*:repo)) 
+           then concat($group/*:name, ' = rw
+')))),'')
 };
