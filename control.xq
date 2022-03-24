@@ -132,7 +132,10 @@ return
        if (control-util:is-admin($username))
        then (control-widgets:create-new-user($svnurl),
              control-widgets:customize-users($svnurl),
-             control-widgets:create-new-group($svnurl))
+             control-widgets:remove-users($svnurl),
+             control-widgets:create-new-group($svnurl),
+             control-widgets:customize-groups($svnurl),
+             control-widgets:remove-groups($svnurl))
        else ''}
     </body>
   </html>
@@ -205,18 +208,6 @@ return
   </html>
 };
 (:
- : clear username group rels
- :)
-declare function control:removegroups-bg($username as xs:string) {
-let $callres := element result {element error {""}, element code {0}},
-    $file := doc("control.xml"),
-    $updated := $file update delete node //control:rels/control:rel[control:group][control:user = $username],
-    $fileupdate := file:write("basex/webapp/control/control.xml",
-          $updated
-        )
-return $callres
-};
-(:
  : set group result
  :)
 declare
@@ -239,21 +230,137 @@ let $credentials := request:header("Authorization")
     $file := doc("control.xml"),
     
     $added-rel := for $group in $groups 
-                   return element control:rel {
-                            element control:user {$selected-user},
+                   return element rel {
+                            element user {$selected-user},
                             element group {$group}
                           },
     $updated-access := $file update {delete node //control:rels//control:rel
                                           [control:group]
                                           [control:user = $selected-user]}
                                        update {insert nodes $added-rel into //control:rels},
-    
-    $filedel := file:write("basex/webapp/control/control.xml",$updated-access),
-    
     $result :=
       if (control-util:is-admin($username))
       then
-       element result { element error {"Updated"}, element code{0}}
+       element result { element error {"Updated"}, element code{0}, element text {file:write("basex/webapp/control/control.xml",$updated-access)}}
+      else
+        element result { element error {"You are not an admin."}, element code {1}},
+    $btntarget :=
+      if ($result/code = 0)
+      then
+        ($control:siteurl || '?svnurl=' || $svnurl)
+      else
+        ($control:siteurl || '/user?svnurl=' || $svnurl),
+    $btntext :=
+      if ($result/code = 0)
+      then
+        ("OK")
+      else
+        ("Zurück"),
+    $writetofile := control:writeauthtofile($updated-access)
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <div class="result">
+        {$result/error}
+        <br/>
+         <a href="{$btntarget }">
+          <input type="button" value="{$btntext}"/>
+        </a>
+      </div>
+    </body>
+  </html>
+};
+(:
+ : delete group result
+ :)
+declare
+%rest:path("/control/group/delete")
+%rest:query-param("svnurl", "{$svnurl}")
+%output:method('html')
+function control:deletegroups($svnurl as xs:string) {
+
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2], 
+    
+    $selected-group := request:parameter("groups"),
+    
+    $file := doc("control.xml"),
+    
+    $updated-access := $file update {delete node //control:rels/control:rel[control:user][control:group = $selected-group]}
+                             update {delete node //control:rels/control:rel[control:repo][control:group = $selected-group]}
+                             update {delete node //control:groups/control:group[control:name = $selected-group]},
+    $result :=
+      if (control-util:is-admin($username))
+      then
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
+      else
+        element result { element error {"You are not an admin."}, element code {1}},
+    $btntarget :=
+      if ($result/code = 0)
+      then
+        ($control:siteurl || '?svnurl=' || $svnurl)
+      else
+        ($control:siteurl || '/user?svnurl=' || $svnurl),
+    $btntext :=
+      if ($result/code = 0)
+      then
+        ("OK")
+      else
+        ("Zurück"),
+    $writetofile := control:writeauthtofile($updated-access)
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <div class="result">
+        {$result/error}
+        <br/>
+         <a href="{$btntarget }">
+          <input type="button" value="{$btntext}"/>
+        </a>
+      </div>
+    </body>
+  </html>
+};
+(:
+ : delete user result
+ :)
+declare
+%rest:path("/control/user/delete")
+%rest:query-param("svnurl", "{$svnurl}")
+%output:method('html')
+function control:deleteuser($svnurl as xs:string) {
+
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2], 
+    
+    $selected-user := request:parameter("users"),
+    
+    $file := doc("control.xml"),
+    
+    $updated-access := $file update {delete node //control:rels/control:rel[control:group][control:user = $selected-user]}
+                             update {delete node //control:users/control:user[control:name = $selected-user]},
+    $result :=
+      if (control-util:is-admin($username))
+      then
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
       else
         element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=
@@ -293,7 +400,9 @@ declare function control:createuser-bg($newusername as xs:string, $newpassword a
 let $callres := proc:execute('htpasswd', ('-b', '/etc/svn/default.htpasswd', $newusername, $newpassword)),
     $fileupdate := file:write("basex/webapp/control/control.xml",
           let $file := doc("control.xml")
-          return $file update insert node element user {element name {$newusername}} into .//*:users
+          return if (not($file//control:users/control:user[control:name = $newusername]))
+                 then $file update insert node element user {element name {$newusername}} into .//*:users
+                 else $file
         )
 return $callres
 };
@@ -354,11 +463,12 @@ return
 (:
  : create new group
  :)
-declare function control:creategroup-bg($newgroupname as xs:string?) {
+declare function control:creategroup-bg($newgroupname as xs:string?,$newgroupreporegex as xs:string?) {
 let $callres := element result { element error {"Group created."}, element code {0}},
     $fileupdate := file:write("basex/webapp/control/control.xml",
           let $file := doc("control.xml")
-          return $file update insert node element group {element name {$newgroupname}} into .//*:groups
+          return $file update {insert node element group {element name {$newgroupname}} into .//*:groups}
+                       update {insert node element rel {element group {$newgroupname}, element repo {$newgroupreporegex}} into .//*:rels}
         )
 return $callres
 };
@@ -378,12 +488,13 @@ let $credentials := request:header("Authorization")
     $username := $credentials[1],
     $password := $credentials[2],
     $newgroupname := request:parameter("newgroupname"),
+    $newgroupreporegex := request:parameter("newgroupname"),
 
     (: Checks if the user is an admin ~ :)
     $result :=
       if (control-util:is-admin($username))
       then
-        control:creategroup-bg(xs:string($newgroupname))
+        control:creategroup-bg(xs:string($newgroupname),xs:string($newgroupreporegex))
       else
         element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=
@@ -416,6 +527,74 @@ return
 };
 
 (:
+ : set reporegex result
+ :)
+declare
+%rest:path("/control/group/setrepo")
+%rest:query-param("svnurl", "{$svnurl}")
+%output:method('html')
+function control:setreporegex($svnurl as xs:string) {
+
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2], 
+    
+    $reporegex := request:parameter("grouprepo"),
+    $selected-group := request:parameter("groups"),
+    
+    $file := doc("control.xml"),
+    
+    $added-rel := element rel {
+                    element group {$selected-group},
+                    element repo {$reporegex}
+                  },
+    $updated-access := $file update {delete node //control:rels//control:rel
+                                          [control:repo]
+                                          [control:group = $selected-group]}
+                             update {insert nodes $added-rel into //control:rels},
+    
+    $filedel := file:write("basex/webapp/control/control.xml",$updated-access),
+    $result :=
+      if (control-util:is-admin($username))
+      then
+       element result { element error {"Updated"}, element code{0}}
+      else
+        element result { element error {"You are not an admin."}, element code {1}},
+    $btntarget :=
+      if ($result/code = 0)
+      then
+        ($control:siteurl || '?svnurl=' || $svnurl)
+      else
+        ($control:siteurl || '/user?svnurl=' || $svnurl),
+    $btntext :=
+      if ($result/code = 0)
+      then
+        ("OK")
+      else
+        ("Zurück"),
+    $writetofile := control:writeauthtofile($updated-access)
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <div class="result">
+        {$result/error}
+        <br/>
+         <a href="{$btntarget }">
+          <input type="button" value="{$btntext}"/>
+        </a>
+      </div>
+    </body>
+  </html>
+};
+(:
  : get groups for user
  :)
 declare
@@ -445,12 +624,10 @@ return
   {$groupglob}
 </response>
 };
-
 declare 
 function control:writeauthtofile($access) {
   file:write($control:svnauth,control:writetoauthz($access))
 };
-
 declare
 function control:writetoauthz($access) {
 concat('[groups]
@@ -461,16 +638,19 @@ concat('[groups]
     for $rel in $access//*:rels/*:rel[*:user][*:group = $group/*:name] (:user:)
     return $rel/*:user,', '),'
 '))
-,string-join(for $repo in $control:repos
+,'[/]
+* = r
+',string-join(for $repo in $control:repos
 return 
-    concat('[', $repo,':/]
-admin = rw
+    concat('[', replace($repo,'/',''),':/]
+@admin = rw
 ',string-join(
   for $group in $access//*:groups/*:group (:groups:)
   let $rels := $access//*:rels/*:rel[*:group = $group/*:name][*:repo]
+  where $access//*:rels/*:rel[*:user][*:group = $group]
   return
     for $rel in $rels
     return if (matches($repo,$rel/*:repo)) 
-           then concat($group/*:name, ' = rw
+           then concat('@',$group/*:name, ' = rw
 ')))),'')
 };

@@ -1,7 +1,6 @@
 /* 
  * Functions
  */
-
 function reveal(id) {
   document.getElementById(id).style.visibility  = "visible"; 
 }
@@ -32,7 +31,6 @@ function createRenameForm(svnurl, file, controlPath) {
     formWrapper.innerHTML = form;
 }
 function setUserGroupSelection(username, selectId){
-  console.log("http://localhost:9081//basex/control/user/getgroups?username=" + username);
   fetch("http://localhost:9081//basex/control/user/getgroups?username=" + username)
   .then(response => {return response.body})
   .then(stream => {return new Response(stream, { headers: { "Content-Type": "text/html" } }).text()})
@@ -50,16 +48,15 @@ function setUserGroupSelection(username, selectId){
   })
 }
 function setGroupSelection(groupname, inputId){
-  console.log("http://localhost:9081//basex/control/group/getglob?groupname=" + groupname);
   fetch("http://localhost:9081//basex/control/group/getglob?groupname=" + groupname)
   .then(response => {return response.body})
   .then(stream => {return new Response(stream, { headers: { "Content-Type": "text/html" } }).text()})
   .then(result => {
-    grouprepo = document.querySelectorAll("#" + inputId + " text");
+    grouprepo = document.querySelectorAll("#" + inputId)[0];
     parser = new DOMParser();
     xmlDoc = parser.parseFromString(result,"text/xml");
     repo = xmlDoc.getElementsByTagName("repo");
-    grouprepo.value = repo;
+    grouprepo.value = repo[0].innerHTML;
   })
 }
 
@@ -135,9 +132,9 @@ window.onload = function() {
   if (groupselect !== null) {
     groupselect.addEventListener("change", event => {
       setGroupSelection(groupselect
-        .selectedOptions[0].value, "repoglob")
+        .selectedOptions[0].value, "grouprepo")
     });
     setGroupSelection(groupselect
-      .selectedOptions[0].value, "repoglob")
+      .selectedOptions[0].value, "grouprepo")
   }
 }

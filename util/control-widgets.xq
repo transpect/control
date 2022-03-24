@@ -374,16 +374,16 @@ declare function control-widgets:create-dir-form( $svnurl as xs:string, $control
  :)
 declare function control-widgets:create-new-user($svnurl as xs:string) as element(div) {
   <div class="adminmgmt">
-    <h2>Neuen Nutzer erstellen</h2>
+    <h2>{control-i18n:localize('createuser', $control:locale)}</h2>
     <form action="{$control:siteurl}/user/createuser?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="createuser">
         <div class="form">
-          <label for="newusername">Name des Nutzers:</label>
+          <label for="newusername">{concat(control-i18n:localize('username', $control:locale),':')}</label>
           <input type="text" id="newusername" name="newusername" pattern="[A-Za-z0-9]+" title="Nutzen Sie nur Buchstaben und Zahlen"/>
         </div>
         <div class="form">
-          <label for="newpassword">Initiales Passwort:</label>
-          <input type="password" id="newpassword" name="newpassword" autocomplete="new-password"/>
+          <label for="newpassword">{concat(control-i18n:localize('initpw', $control:locale),':')}</label>
+          <input type="password" id="newpassword" name="newpassword" autocomplete="new-password" pattern="....+" title="Bitte geben Sie mehr als 3 Zeichen ein."/>
         </div>
         <br/>
         <input type="submit" name="Submit request"/>
@@ -396,20 +396,42 @@ declare function control-widgets:create-new-user($svnurl as xs:string) as elemen
  :)
 declare function control-widgets:get-pw-change( $svnurl as xs:string ) as element(div) {
   <div class="adminmgmt">
-    <h2>Eigenes Passwort ändern</h2>
+    <h2>{control-i18n:localize('changepassword', $control:locale)}</h2>
     <form action="{$control:siteurl}/user/setpw?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="setpw">
         <div class="form">
-          <label for="old-pwd">altes Password:</label>
+          <label for="old-pwd">{concat(control-i18n:localize('oldpw', $control:locale),':')}</label>
           <input type="password" id="old-pwd" name="oldpw" autocomplete="new-password"/>
         </div>
         <div class="form">
-          <label for="new-pwd">neues Password:</label>
-          <input type="password" id="new-pwd" name="newpw" autocomplete="new-password"/>
+          <label for="new-pwd">{concat(control-i18n:localize('newpw', $control:locale),':')}</label>
+          <input type="password" id="new-pwd" name="newpw" autocomplete="new-password" pattern="....+" title="{control-i18n:localize('pwregextip', $control:locale)}"/>
         </div>
         <div class="form">
-          <label for="new-pwd-re">neues Password wiederholen:</label>
-          <input type="password" id="new-pwd-re" name="newpwre" autocomplete="new-password"/>
+          <label for="new-pwd-re">{concat(control-i18n:localize('newpwre', $control:locale),':')}</label>
+          <input type="password" id="new-pwd-re" name="newpwre" autocomplete="new-password" pattern="....+" title="{control-i18n:localize('pwregextip', $control:locale)}"/>
+        </div>
+        <br/>
+        <input type="submit" name="Submit request"/>
+      </div>
+    </form>
+  </div>
+};
+(:
+ : returns a form for creating groups
+ :)
+declare function control-widgets:create-new-group( $svnurl as xs:string ) as element(div) {
+  <div class="adminmgmt">
+    <h2>{control-i18n:localize('creategroup', $control:locale)}</h2>
+    <form action="{$control:siteurl}/group/creategroup?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <div class="createnewgroup">
+        <div class="form">
+          <label for="groupname">{concat(control-i18n:localize('groupname', $control:locale),':')}</label>
+          <input type="text" id="groupname" name="newgroupname" autocomplete="new-password" pattern="[A-Za-z0-9]+" title="Nutzen Sie nur Buchstaben und Zahlen"/>
+        </div>
+        <div class="form">
+          <label for="groupregex">{concat(control-i18n:localize('selectreporegex', $control:locale),':')}</label>
+          <input type="text" id="newgroupregex" name="newgroupregex" autocomplete="new-password" pattern=".+" title="Regex darf nicht leer sein"/>
         </div>
         <br/>
         <input type="submit" name="Submit request"/>
@@ -420,14 +442,60 @@ declare function control-widgets:get-pw-change( $svnurl as xs:string ) as elemen
 (:
  : returns a form for customizing groups
  :)
-declare function control-widgets:create-new-group( $svnurl as xs:string ) as element(div) {
+declare function control-widgets:customize-groups( $svnurl as xs:string ) as element(div) {
   <div class="adminmgmt">
-    <h2>Neue Gruppe erstellen</h2>
-    <form action="{$control:siteurl}/group/creategroup?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
-      <div class="createnewgroup">
-        <div class="form">
-          <label for="groupname">Name der Gruppe:</label>
-          <input type="text" id="groupname" name="newgroupname" autocomplete="new-password"/>
+    <h2>{control-i18n:localize('customizegroup', $control:locale)}</h2>
+    <form action="{$control:siteurl}/group/setrepo?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <div class="managegroups">
+        <div>
+          <label for="groups">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
+          <select name="groups" id="groupselect">
+            {control-widgets:get-groups( $svnurl )}
+          </select>
+        </div>
+        <div>
+          <label for="grouprepo">{concat(control-i18n:localize('selectreporegex', $control:locale),':')}</label>
+          <input type="text" id="grouprepo" name="grouprepo" autocomplete="new-password" pattern=".+" title="Regex darf nicht leer sein"/>
+        </div>
+        <br/>
+        <input type="submit" name="Submit request"/>
+      </div>
+    </form>
+  </div>
+};
+(:
+ : returns a form for deleting groups
+ :)
+declare function control-widgets:remove-groups( $svnurl as xs:string ) as element(div) {
+  <div class="adminmgmt">
+    <h2>{control-i18n:localize('deletegroup', $control:locale)}</h2>
+    <form action="{$control:siteurl}/group/delete?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <div class="managegroups">
+        <div>
+          <label for="groups">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
+          <select name="groups" id="deletegroupselect">
+            {control-widgets:get-groups( $svnurl )}
+          </select>
+        </div>
+        <br/>
+        <input type="submit" name="Submit request"/>
+      </div>
+    </form>
+  </div>
+};
+(:
+ : returns a form for deleting users
+ :)
+declare function control-widgets:remove-users( $svnurl as xs:string ) as element(div) {
+  <div class="adminmgmt">
+    <h2>{control-i18n:localize('deleteuser', $control:locale)}</h2>
+    <form action="{$control:siteurl}/user/delete?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <div class="manageusers">
+        <div>
+          <label for="users">{concat(control-i18n:localize('selectuser', $control:locale),':')}</label>
+          <select name="users" id="deleteuserselect">
+            {control-widgets:get-users( $svnurl )}
+          </select>
         </div>
         <br/>
         <input type="submit" name="Submit request"/>
@@ -440,19 +508,19 @@ declare function control-widgets:create-new-group( $svnurl as xs:string ) as ele
  :)
 declare function control-widgets:customize-users( $svnurl as xs:string ) as element(div) {
   <div class="adminmgmt">
-    <h2>Nutzer verwalten</h2>
+    <h2>{control-i18n:localize('customizeuser', $control:locale)}</h2>
     <form action="{$control:siteurl}/user/setgroups?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="manageuser">
         <div>
-          <label for="users">Nutzer auswählen:</label>
+          <label for="users">{concat(control-i18n:localize('selectuser', $control:locale),':')}</label>
           <select name="users" id="userselect">
             {control-widgets:get-users( $svnurl )}
           </select>
         </div>
         <div>
-          <label for="groups">Gruppenzugehörigkeit:</label>
+          <label for="groups">{concat(control-i18n:localize('selectusergroup', $control:locale),':')}</label>
           <select name="groups" id="groups" multiple="true">
-            {control-widgets:get-groups( $svnurl )}
+            {control-widgets:get-groups-and-admin( $svnurl )}
           </select>
         </div>
         <br/>
@@ -461,30 +529,6 @@ declare function control-widgets:customize-users( $svnurl as xs:string ) as elem
     </form>
   </div>
 };
-(:
- : returns the selection for groups
- 
-declare function control-widgets:customize-groups( $svnurl as xs:string ) as element(div) {
-  <div class="adminmgmt">
-    <h2>Gruppe verwalten</h2>
-    <form action="{$control:siteurl}/group/setglob?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
-      <div class="managegroup">
-        <div>
-          <label for="groups">Gruppe auswählen:</label>
-          <select name="groups" id="groupselect">
-            {control-widgets:get-groups( $svnurl )}
-          </select>
-        </div>
-        <div>
-          <label for="repoglob">Repo-Regex:</label>
-          <input type="text" id="repoglob" name="repoglob" autocomplete="new-password"/>
-        </div>
-        <br/>
-        <input type="submit" name="Submit request"/>
-      </div>
-    </form>
-  </div>
-};:)
 (:
  : returns the selectionoptions for users
  :)
@@ -494,9 +538,18 @@ declare function control-widgets:get-users( $svnurl as xs:string ) as element(op
     <option value="{$user/control:name}">{$user/control:name}</option>
 };
 (:
- : returns the selectionoptions for groups
+ : returns the selectionoptions for groups (not admin)
  :)
 declare function control-widgets:get-groups( $svnurl as xs:string ) as element(option)* {
+  for $group in $control:access//control:groups/control:group
+  where not($group/control:name = "admin")
+  return
+    <option value="{$group/control:name}">{$group/control:name}</option>
+};
+(:
+ : returns the selectionoptions for groups
+ :)
+declare function control-widgets:get-groups-and-admin( $svnurl as xs:string ) as element(option)* {
   for $group in $control:access//control:groups/control:group
   return
     <option value="{$group/control:name}">{$group/control:name}</option>

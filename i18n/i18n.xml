@@ -108,4 +108,76 @@
     <locale lang="de">Auswählen</locale>
     <locale lang="en">Select</locale>
   </entry>
+  <entry name="changepassword">
+    <locale lang="de">Eigenes Passwort ändern</locale>
+    <locale lang="en">Change own password</locale>
+  </entry>
+  <entry name="oldpw">
+    <locale lang="de">Altes Passwort</locale>
+    <locale lang="en">Old password</locale>
+  </entry>
+  <entry name="newpw">
+    <locale lang="de">Neues Password</locale>
+    <locale lang="en">New password</locale>
+  </entry>
+  <entry name="newpwre">
+    <locale lang="de">Neues Password wiederholen</locale>
+    <locale lang="en">Repeat new password</locale>
+  </entry>
+  <entry name="pwregextip">
+    <locale lang="de">Bitte geben Sie mehr als 3 Zeichen ein</locale>
+    <locale lang="en">Please enter more than 3 characters</locale>
+  </entry>
+  <entry name="createuser">
+    <locale lang="de">Neue Nutzer erstellen</locale>
+    <locale lang="en">Create new users</locale>
+  </entry>
+  <entry name="customizeuser">
+    <locale lang="de">Nutzer verwalten</locale>
+    <locale lang="en">Configure users</locale>
+  </entry>
+  <entry name="deleteuser">
+    <locale lang="de">Nutzer löschen</locale>
+    <locale lang="en">Delete users</locale>
+  </entry>
+  <entry name="creategroup">
+    <locale lang="de">Neue Gruppen erstellen</locale>
+    <locale lang="en">Create new groups</locale>
+  </entry>
+  <entry name="customizegroup">
+    <locale lang="de">Gruppen verwalten</locale>
+    <locale lang="en">Configure groups</locale>
+  </entry>
+  <entry name="deletegroup">
+    <locale lang="de">Gruppen löschen</locale>
+    <locale lang="en">Delete groups</locale>
+  </entry>
+  <entry name="username">
+    <locale lang="de">Name des Nutzers</locale>
+    <locale lang="en">User name</locale>
+  </entry>
+  <entry name="initpw">
+    <locale lang="de">Initiales Passwort</locale>
+    <locale lang="en">Initial password</locale>
+  </entry>
+  <entry name="selectuser">
+    <locale lang="de">Nutzer auswählen</locale>
+    <locale lang="en">Select user</locale>
+  </entry>
+  <entry name="groupname">
+    <locale lang="de">Name des Gruppe</locale>
+    <locale lang="en">Group name</locale>
+  </entry>
+  <entry name="selectusergroup">
+    <locale lang="de">Gruppenzugehörigkeit</locale>
+    <locale lang="en">Select groups for user</locale>
+  </entry>
+  <entry name="selectgroup">
+    <locale lang="de">Gruppe auswählen</locale>
+    <locale lang="en">Select group</locale>
+  </entry>
+  <entry name="selectreporegex">
+    <locale lang="de">Regex zur Repoauswahl</locale>
+    <locale lang="en">Regex for repo selection</locale>
+  </entry>
 </i18n>
