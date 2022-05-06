@@ -215,11 +215,8 @@ declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-di
   {control-widgets:get-dir-menu( $svnurl, $control-dir )}
     <div class="directory-list table">
       <div class="table-body">
-        {if ($is-svn or $repopath) then control-widgets:list-admin-dir-entries( $svnurl,if (string-length($repopath) > 1) then $repopath else "/", $control-dir, map{'show-externals': false()} )
+        {if ($is-svn or $repopath) then control-widgets:list-admin-dir-entries( $svnurl,if ($repopath != '') then $repopath else "", $control-dir, map{'show-externals': false()} )
                       else control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': false()} )}
-      </div>
-      <div class="table-body">
-        {}
       </div>
     </div>
   </div>
@@ -295,7 +292,7 @@ declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control
 declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                                            $control-dir as xs:string,
                                            $options as map(xs:string, item()*)? ) as element(div )* {
-  control-widgets:get-dir-parent( $svnurl, $control-dir ),
+  control-widgets:get-dir-parent( $svnurl, $control-dir, '' ),
   let $filename-filter-regex as xs:string? := $options?filename-filter-regex,
       $dirs-only as xs:boolean? := $options?dirs-only = true(),
       $add-query-params as xs:string? := $options?add-query-params,
@@ -372,7 +369,7 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
                                            $repopath as xs:string,
                                            $control-dir as xs:string,
                                            $options as map(xs:string, item()*)? ) as element(div)* {
-  control-widgets:get-dir-parent( $svnurl, $control-dir ),
+  control-widgets:get-dir-parent( $svnurl, $control-dir, $repopath ),
   let $filename-filter-regex as xs:string? := $options?filename-filter-regex,
       $dirs-only as xs:boolean? := $options?dirs-only = true(),
       $add-query-params as xs:string? := $options?add-query-params,
@@ -385,13 +382,11 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
       $username := $credentials[1],
       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
   return
-  (:<div>{svn:list( $svnurl, $control:svnusername, $control:svnpassword, false()), 
-  control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))}</div>:)
   for $files in (
-    svn:look( $svnurl,$repopath, $auth, false())/*(:,
+    svn:look( $svnurl,$repopath, $auth, false())/*,
     if ($show-externals) then
       control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))
-    else ():)
+    else ()
   )
   order by lower-case( $files/(@name | @mount) )
   order by $files/local-name()
@@ -440,19 +435,20 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
  : provides a row in the html direcory listing 
  : with the link to the parent directory
 :)
-declare function control-widgets:get-dir-parent( $svnurl as xs:string, $control-dir as xs:string ) as element(div )* {
-  for $path in (
-                  request:parameter('from'),
+declare function control-widgets:get-dir-parent( $svnurl as xs:string, $control-dir as xs:string, $repopath as xs:string? ) as element(div )* {
+  let $new-svnurl := if ($repopath!= '') then $svnurl else replace($svnurl,'/?[^/]+/?$',''),
+      $new-repopath := if ($repopath!= '') then replace($repopath,'/?[^/]+/?$','') else '',
+      $path := (request:parameter('from'),
                   svn:list(
                     control-util:path-parent-dir( $svnurl ), 
                     $control:svnusername, $control:svnpassword, false()
-                  )/self::c:files/@*:base
-                )
+                  )/self::c:files/@*:base)[1]
   return 
     <div class="table-row directory-entry">
       <div class="icon table-cell"/>
       <div class="name parentdir table-cell">
-        <a href="{$control-dir || '?svnurl=' || $path}">{if (request:parameter('from') and $path/position() = 1) then '←' else '..'}</a>
+        <a href="{$control-dir || '?svnurl=' || $new-svnurl 
+        || (if ($new-repopath != '') then '&amp;repopath=' || $new-repopath else '')}">{if (request:parameter('from') and $path/position() = 1) then '←' else '..'}</a>
       </div>
       <div class="author table-cell"/>
       <div class="date table-cell"/>
