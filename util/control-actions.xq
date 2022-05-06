@@ -100,16 +100,17 @@ function control-actions:copy( $svnurl as xs:string, $file as xs:string ) {
 declare
   %rest:path("/control/access")
   %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("repopath", "{$repopath}")
   %rest:query-param("file", "{$file}")
   %output:method('html')
-function control-actions:access( $svnurl as xs:string, $file as xs:string ) {
+function control-actions:access( $svnurl as xs:string, $file as xs:string, $repopath as xs:string? ) {
 <html>
   <head>
     {control-widgets:get-html-head( )}
   </head>
   <body>
     {control-widgets:get-page-header()}
-    <h1> Bearbeiten der Zugriffsrechte für {$svnurl}</h1>
+    <div> Bearbeiten der Zugriffsrechte für {string-join(($svnurl,$repopath,$file),'/')}</div>
     <main>
       {control-widgets:add-acces-entry( $svnurl, $control:path || '/../' )}
     </main>

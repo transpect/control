@@ -81,7 +81,7 @@ declare function control-widgets:get-back-to-svndir-button( $svnurl as xs:string
 (:
  : get file action dropdown button
  :)
-declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $file as attribute(*) ) as element(details){
+declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $repopath as xs:string?, $file as attribute(*) ) as element(details){
   <details class="file action dropdown">
     <summary class="btn">
       {control-i18n:localize('actions', $control:locale)}<span class="spacer"/>▼
@@ -107,7 +107,7 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
             <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
           </li>,
           <li>
-            <a class="btn" href="{$control:path || '/access?svnurl=' || $svnurl || '&amp;action=access&amp;file=' || $file }">{control-i18n:localize('access', $control:locale)}</a>
+            <a class="btn" href="{$control:path || '/access?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;action=access&amp;file=' || $file }">{control-i18n:localize('access', $control:locale)}</a>
           </li>,
           <li>
             <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
@@ -357,7 +357,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                      $auth, true())/*:param[@name eq 'root-url']/@value
                     }</div>
       <div class="action table-cell">{if (control-util:get-rights($username, xs:string($files/@name)) = "write") 
-                                      then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files/(@name | @mount) ) 
+                                      then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], '', $files/(@name | @mount) ) 
                                       else ""}</div>
     </div> 
     else()
@@ -426,7 +426,7 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>
       <div class="size table-cell">{$files/@size[$files/local-name() eq 'file']/concat(., '&#x202f;KB')}</div>
       <div class="action table-cell">{if (control-util:get-rights($username, xs:string($files/@name)) = "write") 
-                                      then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files/(@name | @mount) ) 
+                                      then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $repopath, $files/(@name | @mount) ) 
                                       else ""}</div>
     </div> 
     else()
