@@ -110,7 +110,8 @@ function control-actions:access( $svnurl as xs:string, $file as xs:string, $repo
   </head>
   <body>
     {control-widgets:get-page-header()}
-    <div> Bearbeiten der Zugriffsrechte für {string-join(($svnurl,$repopath,$file),'/')}</div>
+    <h1> {control-i18n:localize('access-title', $control:locale )}</h1>
+    <div>{string-join(($svnurl,$repopath,$file),'/')}</div>
     <main>
       {control-widgets:add-acces-entry( $svnurl, $control:path || '/../' )}
     </main>

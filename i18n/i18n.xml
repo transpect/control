@@ -92,6 +92,10 @@
     <locale lang="de">Zugriff</locale>
     <locale lang="en">Access</locale>
   </entry>
+  <entry name="access-title">
+    <locale lang="de">Bearbeiten der Zugriffsrecht für </locale>
+    <locale lang="en">Set Access for </locale>
+  </entry>
   <entry name="move">
     <locale lang="de">Verschieben</locale>
     <locale lang="en">Move</locale>

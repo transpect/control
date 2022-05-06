@@ -306,10 +306,10 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
   return
   for $files in (
-    svn:list( $svnurl, $control:svnusername, $control:svnpassword, false())/*(:,
+    svn:list( $svnurl, $control:svnusername, $control:svnpassword, false())/*,
     if ($show-externals) then
       control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))
-    else ():)
+    else ()
   )
   order by lower-case( $files/(@name | @mount) )
   order by $files/local-name()
@@ -319,7 +319,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                  then replace($files/@url, '/[^/]+/?$', '/')
                  else $control:siteurl || '?svnurl=' || $files/@url || '&amp;from=' || $svnurl || $add-query-params
                else if($files/local-name() eq 'directory')
-                    then $control:siteurl || '?svnurl=' || $svnurl || '/' || $files/@name 
+                    then $control:siteurl || '?svnurl=' || replace($svnurl,'/$','') || '/' || $files/@name 
                       || '&amp;from='[request:parameter('from')] || request:parameter('from') || $add-query-params
                     else $svnurl || '/' || $files/@name
   return
