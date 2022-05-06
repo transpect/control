@@ -37,14 +37,14 @@ return
           <img src="{ $control:siteurl || '/static/icons/transpect.svg'}" alt="transpect logo"/>
         </a>
       </div>
-      <h1><a href="{ $control:siteurl }"><span class="thin">transpect</span>control</a></h1>
+      <h1><a href="{$control:siteurl ||  '?svnurl=' || $control:svnurl}"><span class="thin">transpect</span>control</a></h1>
     </div>
     <div class="nav-wrapper">
       <nav class="nav">
         <ol class="nav-ol">{(
           <li class="nav-tab"><a href="{ 'control/projects?svnurl=' || $control:svnurl   }">{control-i18n:localize('projects', $control:locale)}</a></li>,
           <li class="nav-tab"><a>{control-i18n:localize('files', $control:locale)}</a></li>,
-          <li class="nav-tab"><a>{control-i18n:localize('configuration', $control:locale)}</a></li>,
+          <li class="nav-tab"><a href="{$control:siteurl ||  '/config?svnurl=' || $control:svnurl}">{control-i18n:localize('configuration', $control:locale)}</a></li>,
 	  <!--<li class="nav-tab"><form method="get" action="/search" id="ftsearch-form"></form></li>-->
 	  )}
         </ol>
@@ -105,6 +105,9 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
           </li>,
           <li>
             <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
+          </li>,
+          <li>
+            <a class="btn" href="{$control:path || '/access?svnurl=' || $svnurl || '&amp;action=access&amp;file=' || $file }">{control-i18n:localize('access', $control:locale)}</a>
           </li>,
           <li>
             <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
@@ -207,14 +210,45 @@ declare function control-widgets:get-choose-directory-button( $svnurl as xs:stri
 (:
  : returns a html directory listing
 :)
-declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-dir as xs:string ) as element(div) {
+declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-dir as xs:string, $is-svn as xs:boolean, $repopath as xs:string?) as element(div) {
   <div class="directory-list-wrapper">
   {control-widgets:get-dir-menu( $svnurl, $control-dir )}
     <div class="directory-list table">
       <div class="table-body">
-        {control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': true()} )}
+        {if ($is-svn or $repopath) then control-widgets:list-admin-dir-entries( $svnurl,if (string-length($repopath) > 1) then $repopath else "/", $control-dir, map{'show-externals': false()} )
+                      else control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': false()} )}
+      </div>
+      <div class="table-body">
+        {}
       </div>
     </div>
+  </div>
+};
+(:
+ : returns controls to modify access to directory
+:)
+declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control-dir as xs:string ) as element(div) {
+  <div class="access-widget">
+    <form action="{$control:siteurl}/group/setaccess?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <div class="add-new-access">
+        <div class="form">
+          <label for="groupname">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
+          <select name="groups" id="groupselect">
+            {control-widgets:get-groups( $svnurl )}
+          </select>
+        </div>
+        <div class="form">
+          <label for="access">{concat(control-i18n:localize('selectdiraccess', $control:locale),':')}</label>
+          <select name="readwrite" id="readwrite">
+            <option value="none">none</option>
+            <option value="read">read</option>
+            <option value="write">write</option>
+          </select>
+        </div>
+        <br/>
+        <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
+      </div>
+    </form>
   </div>
 };
 (:
@@ -271,15 +305,14 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                     => xs:base64Binary()
                     => bin:decode-string()
                     => tokenize(':'),
-    $username := $credentials[1]
+      $username := $credentials[1],
+      $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
   return
-  (:<div>{svn:list( $svnurl, $control:svnusername, $control:svnpassword, false()), 
-  control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))}</div>:)
   for $files in (
-    svn:list( $svnurl, $control:svnusername, $control:svnpassword, false())/*,
+    svn:list( $svnurl, $control:svnusername, $control:svnpassword, false())/*(:,
     if ($show-externals) then
       control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))
-    else ()
+    else ():)
   )
   order by lower-case( $files/(@name | @mount) )
   order by $files/local-name()
@@ -322,6 +355,81 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                      $control:svnusername, 
                      $control:svnpassword)/*:param[@name eq 'root-url']/@value
                     }</div>
+      <div>{svn:look($svnurl,
+                     ',/',
+                     $auth, true())/*:param[@name eq 'root-url']/@value
+                    }</div>
+      <div class="action table-cell">{if (control-util:get-rights($username, xs:string($files/@name)) = "write") 
+                                      then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files/(@name | @mount) ) 
+                                      else ""}</div>
+    </div> 
+    else()
+};
+(:
+ : provide directory listing for local repo
+ :)
+declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
+                                           $repopath as xs:string,
+                                           $control-dir as xs:string,
+                                           $options as map(xs:string, item()*)? ) as element(div)* {
+  control-widgets:get-dir-parent( $svnurl, $control-dir ),
+  let $filename-filter-regex as xs:string? := $options?filename-filter-regex,
+      $dirs-only as xs:boolean? := $options?dirs-only = true(),
+      $add-query-params as xs:string? := $options?add-query-params,
+      $show-externals as xs:boolean? := $options?show-externals = true(),
+      $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+      $username := $credentials[1],
+      $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
+  return
+  (:<div>{svn:list( $svnurl, $control:svnusername, $control:svnpassword, false()), 
+  control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))}</div>:)
+  for $files in (
+    svn:look( $svnurl,$repopath, $auth, false())/*(:,
+    if ($show-externals) then
+      control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))
+    else ():)
+  )
+  order by lower-case( $files/(@name | @mount) )
+  order by $files/local-name()
+  let $href := if ($files/self::external)
+               then 
+                 if (starts-with($files/@url, 'https://github.com/'))
+                 then replace($files/@url, '/[^/]+/?$', '/')
+                 else $control:siteurl || '?svnurl=' || $files/@url || '&amp;from=' || $svnurl || $add-query-params
+               else if($files/local-name() eq 'directory')
+                    then $control:siteurl || '?svnurl=' || $svnurl  || '&amp;repopath=' || $files/@name 
+                      || '&amp;from='[request:parameter('from')] || request:parameter('from') || $add-query-params
+                    else $svnurl || '/' || $files/@name
+  return
+    if(    not($dirs-only and $files/local-name() eq 'file')
+       or  not(matches($files/@name, ($filename-filter-regex, '')[1])))
+    then 
+    <div class="table-row directory-entry {local-name( $files )}">
+      <div class="table-cell icon">
+        <a href="{$href}">
+          <img src="{(concat( $control-dir,
+                             '/',
+                             control-util:get-mimetype-url(
+                                       if( $files/local-name() eq 'directory') 
+                                       then 'folder'
+                                       else if ($files/self::external)
+                                            then 'external'
+                                            else tokenize( $files/@name, '\.')[last()]
+                                       )
+                      )
+               )}" alt="" class="file-icon"/>
+        </a>
+      </div>
+      <div class="name table-cell">
+        <a href="{$href}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a></div>
+      <div class="author table-cell">{xs:string( $files/@author )}</div>
+      <div class="date table-cell">{xs:string( $files/@date )}</div>
+      <div class="revision table-cell">{xs:string( $files/@revision )}</div>
+      <div class="size table-cell">{$files/@size[$files/local-name() eq 'file']/concat(., '&#x202f;KB')}</div>
       <div class="action table-cell">{if (control-util:get-rights($username, xs:string($files/@name)) = "write") 
                                       then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files/(@name | @mount) ) 
                                       else ""}</div>
@@ -386,7 +494,7 @@ declare function control-widgets:create-new-user($svnurl as xs:string) as elemen
           <input type="password" id="newpassword" name="newpassword" autocomplete="new-password" pattern="....+" title="Bitte geben Sie mehr als 3 Zeichen ein."/>
         </div>
         <br/>
-        <input type="submit" name="Submit request"/>
+        <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
       </div>
     </form>
   </div>
@@ -412,7 +520,7 @@ declare function control-widgets:get-pw-change( $svnurl as xs:string ) as elemen
           <input type="password" id="new-pwd-re" name="newpwre" autocomplete="new-password" pattern="....+" title="{control-i18n:localize('pwregextip', $control:locale)}"/>
         </div>
         <br/>
-        <input type="submit" name="Submit request"/>
+        <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
       </div>
     </form>
   </div>
@@ -434,7 +542,7 @@ declare function control-widgets:create-new-group( $svnurl as xs:string ) as ele
           <input type="text" id="newgroupregex" name="newgroupregex" autocomplete="new-password" pattern=".+" title="Regex darf nicht leer sein"/>
         </div>
         <br/>
-        <input type="submit" name="Submit request"/>
+        <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
       </div>
     </form>
   </div>
@@ -458,7 +566,7 @@ declare function control-widgets:customize-groups( $svnurl as xs:string ) as ele
           <input type="text" id="grouprepo" name="grouprepo" autocomplete="new-password" pattern=".+" title="Regex darf nicht leer sein"/>
         </div>
         <br/>
-        <input type="submit" name="Submit request"/>
+        <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
       </div>
     </form>
   </div>
@@ -478,7 +586,7 @@ declare function control-widgets:remove-groups( $svnurl as xs:string ) as elemen
           </select>
         </div>
         <br/>
-        <input type="submit" name="Submit request"/>
+        <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
       </div>
     </form>
   </div>
@@ -498,7 +606,7 @@ declare function control-widgets:remove-users( $svnurl as xs:string ) as element
           </select>
         </div>
         <br/>
-        <input type="submit" name="Submit request"/>
+        <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
       </div>
     </form>
   </div>
@@ -524,7 +632,7 @@ declare function control-widgets:customize-users( $svnurl as xs:string ) as elem
           </select>
         </div>
         <br/>
-        <input type="submit" name="Submit request"/>
+        <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
       </div>
     </form>
   </div>

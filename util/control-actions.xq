@@ -88,7 +88,30 @@ function control-actions:copy( $svnurl as xs:string, $file as xs:string ) {
      else ()}
     <main>
       {control:get-message( $control:msg, $control:msgtype ),
-       control-widgets:get-dir-list( $svnurl, $control:path || '/../' )}
+       control-widgets:get-dir-list( $svnurl, $control:path || '/../',control-util:is-svn-repo($svnurl),"" )}
+    </main>
+    {control-widgets:get-page-footer()}
+  </body>
+</html>
+};
+(:
+ : choose access control for selected file
+ :)
+declare
+  %rest:path("/control/access")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("file", "{$file}")
+  %output:method('html')
+function control-actions:access( $svnurl as xs:string, $file as xs:string ) {
+<html>
+  <head>
+    {control-widgets:get-html-head( )}
+  </head>
+  <body>
+    {control-widgets:get-page-header()}
+    <h1> Bearbeiten der Zugriffsrechte für {$svnurl}</h1>
+    <main>
+      {control-widgets:add-acces-entry( $svnurl, $control:path || '/../' )}
     </main>
     {control-widgets:get-page-footer()}
   </body>

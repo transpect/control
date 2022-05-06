@@ -18,6 +18,7 @@ declare variable $control:datadir         := doc('config.xml')/control:config/co
 declare variable $control:db              := doc('config.xml')/control:config/control:db;
 declare variable $control:max-upload-size := doc('config.xml')/control:config/control:max-upload-size;
 declare variable $control:access          := doc('control.xml')/control:access;
+declare variable $control:svnbase         := "/data/svn/werke";
 declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || '/' || $control:path;
 declare variable $control:svnusername     := (request:parameter('svnusername'), xs:string(doc('config.xml')/control:config/control:svnusername))[1];
@@ -28,19 +29,20 @@ declare variable $control:msgtype         := request:parameter('msgtype');
 declare variable $control:action          := request:parameter('action');
 declare variable $control:file            := request:parameter('file');
 declare variable $control:dest-svnurl     := request:parameter('dest-svnurl');
-declare variable $control:repos           := file:list('/data/svn/werke');
 declare variable $control:svnauth         := "/etc/svn/default.authz";
 
 declare
 %rest:path('/control')
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("repopath", "{$repopath}")
 %output:method('html')
-function control:control() as element() {
-  control:main( $control:svnurl )
+function control:control($svnurl as xs:string?, $repopath as xs:string?) as element() {
+  control:main( $svnurl, $repopath )
 };
 (:
  : this is where the "fun" starts...
  :)
-declare function control:main( $svnurl as xs:string ) as element(html) {
+declare function control:main( $svnurl as xs:string, $repopath as xs:string?) as element(html) {
   <html>
     <head>
       {control-widgets:get-html-head( )}
@@ -54,7 +56,7 @@ declare function control:main( $svnurl as xs:string ) as element(html) {
         {
          control:get-message( $control:msg, $control:msgtype ),
          if(normalize-space( $svnurl ))
-         then control-widgets:get-dir-list( $svnurl, $control:path )
+         then control-widgets:get-dir-list( $svnurl, $control:path, control-util:is-svn-repo($svnurl), $repopath )
          else 'URL parameter empty!'}
       </main>
       {control-widgets:get-page-footer()}
@@ -128,7 +130,32 @@ return
     </head>
     <body>
       {control-widgets:get-page-header( ),
-       control-widgets:get-pw-change($svnurl),
+       control-widgets:get-pw-change($svnurl)}
+    </body>
+  </html>
+};
+(:
+ : Configuration main page
+ :)
+declare
+%rest:path("/control/config")
+%rest:query-param("svnurl", "{$svnurl}")
+%output:method('html')
+function control:configmgmt($svnurl as xs:string?) as element(html) {
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2]
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head()}
+    </head>
+    <body>
+      {control-widgets:get-page-header( ),
        if (control-util:is-admin($username))
        then (control-widgets:create-new-user($svnurl),
              control-widgets:customize-users($svnurl),
@@ -256,7 +283,7 @@ let $credentials := request:header("Authorization")
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access)
+    $writetofile := control:writeauthtofile($updated-access, $svnurl)
 return
   <html>
     <head>
@@ -316,7 +343,66 @@ let $credentials := request:header("Authorization")
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access)
+    $writetofile := control:writeauthtofile($updated-access, $svnurl)
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <div class="result">
+        {$result/error}
+        <br/>
+         <a href="{$btntarget }">
+          <input type="button" value="{$btntext}"/>
+        </a>
+      </div>
+    </body>
+  </html>
+};
+(:
+ : delete group result
+ :)
+declare
+%rest:path("/control/group/setaccess")
+%rest:query-param("svnurl", "{$svnurl}")
+%output:method('html')
+function control:setaccess($svnurl as xs:string) {
+
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2], 
+    
+    $selected-group := request:parameter("groups"),
+    $selected-access := request:parameter("access"),
+    
+    $file := doc("control.xml"),
+    
+    $updated-access := $file update {insert node element rel {element group {$selected-group}} into .//*:rels},
+    $result :=
+      if (control-util:is-admin($username))
+      then
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
+      else
+        element result { element error {"You are not an admin."}, element code {1}},
+    $btntarget :=
+      if ($result/code = 0)
+      then
+        ($control:siteurl || '?svnurl=' || $svnurl)
+      else
+        ($control:siteurl || '/user?svnurl=' || $svnurl),
+    $btntext :=
+      if ($result/code = 0)
+      then
+        ("OK")
+      else
+        ("Zurück"),
+    $writetofile := control:writeauthtofile($updated-access, $svnurl)
 return
   <html>
     <head>
@@ -375,7 +461,7 @@ let $credentials := request:header("Authorization")
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access)
+    $writetofile := control:writeauthtofile($updated-access, $svnurl)
 return
   <html>
     <head>
@@ -576,7 +662,7 @@ let $credentials := request:header("Authorization")
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access)
+    $writetofile := control:writeauthtofile($updated-access, $svnurl)
 return
   <html>
     <head>
@@ -625,11 +711,11 @@ return
 </response>
 };
 declare 
-function control:writeauthtofile($access) {
-  file:write($control:svnauth,control:writetoauthz($access))
+function control:writeauthtofile($access, $svnurl) {
+  file:write($control:svnauth,control:writetoauthz($access, $svnurl))
 };
 declare
-function control:writetoauthz($access) {
+function control:writetoauthz($access, $svnurl) {
 concat('[groups]
 ',string-join(
   for $group in $access//*:groups/*:group (:groups:)
@@ -640,7 +726,7 @@ concat('[groups]
 '))
 ,'[/]
 * = r
-',string-join(for $repo in $control:repos
+',string-join(for $repo in file:list($control:svnbase)
 return 
     concat('[', replace($repo,'/',''),':/]
 @admin = rw

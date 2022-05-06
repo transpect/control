@@ -38,9 +38,16 @@ declare function control-util:get-mimetype-url( $ext as xs:string? ) as xs:strin
     else 'static/icons/flat-remix/Flat-Remix-Blue-Dark/mimetypes/scalable/' || control-util:ext-to-mimetype( $ext ) || '.svg' 
 };
 (:
+ : check if svnurl is a local repo
+ :)
+declare function control-util:is-svn-repo( $svnurl as xs:string? ) as xs:boolean {
+  let $children := svn:list($svnurl, $control:svnusername, $control:svnpassword, false())//*:directory
+  return count($children[@name = ("locks", "hooks", "db")]) ge 3
+};
+(:
  : get mimetype for file extension
  :)
-declare function control-util:ext-to-mimetype( $ext as xs:string ) as xs:string {
+declare function control-util:ext-to-mimetype( $ext as xs:string? ) as xs:string {
      if ( $ext eq 'xml')              then 'text-xml'
 else if ( $ext eq 'text')             then 'text-plain'
 else if ( $ext = ('Makefile', 'bat')) then 'text-x'
