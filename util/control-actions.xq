@@ -110,10 +110,9 @@ function control-actions:access( $svnurl as xs:string, $file as xs:string, $repo
   </head>
   <body>
     {control-widgets:get-page-header()}
-    <h1> {control-i18n:localize('access-title', $control:locale )}</h1>
-    <div>{string-join(($svnurl,$repopath,$file),'/')}</div>
+    <h1> {control-i18n:localize('access-title', $control:locale ) || ' ' || string-join(($repopath,$file),'/')}</h1>
     <main>
-      {control-widgets:add-acces-entry( $svnurl, $control:path || '/../' )}
+      {control-widgets:add-acces-entry( $svnurl, $control:path || '/../', $repopath, string-join(($repopath,$file),'/') )}
     </main>
     {control-widgets:get-page-footer()}
   </body>

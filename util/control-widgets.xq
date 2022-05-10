@@ -224,9 +224,27 @@ declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-di
 (:
  : returns controls to modify access to directory
 :)
-declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control-dir as xs:string ) as element(div) {
+declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control-dir as xs:string, $repopath as xs:string?, $filepath as xs:string ) as element(div) {
   <div class="access-widget">
-    <form action="{$control:siteurl}/group/setaccess?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+    {if (exists($control:access//*:rels/*:rel[*:group][*:right][*:repo][*:file = $filepath])) then 
+      <div class="table">
+      {control-i18n:localize('existingrights', $control:locale )}
+        <div class="table-body">
+          <div class="table-row">
+            <div class="table-cell">{control-i18n:localize('groupname', $control:locale )}</div>
+            <div class="table-cell">{control-i18n:localize('accessright', $control:locale )}</div>
+            <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
+          </div>
+        </div>
+        {for $access in $control:access//*:rels/*:rel[*:group][*:right][*:repo][*:file = $filepath]
+          return <div class="table-row">
+                   <div class="table-cell">{$access/*:group}</div>
+                   <div class="table-cell">{$access/*:right}</div>
+                   <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removeaccess?svnurl={$svnurl}&amp;repoath={$repopath}&amp;filepath={$access/*:file}&amp;group={$access/*:group}">&#x1f5d1;</a></div>
+                 </div>}
+      </div>
+    }
+    <form action="{$control:siteurl}/group/setaccess?svnurl={$svnurl}&amp;repopath={$repopath}&amp;filepath={$filepath}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="add-new-access">
         <div class="form">
           <label for="groupname">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
@@ -236,7 +254,7 @@ declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control
         </div>
         <div class="form">
           <label for="access">{concat(control-i18n:localize('selectdiraccess', $control:locale),':')}</label>
-          <select name="readwrite" id="readwrite">
+          <select name="access" id="readwrite">
             <option value="none">none</option>
             <option value="read">read</option>
             <option value="write">write</option>

@@ -331,6 +331,7 @@ let $credentials := request:header("Authorization")
        element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
       else
         element result { element error {"You are not an admin."}, element code {1}},
+        
     $btntarget :=
       if ($result/code = 0)
       then
@@ -367,8 +368,10 @@ return
 declare
 %rest:path("/control/group/setaccess")
 %rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("repopath", "{$repopath}")
+%rest:query-param("filepath", "{$filepath}")
 %output:method('html')
-function control:setaccess($svnurl as xs:string) {
+function control:setaccess($svnurl as xs:string, $repopath as xs:string?, $filepath as xs:string) {
 
 let $credentials := request:header("Authorization")
                     => substring(6)
@@ -382,8 +385,16 @@ let $credentials := request:header("Authorization")
     $selected-access := request:parameter("access"),
     
     $file := doc("control.xml"),
-    
-    $updated-access := $file update {insert node element rel {element group {$selected-group}} into .//*:rels},
+    (:rights umbenennen:)
+    $updated-access := $file update {delete node //control:rels/control:rel
+                                      [control:repo = tokenize($svnurl,'/')[last()]]
+                                      [control:file = $filepath]
+                                      [control:group = $selected-group]}
+                             update {insert node element rel {
+                                      element group {$selected-group},
+                                      element repo {tokenize($svnurl,'/')[last()]},
+                                      element file {$filepath}, 
+                                      element right {$selected-access}} into .//control:rels},
     $result :=
       if (control-util:is-admin($username))
       then
@@ -393,7 +404,66 @@ let $credentials := request:header("Authorization")
     $btntarget :=
       if ($result/code = 0)
       then
-        ($control:siteurl || '?svnurl=' || $svnurl)
+        ($control:siteurl || '/access?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;action=access' || '&amp;file=' || tokenize($filepath,'/')[last()] )
+      else
+        ($control:siteurl || '/user?svnurl=' || $svnurl),
+    $btntext :=
+      if ($result/code = 0)
+      then
+        ("OK")
+      else
+        ("Zurück"),
+    $writetofile := control:writeauthtofile($updated-access, $svnurl)
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <div class="result">
+        {$result/error}
+        <br/>
+         <a href="{$btntarget }">
+          <input type="button" value="{$btntext}"/>
+        </a>
+      </div>
+    </body>
+  </html>
+};
+declare
+%rest:path("/control/group/removeaccess")
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("repopath", "{$repopath}")
+%rest:query-param("filepath", "{$filepath}")
+%rest:query-param("group", "{$group}")
+%output:method('html')
+function control:removeaccess($svnurl as xs:string, $repopath as xs:string?, $filepath as xs:string, $group as xs:string) {
+
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2],
+    
+    $file := doc("control.xml"),
+    (:rights umbenennen:)
+    $updated-access := $file update {delete node //control:rels/control:rel
+                                      [control:repo = tokenize($svnurl,'/')[last()]]
+                                      [control:file = $filepath]
+                                      [control:group = $group]},
+    $result :=
+      if (control-util:is-admin($username))
+      then
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
+      else
+        element result { element error {"You are not an admin."}, element code {1}},
+    $btntarget :=
+      if ($result/code = 0)
+      then
+        ($control:siteurl || '/access?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;action=access' || '&amp;file=' || tokenize($filepath,'/')[last()] )
       else
         ($control:siteurl || '/user?svnurl=' || $svnurl),
     $btntext :=
@@ -732,11 +802,17 @@ return
 @admin = rw
 ',string-join(
   for $group in $access//*:groups/*:group (:groups:)
-  let $rels := $access//*:rels/*:rel[*:group = $group/*:name][*:repo]
+  let $rels := $access//*:rels/*:rel[*:group = $group/*:name][*:repo][not(*:file)]
   where $access//*:rels/*:rel[*:user][*:group = $group]
   return
     for $rel in $rels
     return if (matches($repo,$rel/*:repo)) 
            then concat('@',$group/*:name, ' = rw
-')))),'')
+')),'
+')),string-join(
+    for $a in $access//*:rels/*:rel[*:repo][*:group][*:right][*:file]
+    return concat('[',$a/*:repo,':/',$a/*:file,']
+',$a/*:group,' = ', $a/*:right,'
+')
+))
 };

@@ -116,6 +116,10 @@
     <locale lang="de">Löschen</locale>
     <locale lang="en">Delete</locale>
   </entry>
+  <entry name="existingrights">
+    <locale lang="de">Vorhandene Rechte</locale>
+    <locale lang="en">Existing Access Controls</locale>
+  </entry>
   <entry name="select">
     <locale lang="de">Auswählen</locale>
     <locale lang="en">Select</locale>
@@ -179,6 +183,10 @@
   <entry name="groupname">
     <locale lang="de">Name des Gruppe</locale>
     <locale lang="en">Group name</locale>
+  </entry>
+  <entry name="accessright">
+    <locale lang="de">Zugriffsrecht</locale>
+    <locale lang="en">Access Right</locale>
   </entry>
   <entry name="selectusergroup">
     <locale lang="de">Gruppenzugehörigkeit</locale>
