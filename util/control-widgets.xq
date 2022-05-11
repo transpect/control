@@ -59,9 +59,7 @@ declare function control-widgets:get-svnhome-button( $svnurl as xs:string, $cont
   <div class="home">
     <a href="{concat($control-dir,
                      '?svnurl=',
-                     svn:info($svnurl, 
-                              $control:svnusername, 
-                              $control:svnpassword)/*:param[@name eq 'root-url']/@value
+                     $control:svnbase
                               )}">
       <button class="home action btn">
         <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/home.svg'}" alt="home"/>
