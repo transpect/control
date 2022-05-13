@@ -258,10 +258,18 @@ input {
 div.form {
     margin: 5px;
 }
+.access-widget {
+  margin: 10px;
+}
+
+.result {
+  margin: 10px;
+}
+
 .adminmgmt{
   margin: 10px;
 }
-.adminmgmt form div div label {
+.leftlabel {
   float: left;
   text-align: right;
   margin-right: 15px;

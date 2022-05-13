@@ -85,16 +85,20 @@
     <locale lang="en">Copy</locale>
   </entry>
   <entry name="access">
-    <locale lang="de">Zugriff</locale>
-    <locale lang="en">Access</locale>
+    <locale lang="de">Zugriffsrechte</locale>
+    <locale lang="en">Permissions</locale>
   </entry>
   <entry name="selectdiraccess">
     <locale lang="de">Zugriff</locale>
     <locale lang="en">Access</locale>
   </entry>
-  <entry name="access-title">
+  <entry name="set-perm">
     <locale lang="de">Bearbeiten der Zugriffsrecht für </locale>
-    <locale lang="en">Set Access for </locale>
+    <locale lang="en">Set Permissions for </locale>
+  </entry>
+  <entry name="perm-title">
+    <locale lang="de">Zugriffsrecht für </locale>
+    <locale lang="en">Permissions for </locale>
   </entry>
   <entry name="move">
     <locale lang="de">Verschieben</locale>
@@ -118,7 +122,7 @@
   </entry>
   <entry name="existingrights">
     <locale lang="de">Vorhandene Rechte</locale>
-    <locale lang="en">Existing Access Controls</locale>
+    <locale lang="en">Existing Permissions</locale>
   </entry>
   <entry name="select">
     <locale lang="de">Auswählen</locale>
@@ -127,6 +131,10 @@
   <entry name="changepassword">
     <locale lang="de">Eigenes Passwort ändern</locale>
     <locale lang="en">Change own password</locale>
+  </entry>
+  <entry name="back">
+    <locale lang="de">Zurück</locale>
+    <locale lang="en">Back</locale>
   </entry>
   <entry name="oldpw">
     <locale lang="de">Altes Passwort</locale>
@@ -181,12 +189,16 @@
     <locale lang="en">Select user</locale>
   </entry>
   <entry name="groupname">
-    <locale lang="de">Name des Gruppe</locale>
+    <locale lang="de">Name der Gruppe</locale>
     <locale lang="en">Group name</locale>
   </entry>
+  <entry name="group">
+    <locale lang="de">Gruppe</locale>
+    <locale lang="en">Group</locale>
+  </entry>
   <entry name="accessright">
-    <locale lang="de">Zugriffsrecht</locale>
-    <locale lang="en">Access Right</locale>
+    <locale lang="de">Zugriffsrechte</locale>
+    <locale lang="en">Permissions</locale>
   </entry>
   <entry name="selectusergroup">
     <locale lang="de">Gruppenzugehörigkeit</locale>

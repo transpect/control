@@ -37,16 +37,19 @@ return
           <img src="{ $control:siteurl || '/static/icons/transpect.svg'}" alt="transpect logo"/>
         </a>
       </div>
-      <h1><a href="{$control:siteurl ||  '?svnurl=' || $control:svnurl}"><span class="thin">transpect</span>control</a></h1>
+      <h1><a href="{$control:siteurl ||  '?svnurl=' || $control:svnbase}"><span class="thin">transpect</span>control</a></h1>
     </div>
     <div class="nav-wrapper">
       <nav class="nav">
-        <ol class="nav-ol">{(
-          <li class="nav-tab"><a href="{ 'control/projects?svnurl=' || $control:svnurl   }">{control-i18n:localize('projects', $control:locale)}</a></li>,
-          <li class="nav-tab"><a>{control-i18n:localize('files', $control:locale)}</a></li>,
-          <li class="nav-tab"><a href="{$control:siteurl ||  '/config?svnurl=' || $control:svnurl}">{control-i18n:localize('configuration', $control:locale)}</a></li>,
-	  <!--<li class="nav-tab"><form method="get" action="/search" id="ftsearch-form"></form></li>-->
-	  )}
+        <ol class="nav-ol">
+          <li class="nav-tab"><a href="{ 'control/projects?svnurl=' || $control:svnurl   }">{control-i18n:localize('projects', $control:locale)}</a></li>
+          <li class="nav-tab"><a>{control-i18n:localize('files', $control:locale)}</a></li>
+          <li class="nav-tab">{
+            if (control-util:is-admin($username))
+            then 
+              <a href="{$control:siteurl ||  '/config?svnurl=' || $control:svnurl}">{control-i18n:localize('configuration', $control:locale)}</a>
+          }
+          </li>
         </ol>
         <ol class="username">
           <li class="nav-tab"><a href="{$control:siteurl ||  '/user?svnurl=' || $control:svnurl}">{$username}</a></li>
@@ -208,9 +211,9 @@ declare function control-widgets:get-choose-directory-button( $svnurl as xs:stri
 (:
  : returns a html directory listing
 :)
-declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-dir as xs:string, $is-svn as xs:boolean, $repopath as xs:string?) as element(div) {
+declare function control-widgets:get-dir-list( $svnurl as xs:string, $repopath as xs:string?, $control-dir as xs:string, $is-svn as xs:boolean) as element(div) {
   <div class="directory-list-wrapper">
-  {control-widgets:get-dir-menu( $svnurl, $control-dir )}
+  {control-widgets:get-dir-menu( $svnurl, $repopath, $control-dir )}
     <div class="directory-list table">
       <div class="table-body">
         {if ($is-svn or $repopath) then control-widgets:list-admin-dir-entries( $svnurl,if ($repopath != '') then $repopath else "", $control-dir, map{'show-externals': false()} )
@@ -223,55 +226,71 @@ declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-di
  : returns controls to modify access to directory
 :)
 declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control-dir as xs:string, $repopath as xs:string?, $filepath as xs:string ) as element(div) {
-  <div class="access-widget">
-    {if (exists($control:access//*:rels/*:rel[*:group][*:right][*:repo][*:file = $filepath])) then 
-      <div class="table">
-      {control-i18n:localize('existingrights', $control:locale )}
-        <div class="table-body">
-          <div class="table-row">
-            <div class="table-cell">{control-i18n:localize('groupname', $control:locale )}</div>
-            <div class="table-cell">{control-i18n:localize('accessright', $control:locale )}</div>
-            <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
+  let $selected-svnurl := if ($repopath = '')
+                          then $filepath
+                          else $svnurl,
+      $selected-file := if ($repopath = '')
+                        then ''
+                        else $filepath
+  return
+    <div class="access-widget">
+    <h1> {control-i18n:localize('perm-title', $control:locale ) || ' ' || $filepath }</h1>
+    <div class="table">
+    {control-i18n:localize('existingrights', $control:locale )}
+      <div class="table-body">
+        <div class="table-row">
+          <div class="table-cell">{control-i18n:localize('group', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('accessright', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
+        </div>
+      </div>
+      {for $access in control-util:get-permissions-for-file($svnurl, $repopath, $filepath,$control:access)
+       return <div class="table-row">
+                <div class="table-cell">{$access/g}</div>
+                <div class="table-cell">{$access/p/text()}</div>
+                {if (not($access/i))
+                then
+                  <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removeaccess?svnurl={$svnurl}&amp;repopath={$repopath}&amp;filepath={$filepath}&amp;group={$access/*:group}">&#x1f5d1;</a></div>
+                else
+                  <div class="table-cell">implicit</div>
+                }
+              </div>}
+      </div>
+      
+      <h2> {control-i18n:localize('set-perm', $control:locale ) || ' ' || $filepath }</h2>
+      <form action="{$control:siteurl}/group/setaccess?svnurl={$svnurl}&amp;repopath={$repopath}&amp;filepath={$filepath}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+        <div class="add-new-access">
+          <div class="form">
+            <label for="groupname" class="leftlabel">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
+            <select name="groups" id="groupselect">
+              {control-widgets:get-groups( $svnurl )}
+            </select>
           </div>
+          <div class="form">
+            <label for="access" class="leftlabel">{concat(control-i18n:localize('selectdiraccess', $control:locale),':')}</label>
+            <select name="access" id="readwrite">
+              <option value="none">none</option>
+              <option value="read">read</option>
+              <option value="write">write</option>
+            </select>
+          </div>
+          <br/>
+          <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
         </div>
-        {for $access in $control:access//*:rels/*:rel[*:group][*:right][*:repo][*:file = $filepath]
-          return <div class="table-row">
-                   <div class="table-cell">{$access/*:group}</div>
-                   <div class="table-cell">{$access/*:right}</div>
-                   <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removeaccess?svnurl={$svnurl}&amp;repoath={$repopath}&amp;filepath={$access/*:file}&amp;group={$access/*:group}">&#x1f5d1;</a></div>
-                 </div>}
-      </div>
-    }
-    <form action="{$control:siteurl}/group/setaccess?svnurl={$svnurl}&amp;repopath={$repopath}&amp;filepath={$filepath}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
-      <div class="add-new-access">
-        <div class="form">
-          <label for="groupname">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
-          <select name="groups" id="groupselect">
-            {control-widgets:get-groups( $svnurl )}
-          </select>
-        </div>
-        <div class="form">
-          <label for="access">{concat(control-i18n:localize('selectdiraccess', $control:locale),':')}</label>
-          <select name="access" id="readwrite">
-            <option value="none">none</option>
-            <option value="read">read</option>
-            <option value="write">write</option>
-          </select>
-        </div>
-        <br/>
-        <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
-      </div>
-    </form>
-  </div>
+      </form>
+      <button class="btn">
+        <a href="{$control:siteurl}?svnurl={concat($svnurl, if ($repopath) then concat('&amp;repopath=', $repopath))}">{control-i18n:localize('back', $control:locale)}</a>
+      </button>
+    </div>
 };
 (:
  : get dir menu
  :)
-declare function control-widgets:get-dir-menu( $svnurl as xs:string, $control-dir as xs:string ) {
+declare function control-widgets:get-dir-menu( $svnurl as xs:string, $repopath as xs:string?, $control-dir as xs:string ) {
   <div class="dir-menu">
     <div class="dir-menu-left">
       {control-widgets:get-svnhome-button( $svnurl, $control-dir )}
-      <div class="path">{tokenize( $svnurl, '/')[last()]}&#xa0;/ </div>
+      <div class="path">{tokenize( string-join(($svnurl,$repopath), '/'),'/')[last()]}&#xa0;/ </div>
       {control-widgets:create-dir-form( $svnurl, $control-dir )}
     </div>
     <div class="dir-menu-right">
@@ -498,11 +517,11 @@ declare function control-widgets:create-new-user($svnurl as xs:string) as elemen
     <form action="{$control:siteurl}/user/createuser?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="createuser">
         <div class="form">
-          <label for="newusername">{concat(control-i18n:localize('username', $control:locale),':')}</label>
+          <label for="newusername" class="leftlabel">{concat(control-i18n:localize('username', $control:locale),':')}</label>
           <input type="text" id="newusername" name="newusername" pattern="[A-Za-z0-9]+" title="Nutzen Sie nur Buchstaben und Zahlen"/>
         </div>
         <div class="form">
-          <label for="newpassword">{concat(control-i18n:localize('initpw', $control:locale),':')}</label>
+          <label for="newpassword" class="leftlabel">{concat(control-i18n:localize('initpw', $control:locale),':')}</label>
           <input type="password" id="newpassword" name="newpassword" autocomplete="new-password" pattern="....+" title="Bitte geben Sie mehr als 3 Zeichen ein."/>
         </div>
         <br/>
@@ -520,15 +539,15 @@ declare function control-widgets:get-pw-change( $svnurl as xs:string ) as elemen
     <form action="{$control:siteurl}/user/setpw?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="setpw">
         <div class="form">
-          <label for="old-pwd">{concat(control-i18n:localize('oldpw', $control:locale),':')}</label>
+          <label for="old-pwd" class="leftlabel">{concat(control-i18n:localize('oldpw', $control:locale),':')}</label>
           <input type="password" id="old-pwd" name="oldpw" autocomplete="new-password"/>
         </div>
         <div class="form">
-          <label for="new-pwd">{concat(control-i18n:localize('newpw', $control:locale),':')}</label>
+          <label for="new-pwd" class="leftlabel">{concat(control-i18n:localize('newpw', $control:locale),':')}</label>
           <input type="password" id="new-pwd" name="newpw" autocomplete="new-password" pattern="....+" title="{control-i18n:localize('pwregextip', $control:locale)}"/>
         </div>
         <div class="form">
-          <label for="new-pwd-re">{concat(control-i18n:localize('newpwre', $control:locale),':')}</label>
+          <label for="new-pwd-re" class="leftlabel">{concat(control-i18n:localize('newpwre', $control:locale),':')}</label>
           <input type="password" id="new-pwd-re" name="newpwre" autocomplete="new-password" pattern="....+" title="{control-i18n:localize('pwregextip', $control:locale)}"/>
         </div>
         <br/>
@@ -546,11 +565,11 @@ declare function control-widgets:create-new-group( $svnurl as xs:string ) as ele
     <form action="{$control:siteurl}/group/creategroup?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="createnewgroup">
         <div class="form">
-          <label for="groupname">{concat(control-i18n:localize('groupname', $control:locale),':')}</label>
+          <label for="groupname" class="leftlabel">{concat(control-i18n:localize('groupname', $control:locale),':')}</label>
           <input type="text" id="groupname" name="newgroupname" autocomplete="new-password" pattern="[A-Za-z0-9]+" title="Nutzen Sie nur Buchstaben und Zahlen"/>
         </div>
         <div class="form">
-          <label for="groupregex">{concat(control-i18n:localize('selectreporegex', $control:locale),':')}</label>
+          <label for="groupregex" class="leftlabel">{concat(control-i18n:localize('selectreporegex', $control:locale),':')}</label>
           <input type="text" id="newgroupregex" name="newgroupregex" autocomplete="new-password" pattern=".+" title="Regex darf nicht leer sein"/>
         </div>
         <br/>
@@ -568,13 +587,13 @@ declare function control-widgets:customize-groups( $svnurl as xs:string ) as ele
     <form action="{$control:siteurl}/group/setrepo?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="managegroups">
         <div>
-          <label for="groups">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
+          <label for="groups" class="leftlabel">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
           <select name="groups" id="groupselect">
             {control-widgets:get-groups( $svnurl )}
           </select>
         </div>
         <div>
-          <label for="grouprepo">{concat(control-i18n:localize('selectreporegex', $control:locale),':')}</label>
+          <label for="grouprepo" class="leftlabel">{concat(control-i18n:localize('selectreporegex', $control:locale),':')}</label>
           <input type="text" id="grouprepo" name="grouprepo" autocomplete="new-password" pattern=".+" title="Regex darf nicht leer sein"/>
         </div>
         <br/>
@@ -592,7 +611,7 @@ declare function control-widgets:remove-groups( $svnurl as xs:string ) as elemen
     <form action="{$control:siteurl}/group/delete?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="managegroups">
         <div>
-          <label for="groups">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
+          <label for="groups" class="leftlabel">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
           <select name="groups" id="deletegroupselect">
             {control-widgets:get-groups( $svnurl )}
           </select>
@@ -612,7 +631,7 @@ declare function control-widgets:remove-users( $svnurl as xs:string ) as element
     <form action="{$control:siteurl}/user/delete?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="manageusers">
         <div>
-          <label for="users">{concat(control-i18n:localize('selectuser', $control:locale),':')}</label>
+          <label for="users" class="leftlabel">{concat(control-i18n:localize('selectuser', $control:locale),':')}</label>
           <select name="users" id="deleteuserselect">
             {control-widgets:get-users( $svnurl )}
           </select>
@@ -632,13 +651,13 @@ declare function control-widgets:customize-users( $svnurl as xs:string ) as elem
     <form action="{$control:siteurl}/user/setgroups?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="manageuser">
         <div>
-          <label for="users">{concat(control-i18n:localize('selectuser', $control:locale),':')}</label>
+          <label for="users" class="leftlabel">{concat(control-i18n:localize('selectuser', $control:locale),':')}</label>
           <select name="users" id="userselect">
             {control-widgets:get-users( $svnurl )}
           </select>
         </div>
         <div>
-          <label for="groups">{concat(control-i18n:localize('selectusergroup', $control:locale),':')}</label>
+          <label for="groups" class="leftlabel">{concat(control-i18n:localize('selectusergroup', $control:locale),':')}</label>
           <select name="groups" id="groups" multiple="true">
             {control-widgets:get-groups-and-admin( $svnurl )}
           </select>

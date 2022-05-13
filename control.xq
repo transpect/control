@@ -20,7 +20,7 @@ declare variable $control:max-upload-size := doc('config.xml')/control:config/co
 declare variable $control:access          := doc('control.xml')/control:access;
 declare variable $control:svnbase         := "/data/svn/werke";
 declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
-declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || '/' || $control:path;
+declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || $control:path;
 declare variable $control:svnusername     := (request:parameter('svnusername'), xs:string(doc('config.xml')/control:config/control:svnusername))[1];
 declare variable $control:svnpassword     := (request:parameter('svnpassword'), xs:string(doc('config.xml')/control:config/control:svnpassword))[1];
 declare variable $control:svnurl          := (request:parameter('svnurl'), xs:string(doc('config.xml')/control:config/control:svnurl))[1];
@@ -30,6 +30,10 @@ declare variable $control:action          := request:parameter('action');
 declare variable $control:file            := request:parameter('file');
 declare variable $control:dest-svnurl     := request:parameter('dest-svnurl');
 declare variable $control:svnauth         := "/etc/svn/default.authz";
+declare variable $control:default-permission
+                                          := "r";
+declare variable $control:nl         := "
+";
 
 declare
 %rest:path('/control')
@@ -56,7 +60,7 @@ declare function control:main( $svnurl as xs:string, $repopath as xs:string?) as
         {
          control:get-message( $control:msg, $control:msgtype ),
          if(normalize-space( $svnurl ))
-         then control-widgets:get-dir-list( $svnurl, $control:path, control-util:is-svn-repo($svnurl), $repopath )
+         then control-widgets:get-dir-list( $svnurl, $repopath, $control:path, control-util:is-svn-repo($svnurl))
          else 'URL parameter empty!'}
       </main>
       {control-widgets:get-page-footer()}
@@ -384,16 +388,24 @@ let $credentials := request:header("Authorization")
     $selected-group := request:parameter("groups"),
     $selected-access := request:parameter("access"),
     
+    $selected-repo := if ($repopath = '')
+                      then replace($filepath,'/','')
+                      else tokenize($svnurl,'/')[last()],
+    
+    $selected-filepath := if ($repopath = '')
+                          then ''
+                          else $filepath,
+    
     $file := doc("control.xml"),
     (:rights umbenennen:)
     $updated-access := $file update {delete node //control:rels/control:rel
-                                      [control:repo = tokenize($svnurl,'/')[last()]]
-                                      [control:file = $filepath]
+                                      [control:repo = $selected-repo]
+                                      [control:file = $selected-filepath]
                                       [control:group = $selected-group]}
                              update {insert node element rel {
                                       element group {$selected-group},
-                                      element repo {tokenize($svnurl,'/')[last()]},
-                                      element file {$filepath}, 
+                                      element repo {$selected-repo},
+                                      element file {$selected-filepath},
                                       element right {$selected-access}} into .//control:rels},
     $result :=
       if (control-util:is-admin($username))
@@ -449,10 +461,16 @@ let $credentials := request:header("Authorization")
     $password := $credentials[2],
     
     $file := doc("control.xml"),
-    (:rights umbenennen:)
+    $selected-repo := if ($repopath = '')
+                      then replace($filepath,'/','')
+                      else tokenize($svnurl,'/')[last()],
+    
+    $selected-filepath := if ($repopath = '')
+                          then ''
+                          else $filepath,
     $updated-access := $file update {delete node //control:rels/control:rel
-                                      [control:repo = tokenize($svnurl,'/')[last()]]
-                                      [control:file = $filepath]
+                                      [control:repo = $selected-repo]
+                                      [control:file = $selected-filepath]
                                       [control:group = $group]},
     $result :=
       if (control-util:is-admin($username))
@@ -785,34 +803,43 @@ function control:writeauthtofile($access, $svnurl) {
   file:write($control:svnauth,control:writetoauthz($access, $svnurl))
 };
 declare
-function control:writetoauthz($access, $svnurl) {
+function control:writetoauthz($access, $svnurl as xs:string) {
 concat('[groups]
 ',string-join(
-  for $group in $access//*:groups/*:group (:groups:)
-  where $access//*:rels/*:rel[*:user][*:group=$group/*:name]
-  return concat($group/*:name,' = ',string-join(
-    for $rel in $access//*:rels/*:rel[*:user][*:group = $group/*:name] (:user:)
-    return $rel/*:user,', '),'
-'))
-,'[/]
-* = r
-',string-join(for $repo in file:list($control:svnbase)
-return 
-    concat('[', replace($repo,'/',''),':/]
-@admin = rw
-',string-join(
-  for $group in $access//*:groups/*:group (:groups:)
-  let $rels := $access//*:rels/*:rel[*:group = $group/*:name][*:repo][not(*:file)]
-  where $access//*:rels/*:rel[*:user][*:group = $group]
-  return
-    for $rel in $rels
-    return if (matches($repo,$rel/*:repo)) 
-           then concat('@',$group/*:name, ' = rw
-')),'
-')),string-join(
-    for $a in $access//*:rels/*:rel[*:repo][*:group][*:right][*:file]
-    return concat('[',$a/*:repo,':/',$a/*:file,']
-',$a/*:group,' = ', $a/*:right,'
-')
-))
+  for $group in $access//control:groups/control:group (:groups:)
+  where $access//control:rels/control:rel[control:user][control:group=$group/control:name]
+  return concat($group/control:name,' = ',string-join(
+    for $rel in $access//control:rels/control:rel[control:user][control:group = $group/control:name] (:user:)
+    return $rel/*:user,', '),$control:nl)),
+      '[/]',
+      $control:nl,
+      '* = ',$control:default-permission,$control:nl,
+      string-join(
+        for $repo in file:list($control:svnbase) (:repos:)
+        return 
+          concat('[', replace($repo,'/',''),':/]',$control:nl,
+          '@admin = rw',$control:nl,
+          string-join(
+            for $group in $access//control:groups/control:group (:groups:)
+            let $permission := control-util:get-permission-for-group($group/control:name, replace($repo,'/',''), $access)
+            where $access//control:rels/control:rel[control:user][control:group = $group] (: not empty groups:)
+            return
+              if ($permission != $control:default-permission)
+              then concat('@',$group/control:name,'=',$permission,$control:nl)
+          ),$control:nl)),
+          string-join(
+            for $a in $access//control:rels/control:rel[control:repo][control:group][control:permission][control:file != '']
+            let $selected-right := if ($a/control:permission = 'none') then ''
+                              else if ($a/control:permission = 'read') then 'r'
+                              else if ($a/control:permission = 'write') then 'rw'
+            return concat(
+                     '[',
+                     $a/control:repo,':/',
+                     $a/control:file,
+                     ']',
+                     $control:nl,
+                     concat('@',$a/control:group),' = ', $selected-right,$control:nl
+                   )
+          )
+)
 };

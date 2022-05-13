@@ -37,12 +37,79 @@ declare function control-util:get-mimetype-url( $ext as xs:string? ) as xs:strin
     then 'static/icons/flat-remix/Flat-Remix-Blue-Dark/places/scalable/folder-black-documents.svg'
     else 'static/icons/flat-remix/Flat-Remix-Blue-Dark/mimetypes/scalable/' || control-util:ext-to-mimetype( $ext ) || '.svg' 
 };
+
 (:
  : check if svnurl is a local repo
  :)
-declare function control-util:is-svn-repo( $svnurl as xs:string? ) as xs:boolean {
+declare function control-util:is-svn-repo( $svnurl as xs:string ) as xs:boolean {
   let $children := svn:list($svnurl, $control:svnusername, $control:svnpassword, false())//*:directory
   return count($children[@name = ("locks", "hooks", "db")]) ge 3
+};
+
+declare function control-util:get-permissions-for-file($svnurl as xs:string, 
+                                                       $repopath as xs:string?, 
+                                                       $filepath as xs:string?,
+                                                       $access){
+  let $selected-repo := if ($repopath = '')
+                        then replace($filepath,'/','')
+                        else tokenize($svnurl,'/')[last()],
+      $selected-filepath := if ($repopath = '')
+                            then ''
+                            else $filepath,
+      $admin-group := $access//control:groups/control:group[control:name = 'admin'],
+      $explicit-permissions := for $group in $access//control:groups/control:group except $admin-group
+                             let $p := $access//control:rels/control:rel[control:file = $selected-filepath]
+                                                                        [control:repo = $selected-repo]
+                                                                        [control:permission]
+                                                                        [control:group = $group/control:name]
+                             return if ($p) 
+                                    then element permission { element g {$group/control:name},
+                                                              element p {$p/control:permission},
+                                                              element i {false()}},
+      $inplicit-permissions := for $group in $access//control:groups/control:group except $admin-group
+                               let $writeable-repos := $access//control:rels/control:rel[control:group = $group]
+                                                                                        [control:repo]
+                                                                                        [not(control:file)],
+                                   $p := if (control-util:or(for $r in $writeable-repos return matches($selected-repo,$r/control:repo)))
+                                         then 'write'
+                                         else 'read'
+                               return element permission { element g {$group/control:name},
+                                                           element p {$p},
+                                                           element i {true()}}
+  return for $group in $access//control:groups/control:group
+         return ($explicit-permissions[g = $group/control:name], $inplicit-permissions[g = $group/control:name])[1]
+         
+};
+declare 
+function control-util:or($bools as xs:boolean*) as xs:boolean{
+  count($bools[. = true()]) > 0
+};
+declare
+function control-util:get-permission-for-group($group as xs:string, $repo as xs:string, $access) as xs:string?{
+  let $writeable-repos := $access//control:rels/control:rel[control:group = $group]
+                                                      [control:repo]
+                                                      [not(control:file)],
+      $indirect-permission := if (control-util:or(for $r in $writeable-repos return matches($repo,$r/control:repo)))
+                              then 'write'
+                              else 'read',
+      $direct-permission := $access//control:rels/control:rel[control:group = $group]
+                                                              [control:repo  =$repo]
+                                                              [control:permission]
+                                                              [control:file = '']/control:permission,
+      $combined-permission := ($direct-permission,$indirect-permission)[1],
+      $selected-permission := if ($combined-permission = 'none') then ''
+                              else if ($combined-permission = 'read') then 'r'
+                              else if ($combined-permission = 'write') then 'rw'
+  return $selected-permission
+};
+declare
+function control-util:get-permission-for-user($user as xs:string, $repo as xs:string, $access) as xs:string?{
+  for $group in $access/control:groups/control:group/control:name
+  let $rels := $access//control:rels/control:rel[control:user = $user]
+                                               [control:group],
+      $permission := control-util:get-permission-for-group($group, $repo, $access)
+  where exists($access/control:rels/control:rel[control:user = $user][control:group = $group])
+  return $permission
 };
 (:
  : get mimetype for file extension

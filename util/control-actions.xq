@@ -74,9 +74,10 @@ function control-actions:download-as-zip( $svnurl as xs:string ) {
 declare
   %rest:path("/control/copy")
   %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("repopath", "{$repopath}")
   %rest:query-param("file", "{$file}")
   %output:method('html')
-function control-actions:copy( $svnurl as xs:string, $file as xs:string ) {
+function control-actions:copy( $svnurl as xs:string, $repopath as xs:string?, $file as xs:string ) {
 <html>
   <head>
     {control-widgets:get-html-head( )}
@@ -88,7 +89,7 @@ function control-actions:copy( $svnurl as xs:string, $file as xs:string ) {
      else ()}
     <main>
       {control:get-message( $control:msg, $control:msgtype ),
-       control-widgets:get-dir-list( $svnurl, $control:path || '/../',control-util:is-svn-repo($svnurl),"" )}
+       control-widgets:get-dir-list( $svnurl, $repopath, $control:path || '/../',control-util:is-svn-repo($svnurl))}
     </main>
     {control-widgets:get-page-footer()}
   </body>
@@ -110,7 +111,6 @@ function control-actions:access( $svnurl as xs:string, $file as xs:string, $repo
   </head>
   <body>
     {control-widgets:get-page-header()}
-    <h1> {control-i18n:localize('access-title', $control:locale ) || ' ' || string-join(($repopath,$file),'/')}</h1>
     <main>
       {control-widgets:add-acces-entry( $svnurl, $control:path || '/../', $repopath, string-join(($repopath,$file),'/') )}
     </main>
