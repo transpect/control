@@ -70,17 +70,11 @@ function cancelRenameForm(svnurl, file, controlPath) {
   anchor.appendChild(txt);
   formWrapper.replaceWith( anchor );
 }
-/* 
- * Register event listener
- */
-window.onload = function() {
-  var details = document.querySelector("details");
-  var summary = document.querySelector("summary");
-  var userselect = document.querySelector("#userselect");
-  var groupselect = document.querySelector("#groupselect");
-  
-  if (summary !== null) {
-    summary.addEventListener("click", function(event) {
+
+function addEventToSummary(summary) {
+  var details = summary.parentElement;
+  summary.addEventListener("click", function(event) {
+    console.log('click');
   	// first a guard clause: don't do anything 
   	// if we're already in the middle of closing the menu.
   	if (details.classList.contains("summary-closing")) {
@@ -100,27 +94,41 @@ window.onload = function() {
   		}, 500);
   	}
     });
-  
-  
     // when user hovers over the summary element, 
     // add the open attribute to the details element
     summary.addEventListener("mouseenter", event => {
+      console.log('mouseenter');
     	details.setAttribute("open", "open");
     });
-  }
-    // when the user moves the mouse away from the details element,
-    // perform the out-animation and delayed attribute-removal
-    // just like in the click handler
-  if (details !== null) {
-    details.addEventListener("mouseleave", event => {
-    	details.classList.add("summary-closing");
+}
+function addEventToDetail(detail) {
+  detail.addEventListener("mouseleave", event => {
+      console.log('mouseleave');
+    	detail.classList.add("summary-closing");
     	setTimeout(function() {
-    		details.removeAttribute("open");
-    		details.classList.remove("summary-closing");
-    	}, 500);
-    	details.setAttribute("open", "open");
+    		detail.removeAttribute("open");
+    		detail.classList.remove("summary-closing");
+    	}, 1);
+    	detail.setAttribute("open", "open");
     });
+}
+/* 
+ * Register event listener
+ */
+window.onload = function() {
+  var details = document.getElementsByTagName("details");
+  var summaries = document.getElementsByTagName("summary");
+  var userselect = document.querySelector("#userselect");
+  var groupselect = document.querySelector("#groupselect");
+  
+  for (let summary of summaries){
+    addEventToSummary(summary)
   }
+ 
+  for (let detail of details){
+    addEventToDetail(detail)
+  }
+  
   if (userselect !== null) {
     userselect.addEventListener("change", event => {
       setUserGroupSelection(userselect

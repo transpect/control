@@ -230,6 +230,9 @@ header a {
 .dropdown li a.btn:hover {
   text-decoration: none
 }
+div.hidden {
+  display: none;
+}
 
 /*details[open] .dropdown-wrapper {
   animation: fade-in 0.5s forwards;

@@ -104,6 +104,10 @@
     <locale lang="de">Verschieben</locale>
     <locale lang="en">Move</locale>
   </entry>
+  <entry name="implicit">
+    <locale lang="de">implizit</locale>
+    <locale lang="en">implicit</locale>
+  </entry>
   <entry name="projects">
     <locale lang="de">Projekte</locale>
     <locale lang="en">Projects</locale>
@@ -111,6 +115,18 @@
   <entry name="files">
     <locale lang="de">Dateien</locale>
     <locale lang="en">Files</locale>
+  </entry>
+  <entry name="read">
+    <locale lang="de">lesen</locale>
+    <locale lang="en">read</locale>
+  </entry>
+  <entry name="write">
+    <locale lang="de">schreiben</locale>
+    <locale lang="en">write</locale>
+  </entry>
+  <entry name="none">
+    <locale lang="de">keine</locale>
+    <locale lang="en">none</locale>
   </entry>
   <entry name="configuration">
     <locale lang="de">Konfiguration</locale>
@@ -196,7 +212,7 @@
     <locale lang="de">Gruppe</locale>
     <locale lang="en">Group</locale>
   </entry>
-  <entry name="accessright">
+  <entry name="permission">
     <locale lang="de">Zugriffsrechte</locale>
     <locale lang="en">Permissions</locale>
   </entry>

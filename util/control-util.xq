@@ -58,32 +58,45 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
                             else $filepath,
       $admin-group := $access//control:groups/control:group[control:name = 'admin'],
       $explicit-permissions := for $group in $access//control:groups/control:group except $admin-group
-                             let $p := $access//control:rels/control:rel[control:file = $selected-filepath]
-                                                                        [control:repo = $selected-repo]
-                                                                        [control:permission]
-                                                                        [control:group = $group/control:name]
-                             return if ($p) 
-                                    then element permission { element g {$group/control:name},
-                                                              element p {$p/control:permission},
-                                                              element i {false()}},
-      $inplicit-permissions := for $group in $access//control:groups/control:group except $admin-group
+                               let $p := $access//control:rels/control:rel[control:file = $selected-filepath]
+                                                                          [control:repo = $selected-repo]
+                                                                          [control:permission]
+                                                                          [control:group = $group/control:name]
+                               return if ($p) 
+                                      then element permission { element g {$group/control:name/text()},
+                                                                element p {$p/control:permission/text()},
+                                                                element i {false()}},
+      $implicit-permissions := for $group in $access//control:groups/control:group except $admin-group
                                let $writeable-repos := $access//control:rels/control:rel[control:group = $group]
                                                                                         [control:repo]
                                                                                         [not(control:file)],
                                    $p := if (control-util:or(for $r in $writeable-repos return matches($selected-repo,$r/control:repo)))
                                          then 'write'
                                          else 'read'
-                               return element permission { element g {$group/control:name},
+                               return element permission { element g {$group/control:name/text()},
                                                            element p {$p},
                                                            element i {true()}}
   return for $group in $access//control:groups/control:group
-         return ($explicit-permissions[g = $group/control:name], $inplicit-permissions[g = $group/control:name])[1]
+         return ($explicit-permissions[g = $group/control:name], $implicit-permissions[g = $group/control:name])[1]
          
 };
+
 declare 
 function control-util:or($bools as xs:boolean*) as xs:boolean{
   count($bools[. = true()]) > 0
 };
+
+declare 
+function control-util:is-file($file as xs:string) as xs:boolean{
+  matches($file,'\.')
+};
+
+declare 
+function control-util:create-download-link($svnurl as xs:string, $repopath as xs:string?, $file as xs:string?) as xs:string{
+  let $result := string-join((replace($svnurl,$control:svnbase,$control:repobase),$repopath,$file),'/')
+  return $result
+};
+
 declare
 function control-util:get-permission-for-group($group as xs:string, $repo as xs:string, $access) as xs:string?{
   let $writeable-repos := $access//control:rels/control:rel[control:group = $group]

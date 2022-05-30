@@ -19,6 +19,7 @@ declare variable $control:db              := doc('config.xml')/control:config/co
 declare variable $control:max-upload-size := doc('config.xml')/control:config/control:max-upload-size;
 declare variable $control:access          := doc('control.xml')/control:access;
 declare variable $control:svnbase         := "/data/svn/werke";
+declare variable $control:repobase         := "/content/werke";
 declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || $control:path;
 declare variable $control:svnusername     := (request:parameter('svnusername'), xs:string(doc('config.xml')/control:config/control:svnusername))[1];
@@ -397,7 +398,6 @@ let $credentials := request:header("Authorization")
                           else $filepath,
     
     $file := doc("control.xml"),
-    (:rights umbenennen:)
     $updated-access := $file update {delete node //control:rels/control:rel
                                       [control:repo = $selected-repo]
                                       [control:file = $selected-filepath]
@@ -406,7 +406,7 @@ let $credentials := request:header("Authorization")
                                       element group {$selected-group},
                                       element repo {$selected-repo},
                                       element file {$selected-filepath},
-                                      element right {$selected-access}} into .//control:rels},
+                                      element permission {$selected-access}} into .//control:rels},
     $result :=
       if (control-util:is-admin($username))
       then
@@ -829,7 +829,7 @@ concat('[groups]
           ),$control:nl)),
           string-join(
             for $a in $access//control:rels/control:rel[control:repo][control:group][control:permission][control:file != '']
-            let $selected-right := if ($a/control:permission = 'none') then ''
+            let $selected-permission := if ($a/control:permission = 'none') then ''
                               else if ($a/control:permission = 'read') then 'r'
                               else if ($a/control:permission = 'write') then 'rw'
             return concat(
@@ -838,7 +838,7 @@ concat('[groups]
                      $a/control:file,
                      ']',
                      $control:nl,
-                     concat('@',$a/control:group),' = ', $selected-right,$control:nl
+                     concat('@',$a/control:group),' = ', $selected-permission,$control:nl
                    )
           )
 )

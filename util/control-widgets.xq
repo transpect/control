@@ -115,7 +115,11 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
           </li>,
           <li>
             <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;action=delete&amp;file=' || $file }">{control-i18n:localize('delete', $control:locale)}</a>
-          </li>
+          </li>,
+          if (control-util:is-file($file))
+          then (<li>
+            <a class="btn" download="" href="{control-util:create-download-link($svnurl, $repopath, $file)}">{control-i18n:localize('download', $control:locale)}</a>
+          </li>)
         )
       }</ul>
     </div>
@@ -217,7 +221,7 @@ declare function control-widgets:get-dir-list( $svnurl as xs:string, $repopath a
     <div class="directory-list table">
       <div class="table-body">
         {if ($is-svn or $repopath) then control-widgets:list-admin-dir-entries( $svnurl,if ($repopath != '') then $repopath else "", $control-dir, map{'show-externals': false()} )
-                      else control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': false()} )}
+                      else control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': false()}, $repopath )}
       </div>
     </div>
   </div>
@@ -235,12 +239,15 @@ declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control
   return
     <div class="access-widget">
     <h1> {control-i18n:localize('perm-title', $control:locale ) || ' ' || $filepath }</h1>
+    <div id="streamed-data" class="hidden">
+    {control-util:get-permissions-for-file($svnurl, $repopath, $filepath,$control:access)}</div>
     <div class="table">
     {control-i18n:localize('existingrights', $control:locale )}
       <div class="table-body">
         <div class="table-row">
           <div class="table-cell">{control-i18n:localize('group', $control:locale )}</div>
-          <div class="table-cell">{control-i18n:localize('accessright', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('permission', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('implicit', $control:locale )}</div>
           <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
         </div>
       </div>
@@ -248,11 +255,12 @@ declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control
        return <div class="table-row">
                 <div class="table-cell">{$access/g}</div>
                 <div class="table-cell">{$access/p/text()}</div>
-                {if (not($access/i))
+                {if ($access/i = true())
                 then
-                  <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removeaccess?svnurl={$svnurl}&amp;repopath={$repopath}&amp;filepath={$filepath}&amp;group={$access/*:group}">&#x1f5d1;</a></div>
-                else
                   <div class="table-cell">implicit</div>
+                else
+                 (<div class="table-cell">explicit</div>,
+                  <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removeaccess?svnurl={$svnurl}&amp;repopath={$repopath}&amp;filepath={$filepath}&amp;group={$access/*:g/text()}">&#x1f5d1;</a></div>)
                 }
               </div>}
       </div>
@@ -269,9 +277,9 @@ declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control
           <div class="form">
             <label for="access" class="leftlabel">{concat(control-i18n:localize('selectdiraccess', $control:locale),':')}</label>
             <select name="access" id="readwrite">
-              <option value="none">none</option>
-              <option value="read">read</option>
-              <option value="write">write</option>
+              <option value="none">{control-i18n:localize('none', $control:locale)}</option>
+              <option value="read">{control-i18n:localize('read', $control:locale)}</option>
+              <option value="write">{control-i18n:localize('write', $control:locale)}</option>
             </select>
           </div>
           <br/>
@@ -294,14 +302,14 @@ declare function control-widgets:get-dir-menu( $svnurl as xs:string, $repopath a
       {control-widgets:create-dir-form( $svnurl, $control-dir )}
     </div>
     <div class="dir-menu-right">
-      {control-widgets:get-dir-actions( $svnurl, $control-dir )}
+      {control-widgets:get-dir-actions( $svnurl, $control-dir, $repopath )}
     </div>
   </div>
 };
 (:
  : get action buttons to add new files, create dirs etc.
  :)
-declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control-dir as xs:string) as element(div )* {
+declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control-dir as xs:string?, $repopath as xs:string?) as element(div )* {
   <div class="directory-actions">
     <a href="/control/new-file?svnurl={$svnurl}">
       <button class="new-file action btn">
@@ -313,12 +321,6 @@ declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control
       <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/folder.svg'}" alt="new-file"/><span class="spacer"/>
         {control-i18n:localize('create-dir', $control:locale )}
     </button>
-    <a href="/control/download?svnurl={$svnurl}">
-      <button class="download action btn">
-        <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/cloud-download.svg'}" alt="new-file"/><span class="spacer"/>
-          {control-i18n:localize('download', $control:locale )}
-      </button>
-    </a>
   </div>
 };
 (:
@@ -326,7 +328,8 @@ declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control
  :)
 declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                                            $control-dir as xs:string,
-                                           $options as map(xs:string, item()*)? ) as element(div )* {
+                                           $options as map(xs:string, item()*)?,
+                                           $repopath as xs:string?) as element(div )* {
   control-widgets:get-dir-parent( $svnurl, $control-dir, '' ),
   let $filename-filter-regex as xs:string? := $options?filename-filter-regex,
       $dirs-only as xs:boolean? := $options?dirs-only = true(),
