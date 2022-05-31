@@ -433,10 +433,11 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
                  if (starts-with($files/@url, 'https://github.com/'))
                  then replace($files/@url, '/[^/]+/?$', '/')
                  else $control:siteurl || '?svnurl=' || $files/@url || '&amp;from=' || $svnurl || $add-query-params
-               else if($files/local-name() eq 'directory')
-                    then $control:siteurl || '?svnurl=' || $svnurl  || '&amp;repopath=' || $files/@name 
-                      || '&amp;from='[request:parameter('from')] || request:parameter('from') || $add-query-params
-                    else $svnurl || '/' || $files/@name
+               else 
+                if($files/local-name() eq 'directory')
+                then $control:siteurl || '?svnurl=' || $svnurl  || '&amp;repopath=' || $repopath || '/' || $files/@name 
+                  || '&amp;from='[request:parameter('from')] || request:parameter('from') || $add-query-params
+                else $svnurl || '/' || $files/@name
   return
     if(    not($dirs-only and $files/local-name() eq 'file')
        or  not(matches($files/@name, ($filename-filter-regex, '')[1])))
