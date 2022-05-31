@@ -74,7 +74,6 @@ function cancelRenameForm(svnurl, file, controlPath) {
 function addEventToSummary(summary) {
   var details = summary.parentElement;
   summary.addEventListener("click", function(event) {
-    console.log('click');
   	// first a guard clause: don't do anything 
   	// if we're already in the middle of closing the menu.
   	if (details.classList.contains("summary-closing")) {
@@ -97,13 +96,11 @@ function addEventToSummary(summary) {
     // when user hovers over the summary element, 
     // add the open attribute to the details element
     summary.addEventListener("mouseenter", event => {
-      console.log('mouseenter');
     	details.setAttribute("open", "open");
     });
 }
 function addEventToDetail(detail) {
   detail.addEventListener("mouseleave", event => {
-      console.log('mouseleave');
     	detail.classList.add("summary-closing");
     	setTimeout(function() {
     		detail.removeAttribute("open");

@@ -119,7 +119,7 @@ function control-actions:access( $svnurl as xs:string, $file as xs:string, $repo
 </html>
 };
 (:
- : deletes quietly a file
+ : quietly deletes a file
  :)
 declare
   %rest:path("/control/delete")
@@ -127,9 +127,9 @@ declare
   %rest:query-param("file", "{$file}")
   %output:method('html')
 function control-actions:delete( $svnurl as xs:string, $file as xs:string ) {
-if(svn:delete($svnurl, $control:svnusername, $control:svnpassword, $file, true(), 'deleted by ' || $control:svnusername )/local-name() ne 'errors' )
-then web:redirect('/control?svnurl=' || $svnurl )
-else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-delete-error', $control:locale )) || '?msgtype=error' )
+  if(svn:delete($svnurl, $control:svnusername, $control:svnpassword, $file, true(), 'deleted by ' || $control:svnusername )/local-name() ne 'errors' )
+  then web:redirect('/control?svnurl=' || $svnurl )
+  else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-delete-error', $control:locale )) || '?msgtype=error' )
 };
 (:
  : renames a file

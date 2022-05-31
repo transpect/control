@@ -33,7 +33,7 @@ declare variable $control:dest-svnurl     := request:parameter('dest-svnurl');
 declare variable $control:svnauth         := "/etc/svn/default.authz";
 declare variable $control:default-permission
                                           := "r";
-declare variable $control:nl         := "
+declare variable $control:nl              := "
 ";
 
 declare
