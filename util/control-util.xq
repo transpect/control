@@ -50,9 +50,9 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
                                                        $repopath as xs:string?, 
                                                        $filepath as xs:string?,
                                                        $access){
-  let $selected-repo := if ($repopath = '')
-                        then replace($filepath,'/','')
-                        else tokenize($svnurl,'/')[last()],
+  let $selected-repo := if (control-util:is-svn-repo($svnurl))
+                        then tokenize($svnurl,'/')[last()]
+                        else $filepath,
       $selected-filepath := if ($repopath = '')
                             then ''
                             else $filepath,
