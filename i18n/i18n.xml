@@ -93,11 +93,11 @@
     <locale lang="en">Access</locale>
   </entry>
   <entry name="set-perm">
-    <locale lang="de">Bearbeiten der Zugriffsrecht für </locale>
+    <locale lang="de">Bearbeiten der Zugriffsrechte für </locale>
     <locale lang="en">Set Permissions for </locale>
   </entry>
   <entry name="perm-title">
-    <locale lang="de">Zugriffsrecht für </locale>
+    <locale lang="de">Zugriffsrechte für </locale>
     <locale lang="en">Permissions for </locale>
   </entry>
   <entry name="move">
@@ -171,6 +171,10 @@
   <entry name="createuser">
     <locale lang="de">Neue Nutzer erstellen</locale>
     <locale lang="en">Create new users</locale>
+  </entry>
+  <entry name="defaultsvnurl">
+    <locale lang="de">Standard svnurl</locale>
+    <locale lang="en">Deafult svnurl</locale>
   </entry>
   <entry name="customizeuser">
     <locale lang="de">Nutzer verwalten</locale>
