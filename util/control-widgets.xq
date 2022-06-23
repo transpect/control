@@ -493,6 +493,7 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
     </div>
     else()
 };
+
 (:
  : provides a row in the html direcory listing 
  : with the link to the parent directory

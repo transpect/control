@@ -18,8 +18,8 @@ declare variable $control:datadir         := doc('config.xml')/control:config/co
 declare variable $control:db              := doc('config.xml')/control:config/control:db;
 declare variable $control:max-upload-size := doc('config.xml')/control:config/control:max-upload-size;
 declare variable $control:access          := doc('control.xml')/control:access;
-declare variable $control:svnbase         := "/data/svn/werke";
-declare variable $control:repobase         := "/content/werke";
+declare variable $control:svnbase         := "/data/svn/hierarchy";
+declare variable $control:repobase         := "/content/hierarchy";
 declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || $control:path;
 declare variable $control:svnusername     := xs:string(doc('config.xml')/control:config/control:svnusername);
@@ -153,15 +153,17 @@ return
 declare
 %rest:path("/control/config")
 %rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("repopath", "{$repopath}")
 %output:method('html')
-function control:configmgmt($svnurl as xs:string?) as element(html) {
+function control:configmgmt($svnurl as xs:string, $repopath as xs:string?) as element(html) {
 let $credentials := request:header("Authorization")
                     => substring(6)
                     => xs:base64Binary()
                     => bin:decode-string()
                     => tokenize(':'),
     $username := $credentials[1],
-    $password := $credentials[2]
+    $password := $credentials[2],
+    $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
 return
   <html>
     <head>
@@ -169,6 +171,8 @@ return
     </head>
     <body>
       {control-widgets:get-page-header( ),
+      control-util:create-path-index($svnurl, $repopath, $auth, 'root', $svnurl || $repopath,''),
+      
        if (control-util:is-admin($username))
        then ('session-id: '||session:id(),
              control-widgets:create-new-user($svnurl),

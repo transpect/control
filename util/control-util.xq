@@ -46,6 +46,33 @@ declare function control-util:is-svn-repo( $svnurl as xs:string ) as xs:boolean 
   return count($children[@name = ("locks", "hooks", "db")]) ge 3
 };
 
+declare function control-util:create-path-index($svnurl as xs:string, $repopath as xs:string?, 
+                                                $auth as map(*), $type as xs:string, 
+                                                $virtual-path as xs:string,
+                                                $mount-point as xs:string?){
+  element {$type} {
+    attribute svnurl {$svnurl},
+    attribute repopath {$repopath},
+    attribute virtual-path {$virtual-path},
+    if ($type = 'file') then attribute mount-point {$mount-point},
+    for $d in svn:look($svnurl,$repopath,$auth, false())/*
+    let $sub := control-util:create-path-index($svnurl,
+                                               concat($repopath,'/',$d/@name),
+                                               $auth, 
+                                               $d/local-name(), 
+                                               $virtual-path || '/' || $d/@name,
+                                               $mount-point)
+    return $sub,
+    for $e in control-util:parse-externals-property(svn:propget( 'http://127.0.0.1' || replace($svnurl,'/data/svn','/content') || $repopath, $auth, 'svn:externals', 'HEAD'))
+    return 
+      <external path="{$e/@url}" mount-point="{$svnurl || $repopath || '/' || $e/@mount}" svnurl="{$svnurl}" repopath="{$svnurl}">
+        {for $f in svn:look(xs:string($e/@url),'/',$auth, false())/*
+         let $subf := control-util:create-path-index(xs:string($e/@url),concat('/',$f/@name),$auth,$f/local-name(), $virtual-path || '/' || $e/@mount ||  '/' || $f/@name,$svnurl || $repopath || '/' || $e/@mount)
+         return $subf}
+      </external>
+  }
+};
+
 declare function control-util:get-permissions-for-file($svnurl as xs:string, 
                                                        $repopath as xs:string?, 
                                                        $filepath as xs:string?,
