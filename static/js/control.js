@@ -10,7 +10,7 @@ function hide(id) {
 function createRenameForm(svnurl, file, controlPath) {
   const id = 'direntry-' + file
   const form = '<div id="rename-form-wrapper">'
-    + '  <form id="rename-form" action="/control/rename" method="POST">'
+    + '  <form id="rename-form" action="control/rename" method="POST">'
     + '    <input type="text" value="'+ file + '" id="target" name="target"/>'
     + '    <input type="hidden" name="svnurl" value="' + svnurl + '"/>'
     + '    <input type="hidden" name="file" value="' + file + '"/>'

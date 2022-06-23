@@ -78,6 +78,14 @@ declare
   %rest:query-param("file", "{$file}")
   %output:method('html')
 function control-actions:copy( $svnurl as xs:string, $repopath as xs:string?, $file as xs:string ) {
+  let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+      $username := $credentials[1],
+      $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
+  return
 <html>
   <head>
     {control-widgets:get-html-head( )}
@@ -89,7 +97,7 @@ function control-actions:copy( $svnurl as xs:string, $repopath as xs:string?, $f
      else ()}
     <main>
       {control:get-message( $control:msg, $control:msgtype ),
-       control-widgets:get-dir-list( $svnurl, $repopath, $control:path || '/../',control-util:is-svn-repo($svnurl))}
+       control-widgets:get-dir-list( $svnurl, $repopath, $control:path || '/../',control-util:is-svn-repo($svnurl), $auth)}
     </main>
     {control-widgets:get-page-footer()}
   </body>
@@ -119,30 +127,59 @@ function control-actions:access( $svnurl as xs:string, $file as xs:string, $repo
 </html>
 };
 (:
- : quietly deletes a file
+ : quietly deletes a file -> needs url http://localhost:9081/content/werke/01991/images/
  :)
 declare
   %rest:path("/control/delete")
   %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("repopath", "{$repopath}")
   %rest:query-param("file", "{$file}")
   %output:method('html')
-function control-actions:delete( $svnurl as xs:string, $file as xs:string ) {
-  if(svn:delete($svnurl, $control:svnusername, $control:svnpassword, $file, true(), 'deleted by ' || $control:svnusername )/local-name() ne 'errors' )
-  then web:redirect('/control?svnurl=' || $svnurl )
-  else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-delete-error', $control:locale )) || '?msgtype=error' )
+function control-actions:delete( $svnurl as xs:string, $repopath as xs:string, $file as xs:string ) {
+let 
+    $auth := map {"username": $control:svnusername, 
+                  'password': $control:svnpassword},
+    $resu := svn:delete(concat('http://127.0.0.1/', control-util:create-download-link($svnurl,$repopath, '')), $auth, $file, true(), 'deleted by me')
+return <html>
+<head>Deleted; Go Back In Browser and Reload</head>
+<body>
+</body></html>
 };
+
+declare
+  %rest:path("/control/delete-not-working")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("repopath", "{$repopath}")
+  %rest:query-param("file", "{$file}")
+  %output:method('html')
+function control-actions:delete-not-working( $svnurl as xs:string, $repopath as xs:string, $file as xs:string ) {
+let 
+    $auth := map {"username": xs:string(doc('../config.xml')/control:config/control:svnusername), 
+                  'password': xs:string(doc('../config.xml')/control:config/control:svnpassword)},
+    $resu := svn:delete(concat('http://127.0.0.1/', control-util:create-download-link($svnurl,$repopath, '')), $auth, $file, true(), 'deleted by me')
+return <html>
+<head>{control-widgets:get-html-head( )}</head>
+<body>
+</body></html>
+};
+
 (:
  : renames a file
  :)
 declare
   %rest:POST
-  %rest:path("/control/rename")
+  %rest:path("/control/rename") 
   %rest:form-param("svnurl", "{$svnurl}")
+  %rest:form-param("repopath", "{$repopath}")
   %rest:form-param("file", "{$file}")
   %rest:form-param("target", "{$target}")
   %output:method('html')
-function control-actions:rename( $svnurl as xs:string, $file as xs:string, $target as xs:string ) {
-if(svn:move($svnurl, $control:svnusername, $control:svnpassword, $file, $target, 'renamed by' || $control:svnusername )/local-name() ne 'errors' )
-then web:redirect('/control?svnurl=' || $svnurl )
-else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-rename-error', $control:locale )) || '?msgtype=error' )
+function control-actions:rename( $svnurl as xs:string, $repopath as xs:string?, $file as xs:string, $target as xs:string ) {
+let $auth := map {"username": xs:string(doc('../config.xml')/control:config/control:svnusername), 
+                  'password': xs:string(doc('../config.xml')/control:config/control:svnpassword)},
+    $resu := svn:move(concat('http://127.0.0.1/', control-util:create-download-link($svnurl,$repopath, '')), $auth, $file, $target, 'renamed by' || $control:svnusername )
+return <html>
+<head>Renamed; Go Back In Browser</head>
+<body>
+</body></html>
 };

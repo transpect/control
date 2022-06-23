@@ -58,12 +58,15 @@ return
     </div>
   </header>
 };
-declare function control-widgets:get-svnhome-button( $svnurl as xs:string, $control-dir as xs:string ) as element(div){
+declare function control-widgets:get-svnhome-button( $svnurl as xs:string, $control-dir as xs:string, $auth as map(*) ) as element(div){
   <div class="home">
-    <a href="{concat($control-dir,
+    <a href="{(:concat($control-dir,
                      '?svnurl=',
-                     $control:svnbase
-                              )}">
+                     $control:svnbase):)
+               concat($control-dir,
+               '?svnurl=',
+               svn:info($svnurl, $auth)/*:param[@name eq 'root-url']/@value)
+              }">
       <button class="home action btn">
         <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/home.svg'}" alt="home"/>
       </button>
@@ -82,7 +85,7 @@ declare function control-widgets:get-back-to-svndir-button( $svnurl as xs:string
 (:
  : get file action dropdown button
  :)
-declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $repopath as xs:string?, $file as attribute(*) ) as element(details){
+declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $repopath as xs:string?, $file as attribute(*)? ) as element(details){
   <details class="file action dropdown">
     <summary class="btn">
       {control-i18n:localize('actions', $control:locale)}<span class="spacer"/>▼
@@ -114,7 +117,10 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
             <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
           </li>,
           <li>
-            <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;action=delete&amp;file=' || $file }">{control-i18n:localize('delete', $control:locale)}</a>
+            <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;file=' || $file || '&amp;action=delete'}">{control-i18n:localize('delete', $control:locale)}</a>
+          </li>,
+          <li>
+            <a class="btn" href="{$control:path || '/delete-not-working?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;file=' || $file || '&amp;action=delete'}">Löschen - kaputt</a>
           </li>,
           if (control-util:is-file($file))
           then (<li>
@@ -215,13 +221,13 @@ declare function control-widgets:get-choose-directory-button( $svnurl as xs:stri
 (:
  : returns a html directory listing
 :)
-declare function control-widgets:get-dir-list( $svnurl as xs:string, $repopath as xs:string?, $control-dir as xs:string, $is-svn as xs:boolean) as element(div) {
+declare function control-widgets:get-dir-list( $svnurl as xs:string, $repopath as xs:string?, $control-dir as xs:string, $is-svn as xs:boolean, $auth as map(*)) as element(div) {
   <div class="directory-list-wrapper">
-  {control-widgets:get-dir-menu( $svnurl, $repopath, $control-dir )}
+  {control-widgets:get-dir-menu( $svnurl, $repopath, $control-dir, $auth )}
     <div class="directory-list table">
       <div class="table-body">
-        {if ($is-svn or $repopath) then control-widgets:list-admin-dir-entries( $svnurl,if ($repopath != '') then $repopath else "", $control-dir, map{'show-externals': false()} )
-                      else control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': false()}, $repopath )}
+        {if ($is-svn or $repopath) then control-widgets:list-admin-dir-entries( $svnurl,if ($repopath != '') then $repopath else "", $control-dir, map{'show-externals': true()} )
+                      else control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': true()}, $repopath )}
       </div>
     </div>
   </div>
@@ -294,10 +300,10 @@ declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control
 (:
  : get dir menu
  :)
-declare function control-widgets:get-dir-menu( $svnurl as xs:string, $repopath as xs:string?, $control-dir as xs:string ) {
+declare function control-widgets:get-dir-menu( $svnurl as xs:string, $repopath as xs:string?, $control-dir as xs:string, $auth as map(*) ) {
   <div class="dir-menu">
     <div class="dir-menu-left">
-      {control-widgets:get-svnhome-button( $svnurl, $control-dir )}
+      {control-widgets:get-svnhome-button( $svnurl, $control-dir, $auth )}
       <div class="path">{tokenize( string-join(($svnurl,$repopath), '/'),'/')[last()]}&#xa0;/ </div>
       {control-widgets:create-dir-form( $svnurl, $control-dir )}
     </div>
@@ -344,21 +350,24 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
   return
   for $files in (
-    svn:list( $svnurl, $control:svnusername, $control:svnpassword, false())/*,
+    svn:list( $svnurl, $auth, true())/*,
     if ($show-externals) then
-      control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))
+      control-util:parse-externals-property(svn:propget('http://127.0.0.1' || $svnurl || $repopath, $auth, 'svn:externals', 'HEAD'))
     else ()
   )
   order by lower-case( $files/(@name | @mount) )
   order by $files/local-name()
-  let $href := if ($files/self::external)
+  let $from-expression := if ($repopath)
+                         then '&amp;fromsvnurl=' || $svnurl || '&amp;fromrepopath=' || $repopath
+                         else '&amp;fromsvnurl=' || $svnurl,
+      $href := if ($files/self::external)
                then 
                  if (starts-with($files/@url, 'https://github.com/'))
                  then replace($files/@url, '/[^/]+/?$', '/')
-                 else $control:siteurl || '?svnurl=' || $files/@url || '&amp;from=' || $svnurl || $add-query-params
+                 else $control:siteurl || '?svnurl=' || $files/@url || $from-expression || $add-query-params
                else if($files/local-name() eq 'directory')
                     then $control:siteurl || '?svnurl=' || replace($svnurl,'/$','') || '/' || $files/@name 
-                      || '&amp;from='[request:parameter('from')] || request:parameter('from') || $add-query-params
+                      || $from-expression|| $add-query-params
                     else $svnurl || '/' || $files/@name
   return
     if(    not($dirs-only and $files/local-name() eq 'file')
@@ -380,6 +389,12 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                )}" alt="" class="file-icon"/>
         </a>
       </div>
+      <div>
+      {svn:list( $svnurl, $auth, true())/*,
+    if ($show-externals) then
+      control-util:parse-externals-property(svn:propget( 'http://127.0.0.1' || $svnurl || $repopath, $auth, 'svn:externals', 'HEAD'))
+    else ()}
+      </div>
       <div class="name table-cell">
         <a href="{$href}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a></div>
       <div class="author table-cell">{xs:string( $files/@author )}</div>
@@ -387,8 +402,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>
       <div class="size table-cell">{$files/@size[$files/local-name() eq 'file']/concat(., '&#x202f;KB')}</div>
       <div>{svn:info($svnurl,
-                     $control:svnusername, 
-                     $control:svnpassword)/*:param[@name eq 'root-url']/@value
+                     $auth)/*:param[@name eq 'root-url']/@value
                     }</div>
       <div>{svn:look($svnurl,
                      ',/',
@@ -398,7 +412,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                                       then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], '', $files/(@name | @mount) ) 
                                       else ""}</div>
     </div> 
-    else()
+    else ()
 };
 (:
  : provide directory listing for local repo
@@ -421,22 +435,30 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
   return
   for $files in (
-    svn:look( $svnurl,$repopath, $auth, false())/*,
-    if ($show-externals) then
-      control-util:parse-externals-property(svn:propget( $svnurl, $control:svnusername, $control:svnpassword, 'svn:externals', 'HEAD'))
-    else ()
+    (:if (not(matches($svnurl, '^http')))
+    then 
+      svn:list( $svnurl, $auth, false())/*,
+      if ($show-externals) then
+        control-util:parse-externals-property(svn:propget( $svnurl, $auth, 'svn:externals', 'HEAD'))
+    else:)
+      svn:look( $svnurl,$repopath, $auth, false())/*,
+      if ($show-externals) then
+        control-util:parse-externals-property(svn:propget( 'http://127.0.0.1' || replace($svnurl,'/data/svn','/content') || $repopath, $auth, 'svn:externals', 'HEAD'))
   )
   order by lower-case( $files/(@name | @mount) )
   order by $files/local-name()
-  let $href := if ($files/self::external)
+  let $from-expression := if ($repopath)
+                         then '&amp;fromsvnurl=' || $svnurl || '&amp;fromrepopath=' || $repopath
+                         else '&amp;fromsvnurl=' || $svnurl,
+      $href := if ($files/self::external)
                then 
                  if (starts-with($files/@url, 'https://github.com/'))
                  then replace($files/@url, '/[^/]+/?$', '/')
-                 else $control:siteurl || '?svnurl=' || $files/@url || '&amp;from=' || $svnurl || $add-query-params
+                 else $control:siteurl || '?svnurl=' || $files/@url || $from-expression || $add-query-params
                else 
                 if($files/local-name() eq 'directory')
                 then $control:siteurl || '?svnurl=' || $svnurl  || '&amp;repopath=' || $repopath || '/' || $files/@name 
-                  || '&amp;from='[request:parameter('from')] || request:parameter('from') || $add-query-params
+                  || $from-expression || $add-query-params
                 else $svnurl || '/' || $files/@name
   return
     if(    not($dirs-only and $files/local-name() eq 'file')
@@ -459,7 +481,8 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
         </a>
       </div>
       <div class="name table-cell">
-        <a href="{$href}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a></div>
+        <a href="{$href}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a>
+        {$files}</div>
       <div class="author table-cell">{xs:string( $files/@author )}</div>
       <div class="date table-cell">{xs:string( $files/@date )}</div>
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>
@@ -467,7 +490,7 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
       <div class="action table-cell">{if (control-util:get-rights($username, xs:string($files/@name)) = "write") 
                                       then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $repopath, $files/(@name | @mount) ) 
                                       else ""}</div>
-    </div> 
+    </div>
     else()
 };
 (:
@@ -477,17 +500,22 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
 declare function control-widgets:get-dir-parent( $svnurl as xs:string, $control-dir as xs:string, $repopath as xs:string? ) as element(div )* {
   let $new-svnurl := if ($repopath!= '') then $svnurl else replace($svnurl,'/?[^/]+/?$',''),
       $new-repopath := if ($repopath!= '') then replace($repopath,'/?[^/]+/?$','') else '',
+      $auth := map{'username':$control:svnusername,'cert-path':'', 'password': $control:svnpassword},
       $path := (request:parameter('from'),
-                  svn:list(
-                    control-util:path-parent-dir( $svnurl ), 
-                    $control:svnusername, $control:svnpassword, false()
-                  )/self::c:files/@*:base)[1]
+                svn:list(
+                  control-util:path-parent-dir( $svnurl ), 
+                  $auth, false()
+                )/self::c:files/@*:base)[1]
   return 
     <div class="table-row directory-entry">
       <div class="icon table-cell"/>
       <div class="name parentdir table-cell">
-        <a href="{$control-dir || '?svnurl=' || $new-svnurl 
-        || (if ($new-repopath != '') then '&amp;repopath=' || $new-repopath else '')}">{if (request:parameter('from') and $path/position() = 1) then '←' else '..'}</a>
+        <a href="{$control-dir || '?svnurl=' || $new-svnurl
+        || (if ($new-repopath != '') 
+            then '&amp;repopath=' || $new-repopath 
+            else '')}">{if (request:parameter('from') eq $path) 
+                        then '←' 
+                        else '..'}</a>
       </div>
       <div class="author table-cell"/>
       <div class="date table-cell"/>
@@ -527,6 +555,10 @@ declare function control-widgets:create-new-user($svnurl as xs:string) as elemen
         <div class="form">
           <label for="newpassword" class="leftlabel">{concat(control-i18n:localize('initpw', $control:locale),':')}</label>
           <input type="password" id="newpassword" name="newpassword" autocomplete="new-password" pattern="....+" title="Bitte geben Sie mehr als 3 Zeichen ein."/>
+        </div>
+        <div class="form">
+          <label for="defaultsvnurl" class="leftlabel">{concat(control-i18n:localize('defaultsvnurl', $control:locale),':')}</label>
+          <input type="text" id="defaultsvnurl" name="defaultsvnurl" autocomplete="new-password"/>
         </div>
         <br/>
         <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>

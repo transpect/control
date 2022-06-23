@@ -87,7 +87,7 @@ function control-util:or($bools as xs:boolean*) as xs:boolean{
 };
 
 declare 
-function control-util:is-file($file as xs:string) as xs:boolean{
+function control-util:is-file($file as xs:string?) as xs:boolean{
   matches($file,'\.')
 };
 
@@ -157,6 +157,9 @@ let  $user := $control:access//*:users/*:user[*:name=$username],
 declare function control-util:normalize-repo-url( $url as xs:string ) as xs:string {
   replace($url, '\p{P}', '_')
 };
+declare function control-util:get-defaultsvnurl-from-user($username as xs:string) as xs:string?{
+  $control:access//*:rels[*:user = $username][*:defaultsvnurl]/*:defaultsvnurl
+};
 declare function control-util:get-checkout-dir($svnusername as xs:string, $svnurl as xs:string, $svnpassword as xs:string) as xs:string {
   let $svninfo := svn:info($svnurl, $svnusername, $svnpassword)
   let $repo := control-util:normalize-repo-url($svninfo/*:param[@name eq 'root-url']/@value)
@@ -172,7 +175,7 @@ declare function control-util:parse-externals-property($prop as element(*)) as e
         $url-plus-rev := $tokens[matches(., '^https?:')],
         $mount as xs:string* := $tokens[not(matches(., '^https?:'))],
         $rev as xs:string* := ($url-plus-rev[contains(., '@')] => tokenize('@'))[last()],
-        $url := replace($url-plus-rev, '^(.+)(@.*)?$', '$1')
+        $url := replace(replace($url-plus-rev, '^(.+)(@.*)?$', '$1'),'http://localhost:9081/content','/data/svn')
     return (attribute url { $url },
             if(exists($rev)) then attribute rev { $rev } else (),
             attribute mount { $mount })

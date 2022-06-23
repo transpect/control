@@ -72,7 +72,7 @@ function control-forms:new-file( $svnurl as xs:string ) {
         <div class="upload-form">
           <dir class="dir-menu">
             <div class="dir-menu-left">
-                {control-widgets:get-svnhome-button( $svnurl, $control:path || '/..' ),
+                {(:control-widgets:get-svnhome-button( $svnurl, $control:path || '/..' ),:)
                  control-widgets:get-back-to-svndir-button($svnurl, $control:path || '/..' )}
               <div class="path">{tokenize( $svnurl, '/')[last()]}</div>
                 {control-widgets:create-dir-form( $svnurl, $control:path || '/../' )}

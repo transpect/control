@@ -22,8 +22,8 @@ declare variable $control:svnbase         := "/data/svn/werke";
 declare variable $control:repobase         := "/content/werke";
 declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || $control:path;
-declare variable $control:svnusername     := (request:parameter('svnusername'), xs:string(doc('config.xml')/control:config/control:svnusername))[1];
-declare variable $control:svnpassword     := (request:parameter('svnpassword'), xs:string(doc('config.xml')/control:config/control:svnpassword))[1];
+declare variable $control:svnusername     := xs:string(doc('config.xml')/control:config/control:svnusername);
+declare variable $control:svnpassword     := xs:string(doc('config.xml')/control:config/control:svnpassword);
 declare variable $control:svnurl          := (request:parameter('svnurl'), xs:string(doc('config.xml')/control:config/control:svnurl))[1];
 declare variable $control:msg             := request:parameter('msg');
 declare variable $control:msgtype         := request:parameter('msgtype');
@@ -42,12 +42,20 @@ declare
 %rest:query-param("repopath", "{$repopath}")
 %output:method('html')
 function control:control($svnurl as xs:string?, $repopath as xs:string?) as element() {
-  control:main( $svnurl, $repopath )
+  let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+       $username := $credentials[1],
+       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
+  return control:main( $svnurl, $repopath ,$auth)
 };
+
 (:
  : this is where the "fun" starts...
  :)
-declare function control:main( $svnurl as xs:string, $repopath as xs:string?) as element(html) {
+declare function control:main( $svnurl as xs:string, $repopath as xs:string?, $auth as map(*)) as element(html) {
   <html>
     <head>
       {control-widgets:get-html-head( )}
@@ -61,7 +69,7 @@ declare function control:main( $svnurl as xs:string, $repopath as xs:string?) as
         {
          control:get-message( $control:msg, $control:msgtype ),
          if(normalize-space( $svnurl ))
-         then control-widgets:get-dir-list( $svnurl, $repopath, $control:path, control-util:is-svn-repo($svnurl))
+         then control-widgets:get-dir-list( $svnurl, $repopath, $control:path, control-util:is-svn-repo($svnurl), $auth)
          else 'URL parameter empty!'}
       </main>
       {control-widgets:get-page-footer()}
@@ -162,7 +170,8 @@ return
     <body>
       {control-widgets:get-page-header( ),
        if (control-util:is-admin($username))
-       then (control-widgets:create-new-user($svnurl),
+       then ('session-id: '||session:id(),
+             control-widgets:create-new-user($svnurl),
              control-widgets:customize-users($svnurl),
              control-widgets:remove-users($svnurl),
              control-widgets:create-new-group($svnurl),
@@ -570,15 +579,19 @@ return
 (:
  : create new user
  :)
-declare function control:createuser-bg($newusername as xs:string, $newpassword as xs:string) {
-let $callres := proc:execute('htpasswd', ('-b', '/etc/svn/default.htpasswd', $newusername, $newpassword)),
-    $fileupdate := file:write("basex/webapp/control/control.xml",
-          let $file := doc("control.xml")
-          return if (not($file//control:users/control:user[control:name = $newusername]))
-                 then $file update insert node element user {element name {$newusername}} into .//*:users
-                 else $file
-        )
-return $callres
+declare function control:createuser-bg($newusername as xs:string, $newpassword as xs:string, $defaultsvnurl as xs:string?) {
+  let $callres := proc:execute('htpasswd', ('-b', '/etc/svn/default.htpasswd', $newusername, $newpassword)),
+      $fileupdate := file:write("basex/webapp/control/control.xml",
+                     let $file := doc("control.xml")
+                     return if (not($file//control:users/control:user[control:name = $newusername]))
+                            then if ($defaultsvnurl)
+                                 then $file update {insert node element user {element name {$newusername}} into .//*:users}
+                                            update {insert node element rel  {element user {$newusername},
+                                                                              element svnurl {$defaultsvnurl}} into .//*:rels}
+                                 else $file update insert node element user {element name {$newusername}} into .//*:users
+                            else $file
+                      )
+  return $callres
 };
 (:
  : create new user
@@ -597,12 +610,13 @@ let $credentials := request:header("Authorization")
     $password := $credentials[2],
     $newusername := request:parameter("newusername"),
     $newpassword := request:parameter("newpassword"),
+    $defaultsvnurl := request:parameter("defaultsvnurl"),
 
     (: Checks if the user is an admin ~ :)
     $result :=
       if (control-util:is-admin($username))
       then
-        control:createuser-bg($newusername, $newpassword)
+        control:createuser-bg($newusername, $newpassword, $defaultsvnurl)
       else
         element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=
@@ -814,11 +828,11 @@ concat('[groups]
       '[/]',
       $control:nl,
       '* = ',$control:default-permission,$control:nl,
+      '@admin = rw',$control:nl,
       string-join(
         for $repo in file:list($control:svnbase) (:repos:)
         return 
           concat('[', replace($repo,'/',''),':/]',$control:nl,
-          '@admin = rw',$control:nl,
           string-join(
             for $group in $access//control:groups/control:group (:groups:)
             let $permission := control-util:get-permission-for-group($group/control:name, replace($repo,'/',''), $access)
