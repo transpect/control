@@ -96,6 +96,22 @@
     <locale lang="de">Bearbeiten der Zugriffsrechte für </locale>
     <locale lang="en">Set Permissions for </locale>
   </entry>
+  <entry name="rebuildindex">
+    <locale lang="de">Index neu erstellen</locale>
+    <locale lang="en">Rebuild Index</locale>
+  </entry>
+  <entry name="rebuildindexbtn">
+    <locale lang="de">Neu erstellen</locale>
+    <locale lang="en">Rebuild</locale>
+  </entry>
+  <entry name="defaultsvnurl">
+    <locale lang="de">Standard svnurl</locale>
+    <locale lang="en">Standard svnurl</locale>
+  </entry>
+  <entry name="setdefaultsvnurl">
+    <locale lang="de">Standard svnurl setzen</locale>
+    <locale lang="en">Set Standard svnurl</locale>
+  </entry>
   <entry name="perm-title">
     <locale lang="de">Zugriffsrechte für </locale>
     <locale lang="en">Permissions for </locale>
@@ -171,10 +187,6 @@
   <entry name="createuser">
     <locale lang="de">Neue Nutzer erstellen</locale>
     <locale lang="en">Create new users</locale>
-  </entry>
-  <entry name="defaultsvnurl">
-    <locale lang="de">Standard svnurl</locale>
-    <locale lang="en">Deafult svnurl</locale>
   </entry>
   <entry name="customizeuser">
     <locale lang="de">Nutzer verwalten</locale>

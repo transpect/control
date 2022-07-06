@@ -37,7 +37,7 @@ return
           <img src="{ $control:siteurl || '/static/icons/transpect.svg'}" alt="transpect logo"/>
         </a>
       </div>
-      <h1><a href="{$control:siteurl ||  '?svnurl=' || $control:svnbase}"><span class="thin">transpect</span>control</a></h1>
+      <h1><a href="{$control:siteurl ||  '?svnurl=' || $control:svnbasehierarchy}"><span class="thin">transpect</span>control</a></h1>
     </div>
     <div class="nav-wrapper">
       <nav class="nav">
@@ -80,6 +80,19 @@ declare function control-widgets:get-back-to-svndir-button( $svnurl as xs:string
         <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/chevron-left.svg'}" alt="back"/>
       </button>
     </a>
+  </div>
+};
+
+declare function control-widgets:rebuild-index($svnurl as xs:string,
+                                               $repopath as xs:string?, 
+                                               $name as xs:string) as element(div){
+  <div class="adminmgmt">
+    <h2>{control-i18n:localize('rebuildindex', $control:locale)}</h2>
+    <button class="btn ok" >
+      <a href="{$control:siteurl}/config/rebuildindex?svnurl={$svnurl}&amp;repopath={$repopath}&amp;name={$name}">
+        {control-i18n:localize('rebuildindexbtn', $control:locale)}
+      </a>
+    </button>
   </div>
 };
 (:
@@ -586,6 +599,24 @@ declare function control-widgets:get-pw-change( $svnurl as xs:string ) as elemen
         <div class="form">
           <label for="new-pwd-re" class="leftlabel">{concat(control-i18n:localize('newpwre', $control:locale),':')}</label>
           <input type="password" id="new-pwd-re" name="newpwre" autocomplete="new-password" pattern="....+" title="{control-i18n:localize('pwregextip', $control:locale)}"/>
+        </div>
+        <br/>
+        <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
+      </div>
+    </form>
+  </div>
+};
+(:
+ : returns a form for setting the default svnurl
+ :)
+declare function control-widgets:get-default-svnurl( $svnurl as xs:string ) as element(div) {
+  <div class="adminmgmt">
+    <h2>{control-i18n:localize('setdefaultsvnurl', $control:locale)}</h2>
+    <form action="{$control:siteurl}/user/setdefaultsvnurl?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <div class="setdefaultsvnurl">
+        <div class="form">
+          <label for="defaultsvnurl" class="leftlabel">{concat(control-i18n:localize('defaultsvnurl', $control:locale),':')}</label>
+          <input type="text" id="defaultsvnurl" name="defaultsvnurl" pattern=".+" autocomplete="new-password"/>
         </div>
         <br/>
         <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>

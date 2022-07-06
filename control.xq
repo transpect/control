@@ -18,8 +18,10 @@ declare variable $control:datadir         := doc('config.xml')/control:config/co
 declare variable $control:db              := doc('config.xml')/control:config/control:db;
 declare variable $control:max-upload-size := doc('config.xml')/control:config/control:max-upload-size;
 declare variable $control:access          := doc('control.xml')/control:access;
-declare variable $control:svnbase         := "/data/svn/hierarchy";
-declare variable $control:repobase         := "/content/hierarchy";
+declare variable $control:index           := doc('index.xml')/root;
+declare variable $control:svnbasehierarchy:= "/data/svn/hierarchy";
+declare variable $control:svnbasewerke    := "/data/svn/werke";
+declare variable $control:repobase        := "/content/hierarchy";
 declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || $control:path;
 declare variable $control:svnusername     := xs:string(doc('config.xml')/control:config/control:svnusername);
@@ -41,6 +43,7 @@ declare
 %rest:query-param("svnurl", "{$svnurl}")
 %rest:query-param("repopath", "{$repopath}")
 %output:method('html')
+%output:version('5.0')
 function control:control($svnurl as xs:string?, $repopath as xs:string?) as element() {
   let $credentials := request:header("Authorization")
                     => substring(6)
@@ -49,6 +52,7 @@ function control:control($svnurl as xs:string?, $repopath as xs:string?) as elem
                     => tokenize(':'),
        $username := $credentials[1],
        $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
+
   return control:main( $svnurl, $repopath ,$auth)
 };
 
@@ -128,6 +132,7 @@ declare
 %rest:path("/control/user")
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
+%output:version('5.0')
 function control:usermgmt($svnurl as xs:string?) as element(html) {
 let $credentials := request:header("Authorization")
                     => substring(6)
@@ -143,7 +148,8 @@ return
     </head>
     <body>
       {control-widgets:get-page-header( ),
-       control-widgets:get-pw-change($svnurl)}
+       control-widgets:get-pw-change($svnurl),
+       control-widgets:get-default-svnurl($svnurl)}
     </body>
   </html>
 };
@@ -155,6 +161,7 @@ declare
 %rest:query-param("svnurl", "{$svnurl}")
 %rest:query-param("repopath", "{$repopath}")
 %output:method('html')
+%output:version('5.0')
 function control:configmgmt($svnurl as xs:string, $repopath as xs:string?) as element(html) {
 let $credentials := request:header("Authorization")
                     => substring(6)
@@ -167,20 +174,20 @@ let $credentials := request:header("Authorization")
 return
   <html>
     <head>
-      {control-widgets:get-html-head()}
+      {control-widgets:get-html-head()(:,
+      control-util:create-path-index('/data/svn/hierarchy', '/', 'root', $auth, 'root', $svnurl || $repopath,''):)}
     </head>
     <body>
       {control-widgets:get-page-header( ),
-      control-util:create-path-index($svnurl, $repopath, $auth, 'root', $svnurl || $repopath,''),
-      
        if (control-util:is-admin($username))
-       then ('session-id: '||session:id(),
-             control-widgets:create-new-user($svnurl),
+       then (control-widgets:create-new-user($svnurl),
              control-widgets:customize-users($svnurl),
              control-widgets:remove-users($svnurl),
              control-widgets:create-new-group($svnurl),
              control-widgets:customize-groups($svnurl),
-             control-widgets:remove-groups($svnurl))
+             control-widgets:remove-groups($svnurl),
+             control-widgets:rebuild-index($svnurl, $repopath, 'root'),
+             <div>{'session-id: '||session:id()}</div>)
        else ''}
     </body>
   </html>
@@ -192,6 +199,7 @@ declare
 %rest:path("/control/user/setpw")
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
+%output:version('5.0')
 function control:setpw($svnurl as xs:string) {
 
 let $credentials := request:header("Authorization")
@@ -253,12 +261,75 @@ return
   </html>
 };
 (:
+ : get set defaultsvnurl result
+ :)
+declare
+%rest:path("/control/user/setdefaultsvnurl")
+%rest:query-param("svnurl", "{$svnurl}")
+%output:method('html')
+%output:version('5.0')
+function control:setdefaultsvnurl($svnurl as xs:string) {
+
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2],
+    
+    $defaultsvnurl := request:parameter("defaultsvnurl"),
+    
+    $file := doc("control.xml"),
+    
+    $updated-access := $file update {delete node //control:rels/control:rel[control:user = $username][control:svnurl]}
+                             update {insert node element rel {element svnurl {$defaultsvnurl},
+                                                              element user {$username}} into .//control:rels},
+    
+    $result := if ($defaultsvnurl)
+      then
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
+      else
+        element result { element error {"deafultsvnurl is empty."}, element code {1}},
+        
+    $btntarget :=
+      if ($result/code = 0)
+      then
+        ($control:siteurl || '?svnurl=' || $svnurl)
+      else
+        ($control:siteurl || '/user?svnurl=' || $svnurl),
+    $btntext :=
+      if ($result/code = 0)
+      then
+        ("OK")
+      else
+        ("Zurück"),
+    $writetofile := control:writeauthtofile($updated-access, $svnurl)
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <div class="result">
+        {$result/error}
+        <br/>
+         <a href="{$btntarget }">
+          <input type="button" value="{$btntext}"/>
+        </a>
+      </div>
+    </body>
+  </html>
+};
+(:
  : set group result
  :)
 declare
 %rest:path("/control/user/setgroups")
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
+%output:version('5.0')
 function control:setgroups($svnurl as xs:string) {
 
 let $credentials := request:header("Authorization")
@@ -319,6 +390,7 @@ return
     </body>
   </html>
 };
+
 (:
  : delete group result
  :)
@@ -326,6 +398,7 @@ declare
 %rest:path("/control/group/delete")
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
+%output:version('5.0')
 function control:deletegroups($svnurl as xs:string) {
 
 let $credentials := request:header("Authorization")
@@ -381,7 +454,7 @@ return
   </html>
 };
 (:
- : delete group result
+ : set access result
  :)
 declare
 %rest:path("/control/group/setaccess")
@@ -389,6 +462,7 @@ declare
 %rest:query-param("repopath", "{$repopath}")
 %rest:query-param("filepath", "{$filepath}")
 %output:method('html')
+%output:version('5.0')
 function control:setaccess($svnurl as xs:string, $repopath as xs:string?, $filepath as xs:string) {
 
 let $credentials := request:header("Authorization")
@@ -456,6 +530,67 @@ return
     </body>
   </html>
 };
+
+(:
+ : rebuild index
+ :)
+declare
+%rest:path("/control/config/rebuildindex")
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("repopath", "{$repopath}")
+%rest:query-param("name", "{$name}")
+%output:method('html')
+%output:version('5.0')
+function control:rebuildindex($svnurl as xs:string, $repopath as xs:string?, $name as xs:string) {
+
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2], 
+    
+    $selected-group := request:parameter("groups"),
+    $selected-access := request:parameter("access"),
+    
+    $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
+    $result :=
+      if (control-util:is-admin($username))
+      then
+       element result { element error {"Index Rebuilt"}, element code{0}, element text{control-util:writeindextofile(control-util:create-path-index($control:svnbasehierarchy, '', $name, $auth, $name, '/data/svn/hierarchy',''))}}
+      else
+        element result { element error {"You are not an admin."}, element code {1}},
+    $btntarget :=
+      if ($result/code = 0)
+      then
+        ($control:siteurl || '/config?svnurl=' || $svnurl)
+      else
+        ($control:siteurl || '/config?svnurl=' || $svnurl),
+    $btntext :=
+      if ($result/code = 0)
+      then
+        ("OK")
+      else
+        ("Zurück")
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <div class="result">
+        {$result/error}
+        <br/>
+         <a href="{$btntarget }">
+          <input type="button" value="{$btntext}"/>
+        </a>
+      </div>
+    </body>
+  </html>
+};
+
 declare
 %rest:path("/control/group/removeaccess")
 %rest:query-param("svnurl", "{$svnurl}")
@@ -463,6 +598,7 @@ declare
 %rest:query-param("filepath", "{$filepath}")
 %rest:query-param("group", "{$group}")
 %output:method('html')
+%output:version('5.0')
 function control:removeaccess($svnurl as xs:string, $repopath as xs:string?, $filepath as xs:string, $group as xs:string) {
 
 let $credentials := request:header("Authorization")
@@ -528,6 +664,7 @@ declare
 %rest:path("/control/user/delete")
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
+%output:version('5.0')
 function control:deleteuser($svnurl as xs:string) {
 
 let $credentials := request:header("Authorization")
@@ -604,6 +741,7 @@ declare
 %rest:path("/control/user/createuser")
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
+%output:version('5.0')
 function control:createuser($svnurl as xs:string) {
 let $credentials := request:header("Authorization")
                     => substring(6)
@@ -671,6 +809,7 @@ declare
 %rest:path("/control/group/creategroup")
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
+%output:version('5.0')
 function control:creategroup($svnurl as xs:string) {
 let $credentials := request:header("Authorization")
                     => substring(6)
@@ -725,6 +864,7 @@ declare
 %rest:path("/control/group/setrepo")
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
+%output:version('5.0')
 function control:setreporegex($svnurl as xs:string) {
 
 let $credentials := request:header("Authorization")
@@ -816,48 +956,52 @@ return
   {$groupglob}
 </response>
 };
+
 declare 
 function control:writeauthtofile($access, $svnurl) {
   file:write($control:svnauth,control:writetoauthz($access, $svnurl))
 };
+
 declare
 function control:writetoauthz($access, $svnurl as xs:string) {
-concat('[groups]
-',string-join(
-  for $group in $access//control:groups/control:group (:groups:)
-  where $access//control:rels/control:rel[control:user][control:group=$group/control:name]
-  return concat($group/control:name,' = ',string-join(
-    for $rel in $access//control:rels/control:rel[control:user][control:group = $group/control:name] (:user:)
-    return $rel/*:user,', '),$control:nl)),
-      '[/]',
-      $control:nl,
-      '* = ',$control:default-permission,$control:nl,
-      '@admin = rw',$control:nl,
-      string-join(
-        for $repo in file:list($control:svnbase) (:repos:)
-        return 
-          concat('[', replace($repo,'/',''),':/]',$control:nl,
-          string-join(
-            for $group in $access//control:groups/control:group (:groups:)
-            let $permission := control-util:get-permission-for-group($group/control:name, replace($repo,'/',''), $access)
-            where $access//control:rels/control:rel[control:user][control:group = $group] (: not empty groups:)
-            return
-              if ($permission != $control:default-permission)
-              then concat('@',$group/control:name,'=',$permission,$control:nl)
-          ),$control:nl)),
-          string-join(
-            for $a in $access//control:rels/control:rel[control:repo][control:group][control:permission][control:file != '']
-            let $selected-permission := if ($a/control:permission = 'none') then ''
-                              else if ($a/control:permission = 'read') then 'r'
-                              else if ($a/control:permission = 'write') then 'rw'
-            return concat(
-                     '[',
-                     $a/control:repo,':/',
-                     $a/control:file,
-                     ']',
-                     $control:nl,
-                     concat('@',$a/control:group),' = ', $selected-permission,$control:nl
-                   )
-          )
-)
+  concat(control-util:writegroups($access),
+    $control:nl,
+    '[/]',
+    $control:nl,
+    '* = ',$control:default-permission,$control:nl,
+    '@admin = rw',$control:nl,
+    string-join(
+      for $repo in file:list($control:svnbasewerke) (:repos:)
+      return 
+        let $repo-groups := 
+          for $group in $access//control:groups/control:group (:groups:)
+          let $permission := control-util:get-permission-for-group($group/control:name, replace($repo,'/',''), $access)
+          where $access//control:rels/control:rel[control:user][control:group = $group] (: not empty groups:)
+          return element permission {element group {$group/control:name},
+                                     element permission {$permission}}
+        return if ($repo-groups[permission != ''][permission != $control:default-permission])
+               then
+                  concat('[', replace($repo,'/',''),':/]',$control:nl,
+                  string-join(
+                    for $group in $repo-groups[permission != ''] (:groups:)
+                    return
+                      if ($group/permission != $control:default-permission)
+                      then concat('@',$group/group,'=',$group/permission,$control:nl)
+                  ),$control:nl)
+    ),
+    string-join(
+      for $a in $access//control:rels/control:rel[control:repo][control:group][control:permission][control:file != '']
+      let $selected-permission := if ($a/control:permission = 'none') then ''
+                        else if ($a/control:permission = 'read') then 'r'
+                        else if ($a/control:permission = 'write') then 'rw'
+      return concat(
+               '[',
+               $a/control:repo,':/',
+               $a/control:file,
+               ']',
+               $control:nl,
+               concat('@',$a/control:group),' = ', $selected-permission,$control:nl
+             )
+    )
+    )
 };

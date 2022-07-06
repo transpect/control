@@ -46,11 +46,20 @@ declare function control-util:is-svn-repo( $svnurl as xs:string ) as xs:boolean 
   return count($children[@name = ("locks", "hooks", "db")]) ge 3
 };
 
-declare function control-util:create-path-index($svnurl as xs:string, $repopath as xs:string?, 
-                                                $auth as map(*), $type as xs:string, 
+declare 
+function control-util:writeindextofile($index) {
+  file:write("index.xml",$index)
+};
+
+declare function control-util:create-path-index($svnurl as xs:string,
+                                                $repopath as xs:string?, 
+                                                $name as xs:string?,
+                                                $auth as map(*),
+                                                $type as xs:string, 
                                                 $virtual-path as xs:string,
                                                 $mount-point as xs:string?){
   element {$type} {
+    attribute name {$name},
     attribute svnurl {$svnurl},
     attribute repopath {$repopath},
     attribute virtual-path {$virtual-path},
@@ -58,6 +67,7 @@ declare function control-util:create-path-index($svnurl as xs:string, $repopath 
     for $d in svn:look($svnurl,$repopath,$auth, false())/*
     let $sub := control-util:create-path-index($svnurl,
                                                concat($repopath,'/',$d/@name),
+                                               $d/@name,
                                                $auth, 
                                                $d/local-name(), 
                                                $virtual-path || '/' || $d/@name,
@@ -65,9 +75,14 @@ declare function control-util:create-path-index($svnurl as xs:string, $repopath 
     return $sub,
     for $e in control-util:parse-externals-property(svn:propget( 'http://127.0.0.1' || replace($svnurl,'/data/svn','/content') || $repopath, $auth, 'svn:externals', 'HEAD'))
     return 
-      <external path="{$e/@url}" mount-point="{$svnurl || $repopath || '/' || $e/@mount}" svnurl="{$svnurl}" repopath="{$svnurl}">
+      <external path="{$e/@url}" mount-point="{$svnurl || $repopath || '/' || $e/@mount}" svnurl="{$svnurl}" repopath="{$repopath}">
         {for $f in svn:look(xs:string($e/@url),'/',$auth, false())/*
-         let $subf := control-util:create-path-index(xs:string($e/@url),concat('/',$f/@name),$auth,$f/local-name(), $virtual-path || '/' || $e/@mount ||  '/' || $f/@name,$svnurl || $repopath || '/' || $e/@mount)
+         let $subf := control-util:create-path-index(xs:string($e/@url),
+                                                     concat('/',$f/@name),
+                                                     $e/@mount,
+                                                     $auth,$f/local-name(),
+                                                     $virtual-path || '/' || $e/@mount ||  '/' || $f/@name,
+                                                     $svnurl || $repopath || '/' || $e/@mount)
          return $subf}
       </external>
   }
@@ -120,7 +135,7 @@ function control-util:is-file($file as xs:string?) as xs:boolean{
 
 declare 
 function control-util:create-download-link($svnurl as xs:string, $repopath as xs:string?, $file as xs:string?) as xs:string{
-  let $result := string-join((replace($svnurl,$control:svnbase,$control:repobase),$repopath,$file),'/')
+  let $result := string-join((replace($svnurl,$control:svnbasewerke,$control:repobase),$repopath,$file),'/')
   return $result
 };
 
@@ -181,18 +196,22 @@ let  $user := $control:access//*:users/*:user[*:name=$username],
         then "write"
         else "read"
 };
+
 declare function control-util:normalize-repo-url( $url as xs:string ) as xs:string {
   replace($url, '\p{P}', '_')
 };
+
 declare function control-util:get-defaultsvnurl-from-user($username as xs:string) as xs:string?{
   $control:access//*:rels[*:user = $username][*:defaultsvnurl]/*:defaultsvnurl
 };
+
 declare function control-util:get-checkout-dir($svnusername as xs:string, $svnurl as xs:string, $svnpassword as xs:string) as xs:string {
   let $svninfo := svn:info($svnurl, $svnusername, $svnpassword)
   let $repo := control-util:normalize-repo-url($svninfo/*:param[@name eq 'root-url']/@value)
   let $path := $svninfo/*:param[@name eq 'path']/@value
   return $control:datadir || file:dir-separator() || $svnusername || file:dir-separator() || $repo || file:dir-separator() || $path
 };
+
 declare function control-util:parse-externals-property($prop as element(*)) as element(external)* {
   for $line in 
     ($prop/self::c:param-set[c:param[@name='property'][@value='svn:externals']]/c:param[@name='value']/@value
@@ -202,9 +221,19 @@ declare function control-util:parse-externals-property($prop as element(*)) as e
         $url-plus-rev := $tokens[matches(., '^https?:')],
         $mount as xs:string* := $tokens[not(matches(., '^https?:'))],
         $rev as xs:string* := ($url-plus-rev[contains(., '@')] => tokenize('@'))[last()],
-        $url := replace(replace($url-plus-rev, '^(.+)(@.*)?$', '$1'),'http://localhost:9081/content','/data/svn')
+        $url := replace(replace($url-plus-rev, '^(.+)(@.*)?$', '$1'),concat('http://localhost:',$control:port,'/content'),'/data/svn')
     return (attribute url { $url },
             if(exists($rev)) then attribute rev { $rev } else (),
             attribute mount { $mount })
   }</external>
+};
+
+declare function control-util:writegroups($access) as xs:string {
+    string-join(('[groups]',
+    for $group in $access//control:groups/control:group (:groups:)
+    where $access//control:rels/control:rel[control:user][control:group=$group/control:name]
+    return concat($group/control:name,' = ',string-join(
+      for $rel in $access//control:rels/control:rel[control:user][control:group = $group/control:name] (:user:)
+      return $rel/*:user,', ')
+    )),$control:nl)
 };
