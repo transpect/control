@@ -202,7 +202,11 @@ declare function control-util:normalize-repo-url( $url as xs:string ) as xs:stri
 };
 
 declare function control-util:get-defaultsvnurl-from-user($username as xs:string) as xs:string?{
-  $control:access//*:rels[*:user = $username][*:defaultsvnurl]/*:defaultsvnurl
+  $control:access//control:rels/control:rel[control:user = $username][control:defaultsvnurl]/control:defaultsvnurl/text()
+};
+
+declare function control-util:get-current-svnurl($username as xs:string, $svnurl as xs:string?) as xs:string {
+  ($svnurl, session:get('svnurl'), control-util:get-defaultsvnurl-from-user($username), $control:svnbasehierarchy)[. != ''][0] 
 };
 
 declare function control-util:get-checkout-dir($svnusername as xs:string, $svnurl as xs:string, $svnpassword as xs:string) as xs:string {

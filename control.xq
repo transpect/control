@@ -59,7 +59,9 @@ function control:control($svnurl as xs:string?, $repopath as xs:string?) as elem
 (:
  : this is where the "fun" starts...
  :)
-declare function control:main( $svnurl as xs:string, $repopath as xs:string?, $auth as map(*)) as element(html) {
+declare function control:main( $svnurl as xs:string?, $repopath as xs:string?, $auth as map(*)) as element(html) {
+  let $used-svnurl := control-util:get-current-svnurl(map:get($auth,'username'), $svnurl)
+  return
   <html>
     <head>
       {control-widgets:get-html-head( )}
@@ -67,13 +69,13 @@ declare function control:main( $svnurl as xs:string, $repopath as xs:string?, $a
     <body>
       {control-widgets:get-page-header( ),
        if( normalize-space($control:action) and normalize-space($control:file) )
-       then control-widgets:manage-actions( $svnurl, ($control:dest-svnurl, $svnurl)[1], $control:action, $control:file )
+       then control-widgets:manage-actions( $used-svnurl, ($control:dest-svnurl, $used-svnurl)[1], $control:action, $control:file )
        else ()}
       <main>
         {
          control:get-message( $control:msg, $control:msgtype ),
-         if(normalize-space( $svnurl ))
-         then control-widgets:get-dir-list( $svnurl, $repopath, $control:path, control-util:is-svn-repo($svnurl), $auth)
+         if(normalize-space( $used-svnurl ))
+         then control-widgets:get-dir-list( $used-svnurl, $repopath, $control:path, control-util:is-svn-repo($used-svnurl), $auth)
          else 'URL parameter empty!'}
       </main>
       {control-widgets:get-page-footer()}
@@ -265,10 +267,9 @@ return
  :)
 declare
 %rest:path("/control/user/setdefaultsvnurl")
-%rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
 %output:version('5.0')
-function control:setdefaultsvnurl($svnurl as xs:string) {
+function control:setdefaultsvnurl() {
 
 let $credentials := request:header("Authorization")
                     => substring(6)
@@ -283,7 +284,7 @@ let $credentials := request:header("Authorization")
     $file := doc("control.xml"),
     
     $updated-access := $file update {delete node //control:rels/control:rel[control:user = $username][control:svnurl]}
-                             update {insert node element rel {element svnurl {$defaultsvnurl},
+                             update {insert node element rel {element defaultsvnurl {$defaultsvnurl},
                                                               element user {$username}} into .//control:rels},
     
     $result := if ($defaultsvnurl)
@@ -295,16 +296,16 @@ let $credentials := request:header("Authorization")
     $btntarget :=
       if ($result/code = 0)
       then
-        ($control:siteurl || '?svnurl=' || $svnurl)
+        ($control:siteurl || '/user')
       else
-        ($control:siteurl || '/user?svnurl=' || $svnurl),
+        ($control:siteurl || '/user'),
     $btntext :=
       if ($result/code = 0)
       then
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access, $svnurl)
+    $writetofile := control:writeauthtofile($updated-access)
 return
   <html>
     <head>
@@ -372,7 +373,7 @@ let $credentials := request:header("Authorization")
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access, $svnurl)
+    $writetofile := control:writeauthtofile($updated-access)
 return
   <html>
     <head>
@@ -435,7 +436,7 @@ let $credentials := request:header("Authorization")
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access, $svnurl)
+    $writetofile := control:writeauthtofile($updated-access)
 return
   <html>
     <head>
@@ -512,7 +513,7 @@ let $credentials := request:header("Authorization")
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access, $svnurl)
+    $writetofile := control:writeauthtofile($updated-access)
 return
   <html>
     <head>
@@ -639,7 +640,7 @@ let $credentials := request:header("Authorization")
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access, $svnurl)
+    $writetofile := control:writeauthtofile($updated-access)
 return
   <html>
     <head>
@@ -699,7 +700,7 @@ let $credentials := request:header("Authorization")
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access, $svnurl)
+    $writetofile := control:writeauthtofile($updated-access)
 return
   <html>
     <head>
@@ -728,7 +729,7 @@ declare function control:createuser-bg($newusername as xs:string, $newpassword a
                             then if ($defaultsvnurl)
                                  then $file update {insert node element user {element name {$newusername}} into .//*:users}
                                             update {insert node element rel  {element user {$newusername},
-                                                                              element svnurl {$defaultsvnurl}} into .//*:rels}
+                                                                              element defaultsvnurl {$defaultsvnurl}} into .//*:rels}
                                  else $file update insert node element user {element name {$newusername}} into .//*:users
                             else $file
                       )
@@ -908,7 +909,7 @@ let $credentials := request:header("Authorization")
         ("OK")
       else
         ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access, $svnurl)
+    $writetofile := control:writeauthtofile($updated-access)
 return
   <html>
     <head>
@@ -958,12 +959,12 @@ return
 };
 
 declare 
-function control:writeauthtofile($access, $svnurl) {
-  file:write($control:svnauth,control:writetoauthz($access, $svnurl))
+function control:writeauthtofile($access) {
+  file:write($control:svnauth,control:writetoauthz($access))
 };
 
 declare
-function control:writetoauthz($access, $svnurl as xs:string) {
+function control:writetoauthz($access) {
   concat(control-util:writegroups($access),
     $control:nl,
     '[/]',

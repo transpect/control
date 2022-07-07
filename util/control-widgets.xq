@@ -37,7 +37,7 @@ return
           <img src="{ $control:siteurl || '/static/icons/transpect.svg'}" alt="transpect logo"/>
         </a>
       </div>
-      <h1><a href="{$control:siteurl ||  '?svnurl=' || $control:svnbasehierarchy}"><span class="thin">transpect</span>control</a></h1>
+      <h1><a href="{$control:siteurl}"><span class="thin">transpect</span>control</a></h1>
     </div>
     <div class="nav-wrapper">
       <nav class="nav">
@@ -610,13 +610,20 @@ declare function control-widgets:get-pw-change( $svnurl as xs:string ) as elemen
  : returns a form for setting the default svnurl
  :)
 declare function control-widgets:get-default-svnurl( $svnurl as xs:string ) as element(div) {
+  let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+      $username := $credentials[1]
+  return
   <div class="adminmgmt">
     <h2>{control-i18n:localize('setdefaultsvnurl', $control:locale)}</h2>
     <form action="{$control:siteurl}/user/setdefaultsvnurl?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="setdefaultsvnurl">
         <div class="form">
           <label for="defaultsvnurl" class="leftlabel">{concat(control-i18n:localize('defaultsvnurl', $control:locale),':')}</label>
-          <input type="text" id="defaultsvnurl" name="defaultsvnurl" pattern=".+" autocomplete="new-password"/>
+          <input type="text" id="defaultsvnurl" name="defaultsvnurl" pattern=".+" autocomplete="new-password" value="{control-util:get-defaultsvnurl-from-user($username)}"/>
         </div>
         <br/>
         <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
