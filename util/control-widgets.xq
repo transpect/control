@@ -52,7 +52,7 @@ return
           </li>
         </ol>
         <ol class="username">
-          <li class="nav-tab"><a href="{$control:siteurl ||  '/user?svnurl=' || $control:svnurl}">{$username}</a></li>
+          <li class="nav-tab"><a href="{$control:siteurl ||  '/user'}">{$username}</a></li>
         </ol>
       </nav>
     </div>
@@ -365,7 +365,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
   for $files in (
     svn:list( $svnurl, $auth, true())/*,
     if ($show-externals) then
-      control-util:parse-externals-property(svn:propget('http://127.0.0.1' || $svnurl || $repopath, $auth, 'svn:externals', 'HEAD'))
+      control-util:parse-externals-property(svn:propget($svnurl || $repopath, $auth, 'svn:externals', 'HEAD'))
     else ()
   )
   order by lower-case( $files/(@name | @mount) )
@@ -401,12 +401,6 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                       )
                )}" alt="" class="file-icon"/>
         </a>
-      </div>
-      <div>
-      {svn:list( $svnurl, $auth, true())/*,
-    if ($show-externals) then
-      control-util:parse-externals-property(svn:propget( 'http://127.0.0.1' || $svnurl || $repopath, $auth, 'svn:externals', 'HEAD'))
-    else ()}
       </div>
       <div class="name table-cell">
         <a href="{$href}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a></div>
@@ -456,7 +450,7 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
     else:)
       svn:look( $svnurl,$repopath, $auth, false())/*,
       if ($show-externals) then
-        control-util:parse-externals-property(svn:propget( 'http://127.0.0.1' || replace($svnurl,'/data/svn','/content') || $repopath, $auth, 'svn:externals', 'HEAD'))
+        control-util:parse-externals-property(svn:propget( $svnurl || $repopath, $auth, 'svn:externals', 'HEAD'))
   )
   order by lower-case( $files/(@name | @mount) )
   order by $files/local-name()
@@ -583,10 +577,10 @@ declare function control-widgets:create-new-user($svnurl as xs:string) as elemen
 (:
  : returns a form for changing the password
  :)
-declare function control-widgets:get-pw-change( $svnurl as xs:string ) as element(div) {
+declare function control-widgets:get-pw-change() as element(div) {
   <div class="adminmgmt">
     <h2>{control-i18n:localize('changepassword', $control:locale)}</h2>
-    <form action="{$control:siteurl}/user/setpw?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+    <form action="{$control:siteurl}/user/setpw" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="setpw">
         <div class="form">
           <label for="old-pwd" class="leftlabel">{concat(control-i18n:localize('oldpw', $control:locale),':')}</label>
@@ -609,7 +603,7 @@ declare function control-widgets:get-pw-change( $svnurl as xs:string ) as elemen
 (:
  : returns a form for setting the default svnurl
  :)
-declare function control-widgets:get-default-svnurl( $svnurl as xs:string ) as element(div) {
+declare function control-widgets:get-default-svnurl() as element(div) {
   let $credentials := request:header("Authorization")
                     => substring(6)
                     => xs:base64Binary()
@@ -619,7 +613,7 @@ declare function control-widgets:get-default-svnurl( $svnurl as xs:string ) as e
   return
   <div class="adminmgmt">
     <h2>{control-i18n:localize('setdefaultsvnurl', $control:locale)}</h2>
-    <form action="{$control:siteurl}/user/setdefaultsvnurl?svnurl={$svnurl}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+    <form action="{$control:siteurl}/user/setdefaultsvnurl" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
       <div class="setdefaultsvnurl">
         <div class="form">
           <label for="defaultsvnurl" class="leftlabel">{concat(control-i18n:localize('defaultsvnurl', $control:locale),':')}</label>

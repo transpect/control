@@ -20,7 +20,9 @@ declare variable $control:max-upload-size := doc('config.xml')/control:config/co
 declare variable $control:access          := doc('control.xml')/control:access;
 declare variable $control:index           := doc('index.xml')/root;
 declare variable $control:svnbasehierarchy:= "/data/svn/hierarchy";
+declare variable $control:svnurlhierarchy := "http://127.0.0.1/content/hierarchy";
 declare variable $control:svnbasewerke    := "/data/svn/werke";
+declare variable $control:svnurlwerke    := "http://127.0.0.1/content/werke";
 declare variable $control:repobase        := "/content/hierarchy";
 declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || $control:path;
@@ -150,8 +152,8 @@ return
     </head>
     <body>
       {control-widgets:get-page-header( ),
-       control-widgets:get-pw-change($svnurl),
-       control-widgets:get-default-svnurl($svnurl)}
+       control-widgets:get-pw-change(),
+       control-widgets:get-default-svnurl()}
     </body>
   </html>
 };
@@ -283,7 +285,7 @@ let $credentials := request:header("Authorization")
     
     $file := doc("control.xml"),
     
-    $updated-access := $file update {delete node //control:rels/control:rel[control:user = $username][control:svnurl]}
+    $updated-access := $file update {delete node //control:rels/control:rel[control:user = $username][control:defaultsvnurl]}
                              update {insert node element rel {element defaultsvnurl {$defaultsvnurl},
                                                               element user {$username}} into .//control:rels},
     

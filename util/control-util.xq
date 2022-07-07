@@ -73,7 +73,7 @@ declare function control-util:create-path-index($svnurl as xs:string,
                                                $virtual-path || '/' || $d/@name,
                                                $mount-point)
     return $sub,
-    for $e in control-util:parse-externals-property(svn:propget( 'http://127.0.0.1' || replace($svnurl,'/data/svn','/content') || $repopath, $auth, 'svn:externals', 'HEAD'))
+    for $e in control-util:parse-externals-property(svn:propget($svnurl || $repopath, $auth, 'svn:externals', 'HEAD'))
     return 
       <external path="{$e/@url}" mount-point="{$svnurl || $repopath || '/' || $e/@mount}" svnurl="{$svnurl}" repopath="{$repopath}">
         {for $f in svn:look(xs:string($e/@url),'/',$auth, false())/*
@@ -209,7 +209,7 @@ declare function control-util:get-current-svnurl($username as xs:string, $svnurl
   ($svnurl,
     session:get('svnurl'),
     control-util:get-defaultsvnurl-from-user($username),
-    $control:svnbasehierarchy)[. != ''][1] 
+    $control:svnurlhierarchy)[. != ''][1]
 };
 
 declare function control-util:get-checkout-dir($svnusername as xs:string, $svnurl as xs:string, $svnpassword as xs:string) as xs:string {
