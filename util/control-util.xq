@@ -206,7 +206,10 @@ declare function control-util:get-defaultsvnurl-from-user($username as xs:string
 };
 
 declare function control-util:get-current-svnurl($username as xs:string, $svnurl as xs:string?) as xs:string {
-  ($svnurl, session:get('svnurl'), control-util:get-defaultsvnurl-from-user($username), $control:svnbasehierarchy)[. != ''][0] 
+  ($svnurl,
+    session:get('svnurl'),
+    control-util:get-defaultsvnurl-from-user($username),
+    $control:svnbasehierarchy)[. != ''][1] 
 };
 
 declare function control-util:get-checkout-dir($svnusername as xs:string, $svnurl as xs:string, $svnpassword as xs:string) as xs:string {
