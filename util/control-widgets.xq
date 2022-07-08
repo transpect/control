@@ -33,7 +33,7 @@ return
   <header class="page-header">
     <div class="header-wrapper">
       <div id="logo">
-        <a href="{ $control:siteurl }">
+        <a href="{ $control:siteurl|| '/setposition?svnurl=http://127.0.0.1/content/werke' }">
           <img src="{ $control:siteurl || '/static/icons/transpect.svg'}" alt="transpect logo"/>
         </a>
       </div>
@@ -131,9 +131,6 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
           </li>,
           <li>
             <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;file=' || $file || '&amp;action=delete'}">{control-i18n:localize('delete', $control:locale)}</a>
-          </li>,
-          <li>
-            <a class="btn" href="{$control:path || '/delete-not-working?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;file=' || $file || '&amp;action=delete'}">Löschen - kaputt</a>
           </li>,
           if (control-util:is-file($file))
           then (<li>
@@ -238,8 +235,10 @@ declare function control-widgets:get-dir-list( $svnurl as xs:string, $repopath a
   <div class="directory-list-wrapper">
   {control-widgets:get-dir-menu( $svnurl, $repopath, $control-dir, $auth )}
     <div class="directory-list table">
+       {(svn:list( $svnurl, $auth, true())/*,
+           control-util:parse-externals-property(svn:propget($svnurl || $repopath, $auth, 'svn:externals', 'HEAD')))}
       <div class="table-body">
-        {if ($is-svn or $repopath) then control-widgets:list-admin-dir-entries( $svnurl,if ($repopath != '') then $repopath else "", $control-dir, map{'show-externals': true()} )
+        {if ($is-svn) then control-widgets:list-admin-dir-entries( $svnurl,if ($repopath != '') then $repopath else "", $control-dir, map{'show-externals': true()} )
                       else control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': true()}, $repopath )}
       </div>
     </div>
@@ -410,10 +409,6 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
       <div class="size table-cell">{$files/@size[$files/local-name() eq 'file']/concat(., '&#x202f;KB')}</div>
       <div>{svn:info($svnurl,
                      $auth)/*:param[@name eq 'root-url']/@value
-                    }</div>
-      <div>{svn:look($svnurl,
-                     ',/',
-                     $auth, true())/*:param[@name eq 'root-url']/@value
                     }</div>
       <div class="action table-cell">{if (control-util:get-rights($username, xs:string($files/@name)) = "write") 
                                       then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], '', $files/(@name | @mount) ) 
