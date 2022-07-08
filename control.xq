@@ -22,7 +22,7 @@ declare variable $control:index           := doc('index.xml')/root;
 declare variable $control:svnbasehierarchy:= "/data/svn/hierarchy";
 declare variable $control:svnurlhierarchy := "http://127.0.0.1/content/hierarchy";
 declare variable $control:svnbasewerke    := "/data/svn/werke";
-declare variable $control:svnurlwerke    := "http://127.0.0.1/content/werke";
+declare variable $control:svnurlwerke     := "http://127.0.0.1/content/werke";
 declare variable $control:repobase        := "/content/hierarchy";
 declare variable $control:protocol        := if ($control:port = '443') then 'https' else 'http';
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || $control:path;
@@ -54,8 +54,26 @@ function control:control($svnurl as xs:string?, $repopath as xs:string?) as elem
                     => tokenize(':'),
        $username := $credentials[1],
        $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
-
   return control:main( $svnurl, $repopath ,$auth)
+};
+declare
+%rest:path('/control/setposition')
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("repopath", "{$repopath}")
+%output:method('html')
+%output:version('5.0')
+function control:setposition($svnurl as xs:string?, $repopath as xs:string?) as element() {
+  let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+       $username := $credentials[1],
+       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
+       $session := session:set('svnurl',$svnurl),
+       $session2 := session:set('repopath',$repopath)
+       
+  return web:redirect('/basex/control')
 };
 
 (:
