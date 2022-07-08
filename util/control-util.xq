@@ -135,7 +135,7 @@ function control-util:is-file($file as xs:string?) as xs:boolean{
 
 declare 
 function control-util:create-download-link($svnurl as xs:string, $repopath as xs:string?, $file as xs:string?) as xs:string{
-  let $result := string-join((replace($svnurl,$control:svnbasewerke,$control:repobase),$repopath,$file),'/')
+  let $result := string-join((replace(replace($svnurl,'127.0.0.1','localhost:' || $control:port),$control:svnbasewerke,$control:repobase),$repopath,$file),'/')
   return $result
 };
 
@@ -228,7 +228,7 @@ declare function control-util:parse-externals-property($prop as element(*)) as e
         $url-plus-rev := $tokens[matches(., '^https?:')],
         $mount as xs:string* := $tokens[not(matches(., '^https?:'))],
         $rev as xs:string* := ($url-plus-rev[contains(., '@')] => tokenize('@'))[last()],
-        $url := replace(replace($url-plus-rev, '^(.+)(@.*)?$', '$1'),concat('http://localhost:',$control:port,'/content'),'/data/svn')
+        $url := replace(replace($url-plus-rev, '^(.+)(@.*)?$', '$1'),'localhost:'|| $control:port,'127.0.0.1')
     return (attribute url { $url },
             if(exists($rev)) then attribute rev { $rev } else (),
             attribute mount { $mount })
