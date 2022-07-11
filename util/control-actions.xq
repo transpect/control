@@ -120,7 +120,7 @@ function control-actions:access( $svnurl as xs:string, $file as xs:string, $repo
   <body>
     {control-widgets:get-page-header()}
     <main>
-      {control-widgets:add-acces-entry( $svnurl, $control:path || '/../', $repopath, string-join(($repopath,$file),'/') )}
+      {control-widgets:add-access-entry( $svnurl, $control:path || '/../', $repopath, string-join(($repopath,$file),'/') )}
     </main>
     {control-widgets:get-page-footer()}
   </body>

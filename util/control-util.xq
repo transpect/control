@@ -92,12 +92,8 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
                                                        $repopath as xs:string?, 
                                                        $filepath as xs:string?,
                                                        $access){
-  let $selected-repo := if (control-util:is-svn-repo($svnurl))
-                        then tokenize($svnurl,'/')[last()]
-                        else $filepath,
-      $selected-filepath := if ($repopath = '')
-                            then ''
-                            else $filepath,
+  let $selected-repo := tokenize($svnurl,'/')[position() = 5],
+      $selected-filepath := $filepath,
       $admin-group := $access//control:groups/control:group[control:name = 'admin'],
       $explicit-permissions := for $group in $access//control:groups/control:group except $admin-group
                                let $p := $access//control:rels/control:rel[control:file = $selected-filepath]

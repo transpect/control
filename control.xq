@@ -497,13 +497,9 @@ let $credentials := request:header("Authorization")
     $selected-group := request:parameter("groups"),
     $selected-access := request:parameter("access"),
     
-    $selected-repo := if ($repopath = '')
-                      then replace($filepath,'/','')
-                      else tokenize($svnurl,'/')[last()],
+    $selected-repo := tokenize($svnurl,'/')[position() = 5],
     
-    $selected-filepath := if ($repopath = '')
-                          then ''
-                          else $filepath,
+    $selected-filepath := $filepath,
     
     $file := doc("control.xml"),
     $updated-access := $file update {delete node //control:rels/control:rel
@@ -613,14 +609,14 @@ return
 };
 
 declare
-%rest:path("/control/group/removeaccess")
+%rest:path("/control/group/removepermission")
 %rest:query-param("svnurl", "{$svnurl}")
 %rest:query-param("repopath", "{$repopath}")
 %rest:query-param("filepath", "{$filepath}")
 %rest:query-param("group", "{$group}")
 %output:method('html')
 %output:version('5.0')
-function control:removeaccess($svnurl as xs:string, $repopath as xs:string?, $filepath as xs:string, $group as xs:string) {
+function control:removepermission($svnurl as xs:string, $repopath as xs:string?, $filepath as xs:string, $group as xs:string) {
 
 let $credentials := request:header("Authorization")
                     => substring(6)
@@ -631,13 +627,8 @@ let $credentials := request:header("Authorization")
     $password := $credentials[2],
     
     $file := doc("control.xml"),
-    $selected-repo := if ($repopath = '')
-                      then replace($filepath,'/','')
-                      else tokenize($svnurl,'/')[last()],
-    
-    $selected-filepath := if ($repopath = '')
-                          then ''
-                          else $filepath,
+    $selected-repo := tokenize($svnurl,'/')[position() = 5],
+    $selected-filepath := $filepath,
     $updated-access := $file update {delete node //control:rels/control:rel
                                       [control:repo = $selected-repo]
                                       [control:file = $selected-filepath]

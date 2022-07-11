@@ -33,11 +33,11 @@ return
   <header class="page-header">
     <div class="header-wrapper">
       <div id="logo">
-        <a href="{ $control:siteurl|| '/setposition?svnurl=http://127.0.0.1/content/werke' }">
+        <a href="{ $control:siteurl|| '/setposition?svnurl=http://127.0.0.1/content/hierarchy/hogrefe.ch' }">
           <img src="{ $control:siteurl || '/static/icons/transpect.svg'}" alt="transpect logo"/>
         </a>
       </div>
-      <h1><a href="{$control:siteurl}"><span class="thin">transpect</span>control</a></h1>
+      <h1><a href="{$control:siteurl || '/setposition?svnurl=http://127.0.0.1/content/hierarchy/hogrefe.de' }"><span class="thin">transpect</span>control</a></h1>
     </div>
     <div class="nav-wrapper">
       <nav class="nav">
@@ -247,7 +247,7 @@ declare function control-widgets:get-dir-list( $svnurl as xs:string, $repopath a
 (:
  : returns controls to modify access to directory
 :)
-declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control-dir as xs:string, $repopath as xs:string?, $filepath as xs:string ) as element(div) {
+declare function control-widgets:add-access-entry( $svnurl as xs:string, $control-dir as xs:string, $repopath as xs:string?, $filepath as xs:string ) as element(div) {
   let $selected-svnurl := if ($repopath = '')
                           then $filepath
                           else $svnurl,
@@ -278,7 +278,7 @@ declare function control-widgets:add-acces-entry( $svnurl as xs:string, $control
                   <div class="table-cell">implicit</div>
                 else
                  (<div class="table-cell">explicit</div>,
-                  <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removeaccess?svnurl={$svnurl}&amp;repopath={$repopath}&amp;filepath={$filepath}&amp;group={$access/*:g/text()}">&#x1f5d1;</a></div>)
+                  <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removepermission?svnurl={$svnurl}&amp;repopath={$repopath}&amp;filepath={$filepath}&amp;group={$access/*:g/text()}">&#x1f5d1;</a></div>)
                 }
               </div>}
       </div>
