@@ -56,6 +56,7 @@ function control:control($svnurl as xs:string?, $repopath as xs:string?) as elem
        $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
   return control:main( $svnurl, $repopath ,$auth)
 };
+
 declare
 %rest:path('/control/setposition')
 %rest:query-param("svnurl", "{$svnurl}")
@@ -98,9 +99,66 @@ declare function control:main( $svnurl as xs:string?, $repopath as xs:string?, $
          then control-widgets:get-dir-list( $used-svnurl, $repopath, $control:path, control-util:is-svn-repo($used-svnurl), $auth)
          else 'URL parameter empty!'}
       </main>
-      {control-widgets:get-page-footer()}
+      {control-widgets:get-page-footer(),
+       control-widgets:create-infobox()}
     </body>
   </html>
+};
+(:
+ : Get SVN Log info for svnurl
+ :)
+declare
+%rest:path('/control/getsvnlog')
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("repopath", "{$repopath}")
+%rest:query-param("file", "{$file}")
+%output:method('html')
+%output:version('5.0')
+function control:get-svnlog($svnurl as xs:string?, $repopath as xs:string?, $file as xs:string?) as element(table) {
+  let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+       $username := $credentials[1],
+       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
+       $svnlog := svn:log( $svnurl || $repopath || '/' || $file,$auth,0,0,0)
+  return 
+    <table> 
+      <thead>
+        <th>Author</th>
+        <th>Date</th>
+        <th>Revision</th>
+      </thead>
+      <tbody>{
+      for $le in $svnlog/*:logEntry
+      return
+         (<tr>
+            <td>{xs:string($le/@author)}</td>
+            <td>{xs:string($le/@date)}</td>
+            <td>{xs:string($le/@revision)}</td>
+          </tr>,
+          <tr>
+            <td colspan="3">
+              <div class="table">
+                <div class="table-row">
+                  <div class="table-cell">Path</div>
+                  <div class="table-cell">Type</div>
+                </div>{
+                for $changedPath in $le//*:changedPath
+                let $path := xs:string($changedPath/@name),
+                    $type := xs:string($changedPath/@type)
+                return 
+                  <div class="table-row">
+                    <div class="table-cell">{$path}</div>
+                    <div class="table-cell">{$type}</div>
+                  </div>}
+              </div>
+            </td>
+          </tr>)
+      }
+      </tbody>
+    </table>
 };
 (:
  : displays a message

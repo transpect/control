@@ -30,6 +30,26 @@ function createRenameForm(svnurl, file, controlPath) {
     anchor.replaceWith( formWrapper );
     formWrapper.innerHTML = form;
 }
+
+function closebox(){
+  var ids = ['infobox']
+  for (let i = 0; i <  ids.length; i++)
+  {hide(ids[i])}
+}
+
+function showLogForm(svnurl, file, controlPath) {
+  fetch('control/getsvnlog?svnurl=' + svnurl + '&file=' + file, {credentials: 'include'})
+    .then(response => response.text())
+    .then(data => fillInfoBox(data));
+}
+
+function fillInfoBox(content)
+{
+  console.log('fill');
+  document.getElementById('infobox').getElementsByClassName('content')[0].innerHTML = content;
+  reveal('infobox')
+}
+
 function setUserGroupSelection(username, selectId){
   fetch("http://localhost:9081//basex/control/user/getgroups?username=" + username)
   .then(response => {return response.body})
@@ -142,4 +162,12 @@ window.onload = function() {
     setGroupSelection(groupselect
       .selectedOptions[0].value, "grouprepo")
   }
+  document.body.addEventListener("click", function(event) {
+    var closestA = event.target.closest('div.infobox');
+    if (closestA || document.getElementById('infobox').style.visibility == 'hidden') {
+      return;
+    } else {
+      hide('infobox')
+    }
+  });
 }

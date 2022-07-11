@@ -121,10 +121,16 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
            <a class="btn" href="#" onclick="{'createRenameForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('rename', $control:locale)}</a>
           </li>,
           <li>
+           <a class="btn" href="#" onclick="{'showLogForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showLog', $control:locale)}</a>
+          </li>,
+          <li>
             <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
           </li>,
           <li>
             <a class="btn" href="{$control:path || '/access?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;action=access&amp;file=' || $file }">{control-i18n:localize('access', $control:locale)}</a>
+          </li>,
+          <li>
+            <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
           </li>,
           <li>
             <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
@@ -243,6 +249,18 @@ declare function control-widgets:get-dir-list( $svnurl as xs:string, $repopath a
       </div>
     </div>
   </div>
+};
+
+
+declare function control-widgets:create-infobox()
+{
+<div id="infobox" class="infobox" style="visibility:hidden">
+  <div class="header">
+    <div class="heading"></div>
+    <div class="closebutton" onclick="closebox(); return false">X</div>
+  </div>
+  <div class="content"></div>
+</div>
 };
 (:
  : returns controls to modify access to directory
@@ -402,7 +420,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
         </a>
       </div>
       <div class="name table-cell">
-        <a href="{control-util:create-download-link($svnurl, $repopath, $files/@name)}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a></div>
+        <a href="{if ($files/local-name() eq 'file') then control-util:create-download-link($svnurl, $repopath, $files/@name) else $href}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a></div>
       <div class="author table-cell">{xs:string( $files/@author )}</div>
       <div class="date table-cell">{xs:string( $files/@date )}</div>
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>

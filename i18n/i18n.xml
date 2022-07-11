@@ -80,6 +80,10 @@
     <locale lang="de">Umbenennen</locale>
     <locale lang="en">Rename</locale>
   </entry>
+  <entry name="showLog">
+    <locale lang="de">Log anzeigen</locale>
+    <locale lang="en">Show log</locale>
+  </entry>
   <entry name="copy">
     <locale lang="de">Kopieren</locale>
     <locale lang="en">Copy</locale>

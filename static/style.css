@@ -150,7 +150,18 @@ header a {
 /* 
  * responsive tables
  */
-.table {
+ 
+table{
+  width:100%;
+  padding: 0 20px;
+}
+
+th{
+  text-align: left;
+  margin: 2px 0;
+  border-bottom: lightgrey 1px solid
+}
+.table{
   display: table;
   width: 100%
 }
@@ -373,6 +384,35 @@ div.form {
 .btn.back,
 .btn.home {
   width: 1.75rem;
+}
+
+/* 
+ * infobox
+ */
+.infobox { 
+  top: 5%; 
+  left: 20%;
+  border-radius: 7px;
+  box-shadow: 0 0 15px 0 rgba(0,0,0,.5);
+  width:60%;
+  height:75%;
+  font-size:92%; 
+  z-index:40; 
+  position:fixed; 
+  background-color:#ffffff;
+  padding:1.5em 1.75em 1.5em 1.5em; 
+}
+.infobox .header{
+  height:auto;
+  display:flex;
+  flex-direction: row;
+  justify-content:space-between;
+  align-items:baseline;
+}
+.infobox .header .closebutton{
+  margin:5px;
+  cursor:pointer;
+  font-weight:bold;
 }
 /* 
  * dropzone 
