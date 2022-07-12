@@ -48,7 +48,7 @@ declare function control-util:is-svn-repo( $svnurl as xs:string ) as xs:boolean 
 
 declare 
 function control-util:writeindextofile($index) {
-  file:write("index.xml",$index)
+  file:write("basex/webapp/control/index.xml",$index)
 };
 
 declare function control-util:create-path-index($svnurl as xs:string,
