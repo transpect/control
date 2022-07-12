@@ -114,7 +114,7 @@ declare
 %rest:query-param("file", "{$file}")
 %output:method('html')
 %output:version('5.0')
-function control:get-svnlog($svnurl as xs:string?, $repopath as xs:string?, $file as xs:string?) as element(table) {
+function control:get-svnlog($svnurl as xs:string?, $repopath as xs:string?, $file as xs:string?) as element() {
   let $credentials := request:header("Authorization")
                     => substring(6)
                     => xs:base64Binary()
@@ -254,8 +254,8 @@ let $credentials := request:header("Authorization")
 return
   <html>
     <head>
-      {control-widgets:get-html-head()(:,
-      control-util:create-path-index('/data/svn/hierarchy', '/', 'root', $auth, 'root', $svnurl || $repopath,''):)}
+      {control-widgets:get-html-head(),
+       (:control-util:create-path-index('http://127.0.0.1/content/hierarchy', 'root', $auth, 'root', '',''):)}
     </head>
     <body>
       {control-widgets:get-page-header( ),
@@ -630,10 +630,11 @@ let $credentials := request:header("Authorization")
     $selected-access := request:parameter("access"),
     
     $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
+    $index := control-util:create-path-index($control:svnurlhierarchy, $name, $auth, $name, $control:svnurlhierarchy,''),
     $result :=
       if (control-util:is-admin($username))
       then
-       element result { element error {"Index Rebuilt"}, element code{0}, element text{control-util:writeindextofile(control-util:create-path-index($control:svnbasehierarchy, '', $name, $auth, $name, '/data/svn/hierarchy',''))}}
+       element result { element error {"Index Rebuilt"}, element code{0}, element text{control-util:writeindextofile($index)}}
       else
         element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=

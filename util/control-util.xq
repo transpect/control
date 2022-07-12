@@ -52,7 +52,6 @@ function control-util:writeindextofile($index) {
 };
 
 declare function control-util:create-path-index($svnurl as xs:string,
-                                                $repopath as xs:string?, 
                                                 $name as xs:string?,
                                                 $auth as map(*),
                                                 $type as xs:string, 
@@ -61,30 +60,28 @@ declare function control-util:create-path-index($svnurl as xs:string,
   element {$type} {
     attribute name {$name},
     attribute svnurl {$svnurl},
-    attribute repopath {$repopath},
     attribute virtual-path {$virtual-path},
-    if ($type = 'file') then attribute mount-point {$mount-point},
-    for $d in svn:look($svnurl,$repopath,$auth, false())/*
-    let $sub := control-util:create-path-index($svnurl,
-                                               concat($repopath,'/',$d/@name),
+    if ($type = 'file') then attribute mount-point {$mount-point}
+    else (
+    for $d in svn:list($svnurl,$auth, false())/*
+    let $sub := control-util:create-path-index(concat($svnurl,'/',$d/@name),
                                                $d/@name,
                                                $auth, 
                                                $d/local-name(), 
                                                $virtual-path || '/' || $d/@name,
                                                $mount-point)
     return $sub,
-    for $e in control-util:parse-externals-property(svn:propget($svnurl || $repopath, $auth, 'svn:externals', 'HEAD'))
+    for $e in control-util:parse-externals-property(svn:propget($svnurl, $auth, 'svn:externals', 'HEAD'))
     return 
-      <external path="{$e/@url}" mount-point="{$svnurl || $repopath || '/' || $e/@mount}" svnurl="{$svnurl}" repopath="{$repopath}">
-        {for $f in svn:look(xs:string($e/@url),'/',$auth, false())/*
+      <external path="{$e/@url}" mount-point="{$svnurl || '/' || $e/@mount}" svnurl="{$svnurl}">
+        {for $f in svn:list(xs:string($e/@url),$auth, false())/*
          let $subf := control-util:create-path-index(xs:string($e/@url),
-                                                     concat('/',$f/@name),
                                                      $e/@mount,
                                                      $auth,$f/local-name(),
                                                      $virtual-path || '/' || $e/@mount ||  '/' || $f/@name,
                                                      $svnurl || $repopath || '/' || $e/@mount)
          return $subf}
-      </external>
+      </external>)
   }
 };
 
