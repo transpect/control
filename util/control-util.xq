@@ -79,7 +79,7 @@ declare function control-util:create-path-index($svnurl as xs:string,
                                                      $e/@mount,
                                                      $auth,$f/local-name(),
                                                      $virtual-path || '/' || $e/@mount ||  '/' || $f/@name,
-                                                     $svnurl || $repopath || '/' || $e/@mount)
+                                                     $svnurl || '/' || $e/@mount)
          return $subf}
       </external>)
   }
