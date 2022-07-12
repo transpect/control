@@ -254,8 +254,8 @@ let $credentials := request:header("Authorization")
 return
   <html>
     <head>
-      {control-widgets:get-html-head(),
-       (:control-util:create-path-index('http://127.0.0.1/content/hierarchy', 'root', $auth, 'root', '',''):)}
+      {control-widgets:get-html-head()
+       (:,control-util:create-path-index('http://127.0.0.1/content/hierarchy', 'root', $auth, 'root', '',''):)}
     </head>
     <body>
       {control-widgets:get-page-header( ),
