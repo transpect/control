@@ -56,7 +56,7 @@ function control:control($svnurl as xs:string?, $repopath as xs:string?) as elem
        $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
   return control:main( $svnurl, $repopath ,$auth)
 };
-
+(:
 declare
 %rest:path('/control/setposition')
 %rest:query-param("svnurl", "{$svnurl}")
@@ -75,7 +75,7 @@ function control:setposition($svnurl as xs:string?, $repopath as xs:string?) as 
        $session2 := session:set('repopath',$repopath)
        
   return web:redirect('/basex/control')
-};
+};:)
 
 (:
  : this is where the "fun" starts...
@@ -96,7 +96,7 @@ declare function control:main( $svnurl as xs:string?, $repopath as xs:string?, $
         {
          control:get-message( $control:msg, $control:msgtype ),
          if(normalize-space( $used-svnurl ))
-         then control-widgets:get-dir-list( $used-svnurl, $repopath, $control:path, control-util:is-svn-repo($used-svnurl), $auth)
+         then control-widgets:get-dir-list( $used-svnurl, $repopath, $control:path, control-util:is-local-repo($used-svnurl), $auth)
          else 'URL parameter empty!'}
       </main>
       {control-widgets:get-page-footer(),
@@ -122,11 +122,29 @@ function control:get-svnlog($svnurl as xs:string?, $repopath as xs:string?, $fil
                     => tokenize(':'),
        $username := $credentials[1],
        $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
-       $svnlog := svn:log( $svnurl || $repopath || '/' || $file,$auth,0,0,0)
-  return 
-    <table> 
+       $svnlog := svn:log( $svnurl || $repopath || '/' || $file,$auth,0,0,0),
+       $monospace-width := 70
+  return <pre class="monospace">
+  {for $le in $svnlog/*:logEntry
+                   return
+                     (' Revision | Author    | Date                                         ',
+                     <br></br>,
+                     ' ' || control-util:pad-text($le/@revision,8) || 
+                     ' | ' || control-util:pad-text($le/@author,9) || 
+                     ' | ' || $le/@date, <br/>,
+                     ' ' ,(for $str in control-util:split-string-at-length($le/@message,$monospace-width - 2)
+                             return ('' || $str, <br/>)),
+                          (for $file in $le//*:changedPath
+                             return (<a href="{$control:siteurl || '?svnurl=' || $svnurl 
+                                            || string-join(tokenize(xs:string($file/@name),'/')[not(matches(.,'\....+$'))],'/')}">
+                                             {control-util:get-short-string(xs:string($file/@name), $monospace-width)}
+                                     </a>,<br/>)))
+   }
+  </pre>
+    (:<table> 
       <thead>
         <th>Author</th>
+        <th>Message</th>
         <th>Date</th>
         <th>Revision</th>
       </thead>
@@ -135,11 +153,12 @@ function control:get-svnlog($svnurl as xs:string?, $repopath as xs:string?, $fil
       return
          (<tr>
             <td>{xs:string($le/@author)}</td>
+            <td>{xs:string($le/@message)}</td>
             <td>{xs:string($le/@date)}</td>
             <td>{xs:string($le/@revision)}</td>
           </tr>,
           <tr>
-            <td colspan="3">
+            <td colspan="4">
               <div class="table">
                 <div class="table-row">
                   <div class="table-cell">Path</div>
@@ -158,7 +177,83 @@ function control:get-svnlog($svnurl as xs:string?, $repopath as xs:string?, $fil
           </tr>)
       }
       </tbody>
-    </table>
+    </table>:)
+};
+(:
+ : Get SVN info for svnurl
+ :)
+declare
+%rest:path('/control/getsvninfo')
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("repopath", "{$repopath}")
+%rest:query-param("file", "{$file}")
+%output:method('html')
+%output:version('5.0')
+function control:get-svninfo($svnurl as xs:string?, $repopath as xs:string?, $file as xs:string?) as element() {
+  let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+       $username := $credentials[1],
+       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
+       $svninfo := svn:info( $svnurl || $repopath || '/' || $file,$auth),
+       $monospace-width := 70
+  return 
+  <pre class="monospace">
+   {
+      let $date := xs:string($svninfo/*:param[matches(@name, 'date')]/@value),
+          $path := xs:string($svninfo/*:param[matches(@name, 'path')]/@value),
+          $rev  := xs:string($svninfo/*:param[matches(@name, 'rev')]/@value),
+          $author := xs:string($svninfo/*:param[matches(@name, 'author')]/@value),
+          $root-url  := xs:string($svninfo/*:param[matches(@name, 'root-url')]/@value),
+          $url  := xs:string($svninfo/*:param[matches(@name, '^url')]/@value)
+      return 
+        ('Path: ', $path,<br/>,
+        'URL: ', $url,<br/>,
+        'Root URL: ', $root-url,<br/>,
+        'Revision: ', $rev,<br/>,
+        'Author: ', $rev,<br/>,
+        'Date: ', $date)
+    }
+  </pre>
+    (:<table> 
+      <thead>
+        <th>Author</th>
+        <th>Message</th>
+        <th>Date</th>
+        <th>Revision</th>
+      </thead>
+      <tbody>{
+      for $le in $svnlog/*:logEntry
+      return
+         (<tr>
+            <td>{xs:string($le/@author)}</td>
+            <td>{xs:string($le/@message)}</td>
+            <td>{xs:string($le/@date)}</td>
+            <td>{xs:string($le/@revision)}</td>
+          </tr>,
+          <tr>
+            <td colspan="4">
+              <div class="table">
+                <div class="table-row">
+                  <div class="table-cell">Path</div>
+                  <div class="table-cell">Type</div>
+                </div>{
+                for $changedPath in $le//*:changedPath
+                let $path := xs:string($changedPath/@name),
+                    $type := xs:string($changedPath/@type)
+                return 
+                  <div class="table-row">
+                    <div class="table-cell">{$path}</div>
+                    <div class="table-cell">{$type}</div>
+                  </div>}
+              </div>
+            </td>
+          </tr>)
+      }
+      </tbody>
+    </table>:)
 };
 (:
  : displays a message
@@ -255,7 +350,7 @@ return
   <html>
     <head>
       {control-widgets:get-html-head()
-       (:,control-util:create-path-index('http://127.0.0.1/content/hierarchy', 'root', $auth, 'root', '',''):)}
+       }
     </head>
     <body>
       {control-widgets:get-page-header( ),
@@ -632,11 +727,11 @@ let $credentials := request:header("Authorization")
     $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
     $index := control-util:create-path-index($control:svnurlhierarchy, $name, $auth, $name, $control:svnurlhierarchy,''),
     $result :=
-      if (control-util:is-admin($username))
+      if ($index)
       then
        element result { element error {"Index Rebuilt"}, element code{0}, element text{control-util:writeindextofile($index)}}
       else
-        element result { element error {"You are not an admin."}, element code {1}},
+        element result { element error {"Index empty."}, element code {1}},
     $btntarget :=
       if ($result/code = 0)
       then

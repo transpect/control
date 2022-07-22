@@ -43,6 +43,12 @@ function showLogForm(svnurl, file, controlPath) {
     .then(data => fillInfoBox(data));
 }
 
+function showInfoForm(svnurl, file, controlPath) {
+  fetch('control/getsvninfo?svnurl=' + svnurl + '&file=' + file, {credentials: 'include'})
+    .then(response => response.text())
+    .then(data => fillInfoBox(data));
+}
+
 function fillInfoBox(content)
 {
   console.log('fill');

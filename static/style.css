@@ -401,6 +401,8 @@ div.form {
   position:fixed; 
   background-color:#ffffff;
   padding:1.5em 1.75em 1.5em 1.5em; 
+  background: #24292e;
+  color: white;
 }
 .infobox .header{
   height:auto;
@@ -413,6 +415,19 @@ div.form {
   margin:5px;
   cursor:pointer;
   font-weight:bold;
+}
+.infobox div.content{
+  overflow:scroll;
+  height:calc(100% - 2em);
+}
+pre a{
+  font-family:monospace;
+  color:white;
+  font-size:1.25em;
+}
+pre a:visited{
+  font-family:monospace;
+  color:white;
 }
 /* 
  * dropzone 

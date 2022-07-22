@@ -33,11 +33,11 @@ return
   <header class="page-header">
     <div class="header-wrapper">
       <div id="logo">
-        <a href="{ $control:siteurl|| '/setposition?svnurl=http://127.0.0.1/content/hierarchy/hogrefe.ch' }">
+        <a href="{ $control:siteurl|| '?svnurl=http://127.0.0.1/content/hierarchy/hogrefe.ch' }">
           <img src="{ $control:siteurl || '/static/icons/transpect.svg'}" alt="transpect logo"/>
         </a>
       </div>
-      <h1><a href="{$control:siteurl || '/setposition?svnurl=http://127.0.0.1/content/hierarchy/hogrefe.de' }"><span class="thin">transpect</span>control</a></h1>
+      <h1><a href="{$control:siteurl || '?svnurl=http://127.0.0.1/content/hierarchy/hogrefe.de' }"><span class="thin">transpect</span>control</a></h1>
     </div>
     <div class="nav-wrapper">
       <nav class="nav">
@@ -122,6 +122,9 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
           </li>,
           <li>
            <a class="btn" href="#" onclick="{'showLogForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showLog', $control:locale)}</a>
+          </li>,
+          <li>
+           <a class="btn" href="#" onclick="{'showInfoForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showInfo', $control:locale)}</a>
           </li>,
           <li>
             <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
@@ -244,7 +247,7 @@ declare function control-widgets:get-dir-list( $svnurl as xs:string, $repopath a
        {(svn:list( $svnurl, $auth, true())/*,
            control-util:parse-externals-property(svn:propget($svnurl || $repopath, $auth, 'svn:externals', 'HEAD')))}
       <div class="table-body">
-        {if ($is-svn) then control-widgets:list-admin-dir-entries( $svnurl,if ($repopath != '') then $repopath else "", $control-dir, map{'show-externals': true()} )
+        {if ($is-svn) then control-widgets:list-admin-dir-entries( replace($svnurl,'http://127\.0\.0\.1\content','/data/svn'),if ($repopath != '') then $repopath else "", $control-dir, map{'show-externals': true()} )
                       else control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': true()}, $repopath )}
       </div>
     </div>

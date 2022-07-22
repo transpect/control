@@ -46,9 +46,15 @@ declare function control-util:is-svn-repo( $svnurl as xs:string ) as xs:boolean 
   return count($children[@name = ("locks", "hooks", "db")]) ge 3
 };
 
-declare 
+(:
+ : check if svnurl is a local repo with external url
+ :)
+declare function control-util:is-local-repo( $svnurl as xs:string ) as xs:boolean {
+  false()};
+
+declare
 function control-util:writeindextofile($index) {
-  file:write("basex/webapp/control/index.xml",$index)
+  file:write("/home/transpect-control/basex/webapp/control/index.xml",$index)
 };
 
 declare function control-util:create-path-index($svnurl as xs:string,
@@ -116,24 +122,63 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
          
 };
 
-declare 
-function control-util:or($bools as xs:boolean*) as xs:boolean{
+declare function control-util:or($bools as xs:boolean*) as xs:boolean{
   count($bools[. = true()]) > 0
 };
 
-declare 
-function control-util:is-file($file as xs:string?) as xs:boolean{
+declare function control-util:is-file($file as xs:string?) as xs:boolean{
   matches($file,'\.')
 };
+declare function control-util:split-string-at-length($str as xs:string?, $length as xs:integer) as xs:string* {
+  for $i in (1 to (xs:integer(ceiling(string-length($str) div $length))))
+  return substring($str, ($i - 1) * $length + 1, $length)
+};
 
-declare 
-function control-util:create-download-link($svnurl as xs:string, $repopath as xs:string?, $file as xs:string?) as xs:string{
+declare function control-util:get-short-string($str as xs:string, $length as xs:integer) as xs:string {
+  concat(
+    control-util:split-string-at-length(xs:string($str),$length - 5)[1],
+      if (string-length(xs:string($str)) gt ($length - 5))  
+      then '...' 
+      else '')
+};
+
+declare function control-util:update-path-index-at-svnurl($index, $svnurl as xs:string, $auth as map(*)){
+  let $updated-index :=  
+       copy $ind := $index
+       modify (
+         for $t in $ind//*[@svnurl eq $svnurl]
+         return replace node $t with
+           control-util:create-path-index($svnurl,
+                                          tokenize($svnurl,'/')[last()],
+                                          $auth, 
+                                          $t/local-name(), 
+                                          $t/@virtual-path, 
+                                          $t/@mount-point)
+       )
+       return $ind
+  return $updated-index
+};
+
+declare function control-util:remove-path-index-at-svnurl($index, $svnurl as xs:string){
+  let $updated-index :=  
+       copy $ind := $index
+       modify (
+         delete node $ind//*[@svnurl eq $svnurl]
+       )
+       return $ind
+  return $updated-index
+};
+
+declare function control-util:pad-text($string as xs:string?, $length as xs:integer) as xs:string{
+  concat($string, string-join(for $x in 1 to ($length - string-length($string)) return ' ', ""))
+};
+
+declare function control-util:create-download-link($svnurl as xs:string, $repopath as xs:string?, $file as xs:string?) as xs:string{
   let $result := string-join((replace(replace($svnurl,'127.0.0.1','localhost:' || $control:port),$control:svnbasewerke,$control:repobase),$repopath,$file),'/')
   return $result
 };
 
-declare
-function control-util:get-permission-for-group($group as xs:string, $repo as xs:string, $access) as xs:string?{
+declare function control-util:get-permission-for-group($group as xs:string, $repo as xs:string, $access) as xs:string?{
   let $writeable-repos := $access//control:rels/control:rel[control:group = $group]
                                                       [control:repo]
                                                       [not(control:file)],
@@ -150,8 +195,7 @@ function control-util:get-permission-for-group($group as xs:string, $repo as xs:
                               else if ($combined-permission = 'write') then 'rw'
   return $selected-permission
 };
-declare
-function control-util:get-permission-for-user($user as xs:string, $repo as xs:string, $access) as xs:string?{
+declare function control-util:get-permission-for-user($user as xs:string, $repo as xs:string, $access) as xs:string?{
   for $group in $access/control:groups/control:group/control:name
   let $rels := $access//control:rels/control:rel[control:user = $user]
                                                [control:group],

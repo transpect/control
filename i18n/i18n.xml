@@ -84,6 +84,10 @@
     <locale lang="de">Log anzeigen</locale>
     <locale lang="en">Show log</locale>
   </entry>
+  <entry name="showInfo">
+    <locale lang="de">Info anzeigen</locale>
+    <locale lang="en">Show info</locale>
+  </entry>
   <entry name="copy">
     <locale lang="de">Kopieren</locale>
     <locale lang="en">Copy</locale>
