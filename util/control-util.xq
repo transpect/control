@@ -59,7 +59,6 @@ function control-util:writeindextofile($index) {
 
 declare function control-util:create-path-index($svnurl as xs:string,
                                                 $name as xs:string?,
-                                                $auth as map(*),
                                                 $type as xs:string, 
                                                 $virtual-path as xs:string,
                                                 $mount-point as xs:string?){
@@ -69,21 +68,20 @@ declare function control-util:create-path-index($svnurl as xs:string,
     attribute virtual-path {$virtual-path},
     if ($type = 'file') then attribute mount-point {$mount-point}
     else (
-    for $d in svn:list($svnurl,$auth, false())/*
+    for $d in svn:list($svnurl,$control:svnauth, false())/*
     let $sub := control-util:create-path-index(concat($svnurl,'/',$d/@name),
                                                $d/@name,
-                                               $auth, 
                                                $d/local-name(), 
                                                $virtual-path || '/' || $d/@name,
                                                $mount-point)
     return $sub,
-    for $e in control-util:parse-externals-property(svn:propget($svnurl, $auth, 'svn:externals', 'HEAD'))
+    for $e in control-util:parse-externals-property(svn:propget($svnurl, $control:svnauth, 'svn:externals', 'HEAD'))
     return 
       <external path="{$e/@url}" mount-point="{$svnurl || '/' || $e/@mount}" svnurl="{$svnurl}">
-        {for $f in svn:list(xs:string($e/@url),$auth, false())/*
-         let $subf := control-util:create-path-index(xs:string($e/@url),
-                                                     $e/@mount,
-                                                     $auth,$f/local-name(),
+        {for $f in svn:list(xs:string($e/@url),$control:svnauth, false())/*
+         let $subf := control-util:create-path-index(string-join((xs:string($e/@url),$f/@name),'/'),
+                                                     $f/@name,
+                                                     $f/local-name(),
                                                      $virtual-path || '/' || $e/@mount ||  '/' || $f/@name,
                                                      $svnurl || '/' || $e/@mount)
          return $subf}
@@ -142,7 +140,7 @@ declare function control-util:get-short-string($str as xs:string, $length as xs:
       else '')
 };
 
-declare function control-util:update-path-index-at-svnurl($index, $svnurl as xs:string, $auth as map(*)){
+declare function control-util:update-path-index-at-svnurl($index, $svnurl as xs:string){
   let $updated-index :=  
        copy $ind := $index
        modify (
@@ -150,20 +148,9 @@ declare function control-util:update-path-index-at-svnurl($index, $svnurl as xs:
          return replace node $t with
            control-util:create-path-index($svnurl,
                                           tokenize($svnurl,'/')[last()],
-                                          $auth, 
                                           $t/local-name(), 
                                           $t/@virtual-path, 
                                           $t/@mount-point)
-       )
-       return $ind
-  return $updated-index
-};
-
-declare function control-util:remove-path-index-at-svnurl($index, $svnurl as xs:string){
-  let $updated-index :=  
-       copy $ind := $index
-       modify (
-         delete node $ind//*[@svnurl eq $svnurl]
        )
        return $ind
   return $updated-index

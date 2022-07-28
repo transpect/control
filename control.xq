@@ -9,6 +9,7 @@ import module namespace control-api     = 'http://transpect.io/control/util/cont
 import module namespace control-i18n    = 'http://transpect.io/control/util/control-i18n'    at 'util/control-i18n.xq';
 import module namespace control-util    = 'http://transpect.io/control/util/control-util'    at 'util/control-util.xq';
 import module namespace control-widgets = 'http://transpect.io/control/util/control-widgets' at 'util/control-widgets.xq';
+import module namespace control-backend = 'http://transpect.io/control-backend' at '../control-backend/control-backend.xqm';
 
 declare variable $control:locale          := doc('config.xml')/control:config/control:locale;
 declare variable $control:host            := doc('config.xml')/control:config/control:host;
@@ -28,13 +29,14 @@ declare variable $control:protocol        := if ($control:port = '443') then 'ht
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || $control:path;
 declare variable $control:svnusername     := xs:string(doc('config.xml')/control:config/control:svnusername);
 declare variable $control:svnpassword     := xs:string(doc('config.xml')/control:config/control:svnpassword);
+declare variable $control:svnauth         := map{'username':$control:svnusername,'cert-path':'', 'password': $control:svnpassword};
 declare variable $control:svnurl          := (request:parameter('svnurl'), xs:string(doc('config.xml')/control:config/control:svnurl))[1];
 declare variable $control:msg             := request:parameter('msg');
 declare variable $control:msgtype         := request:parameter('msgtype');
 declare variable $control:action          := request:parameter('action');
 declare variable $control:file            := request:parameter('file');
 declare variable $control:dest-svnurl     := request:parameter('dest-svnurl');
-declare variable $control:svnauth         := "/etc/svn/default.authz";
+declare variable $control:svnauthfile         := "/etc/svn/default.authz";
 declare variable $control:default-permission
                                           := "r";
 declare variable $control:nl              := "
@@ -725,7 +727,7 @@ let $credentials := request:header("Authorization")
     $selected-access := request:parameter("access"),
     
     $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
-    $index := control-util:create-path-index($control:svnurlhierarchy, $name, $auth, $name, $control:svnurlhierarchy,''),
+    $index := control-util:create-path-index($control:svnurlhierarchy, $name, $name, $control:svnurlhierarchy,''),
     $result :=
       if ($index)
       then
@@ -1125,7 +1127,7 @@ return
 
 declare 
 function control:writeauthtofile($access) {
-  file:write($control:svnauth,control:writetoauthz($access))
+  file:write($control:svnauthfile,control:writetoauthz($access))
 };
 
 declare

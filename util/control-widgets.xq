@@ -158,7 +158,7 @@ declare function control-widgets:manage-actions( $svnurl as xs:string, $dest-svn
       then control-widgets:display-window( $svnurl, $dest-svnurl, $action, $file )
     else if( $action = 'do-copy' )
       then svn:copy( $svnurl, 
-                     $control:svnusername, $control:svnpassword, 
+                     $control:svnauth, 
                      substring-after( $file, $svnurl ), substring-after( $dest-svnurl, $svnurl ), 'copy' )
     else () (: tbd :)
 };
@@ -193,7 +193,7 @@ declare function control-widgets:choose-directory( $svnurl as xs:string, $dest-s
               <div class="name parentdir table-cell">
                 <a href="{$control:siteurl || '/' || $action || '?svnurl=' || $svnurl || '&amp;dest-svnurl=' || control-util:path-parent-dir( $dest-svnurl ) || '&amp;action=' || $action || '&amp;file=' || $file }">..</a></div>
               </div>,
-              for $files in svn:list( $dest-svnurl, $control:svnusername, $control:svnpassword, false())/*
+              for $files in svn:list( $dest-svnurl, $control:svnauth, false())/*
               order by lower-case( $files/@name )
               order by $files/local-name()
               let $href := $control:siteurl || '/' || $action || '?svnurl=' || $svnurl || '&amp;dest-svnurl=' || $dest-svnurl || '/' || $files/@name || '&amp;action=' || $action || '&amp;file=' || $file
@@ -524,11 +524,10 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
 declare function control-widgets:get-dir-parent( $svnurl as xs:string, $control-dir as xs:string, $repopath as xs:string? ) as element(div )* {
   let $new-svnurl := if ($repopath!= '') then $svnurl else replace($svnurl,'/?[^/]+/?$',''),
       $new-repopath := if ($repopath!= '') then replace($repopath,'/?[^/]+/?$','') else '',
-      $auth := map{'username':$control:svnusername,'cert-path':'', 'password': $control:svnpassword},
       $path := (request:parameter('from'),
                 svn:list(
                   control-util:path-parent-dir( $svnurl ), 
-                  $auth, false()
+                  $control:svnauth, false()
                 )/self::c:files/@*:base)[1]
   return 
     <div class="table-row directory-entry">
