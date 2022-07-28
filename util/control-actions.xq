@@ -109,10 +109,9 @@ function control-actions:copy( $svnurl as xs:string, $repopath as xs:string?, $f
 declare
   %rest:path("/control/access")
   %rest:query-param("svnurl", "{$svnurl}")
-  %rest:query-param("repopath", "{$repopath}")
   %rest:query-param("file", "{$file}")
   %output:method('html')
-function control-actions:access( $svnurl as xs:string, $file as xs:string, $repopath as xs:string? ) {
+function control-actions:access( $svnurl as xs:string, $file as xs:string) {
 <html>
   <head>
     {control-widgets:get-html-head( )}
@@ -120,7 +119,7 @@ function control-actions:access( $svnurl as xs:string, $file as xs:string, $repo
   <body>
     {control-widgets:get-page-header()}
     <main>
-      {control-widgets:add-access-entry( $svnurl, $control:path || '/../', $repopath, string-join(($repopath,$file),'/') )}
+      {control-widgets:file-access( $svnurl, $file )}
     </main>
     {control-widgets:get-page-footer()}
   </body>

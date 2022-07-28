@@ -130,7 +130,7 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
             <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
           </li>,
           <li>
-            <a class="btn" href="{$control:path || '/access?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;action=access&amp;file=' || $file }">{control-i18n:localize('access', $control:locale)}</a>
+            <a class="btn" href="{$control:path || '/access?svnurl=' || $svnurl || '&amp;action=access&amp;file=' || $file }">{control-i18n:localize('access', $control:locale)}</a>
           </li>,
           <li>
             <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
@@ -268,18 +268,21 @@ declare function control-widgets:create-infobox()
 (:
  : returns controls to modify access to directory
 :)
-declare function control-widgets:add-access-entry( $svnurl as xs:string, $control-dir as xs:string, $repopath as xs:string?, $filepath as xs:string ) as element(div) {
-  let $selected-svnurl := if ($repopath = '')
-                          then $filepath
-                          else $svnurl,
-      $selected-file := if ($repopath = '')
-                        then ''
-                        else $filepath
+declare function control-widgets:file-access( $svnurl as xs:string, $file as xs:string ) as element(div) {
+  let $repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
+      $filepath := replace(
+                     replace(
+                       string-join(
+                         ($svnurl,$file),'/'),'/$','')
+                         ,svn:info(
+                           $svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value
+                         ,'')
+      
   return
     <div class="access-widget">
     <h1> {control-i18n:localize('perm-title', $control:locale ) || ' ' || $filepath }</h1>
     <div id="streamed-data" class="hidden">
-    {control-util:get-permissions-for-file($svnurl, $repopath, $filepath,$control:access)}</div>
+    {control-util:get-permissions-for-file($svnurl, $file, $control:access)}</div>
     <div class="table">
     {control-i18n:localize('existingrights', $control:locale )}
       <div class="table-body">
@@ -290,7 +293,7 @@ declare function control-widgets:add-access-entry( $svnurl as xs:string, $contro
           <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
         </div>
       </div>
-      {for $access in control-util:get-permissions-for-file($svnurl, $repopath, $filepath,$control:access)
+      {for $access in control-util:get-permissions-for-file($svnurl, $file,$control:access)
        return <div class="table-row">
                 <div class="table-cell">{$access/g}</div>
                 <div class="table-cell">{$access/p/text()}</div>
@@ -299,13 +302,13 @@ declare function control-widgets:add-access-entry( $svnurl as xs:string, $contro
                   <div class="table-cell">implicit</div>
                 else
                  (<div class="table-cell">explicit</div>,
-                  <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removepermission?svnurl={$svnurl}&amp;repopath={$repopath}&amp;filepath={$filepath}&amp;group={$access/*:g/text()}">&#x1f5d1;</a></div>)
+                  <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removepermission?svnurl={$svnurl}&amp;file={$file}&amp;group={$access/*:g/text()}">&#x1f5d1;</a></div>)
                 }
               </div>}
       </div>
       
       <h2> {control-i18n:localize('set-perm', $control:locale ) || ' ' || $filepath }</h2>
-      <form action="{$control:siteurl}/group/setaccess?svnurl={$svnurl}&amp;repopath={$repopath}&amp;filepath={$filepath}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+      <form action="{$control:siteurl}/group/setaccess?svnurl={$svnurl}&amp;file={$file}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
         <div class="add-new-access">
           <div class="form">
             <label for="groupname" class="leftlabel">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
@@ -326,7 +329,7 @@ declare function control-widgets:add-access-entry( $svnurl as xs:string, $contro
         </div>
       </form>
       <button class="btn">
-        <a href="{$control:siteurl}?svnurl={concat($svnurl, if ($repopath) then concat('&amp;repopath=', $repopath))}">{control-i18n:localize('back', $control:locale)}</a>
+        <a href="{$control:siteurl}?svnurl={$svnurl}">{control-i18n:localize('back', $control:locale)}</a>
       </button>
     </div>
 };

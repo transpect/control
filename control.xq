@@ -635,12 +635,10 @@ return
 declare
 %rest:path("/control/group/setaccess")
 %rest:query-param("svnurl", "{$svnurl}")
-%rest:query-param("repopath", "{$repopath}")
-%rest:query-param("filepath", "{$filepath}")
+%rest:query-param("file", "{$file}")
 %output:method('html')
 %output:version('5.0')
-function control:setaccess($svnurl as xs:string, $repopath as xs:string?, $filepath as xs:string) {
-
+function control:setaccess($svnurl as xs:string, $file as xs:string) {
 let $credentials := request:header("Authorization")
                     => substring(6)
                     => xs:base64Binary()
@@ -650,14 +648,18 @@ let $credentials := request:header("Authorization")
     $password := $credentials[2], 
     
     $selected-group := request:parameter("groups"),
-    $selected-access := request:parameter("access"),
+    $selected-permission := request:parameter("access"),
     
-    $selected-repo := tokenize($svnurl,'/')[position() = 5],
+    $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
     
-    $selected-filepath := $filepath,
+    $selected-filepath := replace(
+                                string-join(
+                                  ($svnurl,$file)
+                                  ,'/')
+                                ,svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value ||'/',''),
     
-    $file := doc("control.xml"),
-    $updated-access := $file update {delete node //control:rels/control:rel
+    $control-file := doc("control.xml"),
+    $updated-access := $control-file update {delete node //control:rels/control:rel
                                       [control:repo = $selected-repo]
                                       [control:file = $selected-filepath]
                                       [control:group = $selected-group]}
@@ -665,7 +667,7 @@ let $credentials := request:header("Authorization")
                                       element group {$selected-group},
                                       element repo {$selected-repo},
                                       element file {$selected-filepath},
-                                      element permission {$selected-access}} into .//control:rels},
+                                      element permission {$selected-permission}} into .//control:rels},
     $result :=
       if (control-util:is-admin($username))
       then
@@ -675,7 +677,7 @@ let $credentials := request:header("Authorization")
     $btntarget :=
       if ($result/code = 0)
       then
-        ($control:siteurl || '/access?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;action=access' || '&amp;file=' || tokenize($filepath,'/')[last()] )
+        ($control:siteurl || '/access?svnurl=' || $svnurl || '&amp;action=access' || '&amp;file=' || tokenize($file,'/')[last()] )
       else
         ($control:siteurl || '/user?svnurl=' || $svnurl),
     $btntext :=
@@ -723,10 +725,6 @@ let $credentials := request:header("Authorization")
     $username := $credentials[1],
     $password := $credentials[2], 
     
-    $selected-group := request:parameter("groups"),
-    $selected-access := request:parameter("access"),
-    
-    $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
     $index := control-util:create-path-index($control:svnurlhierarchy, $name, $name, $control:svnurlhierarchy,''),
     $result :=
       if ($index)
@@ -767,12 +765,11 @@ return
 declare
 %rest:path("/control/group/removepermission")
 %rest:query-param("svnurl", "{$svnurl}")
-%rest:query-param("repopath", "{$repopath}")
-%rest:query-param("filepath", "{$filepath}")
+%rest:query-param("file", "{$file}")
 %rest:query-param("group", "{$group}")
 %output:method('html')
 %output:version('5.0')
-function control:removepermission($svnurl as xs:string, $repopath as xs:string?, $filepath as xs:string, $group as xs:string) {
+function control:removepermission($svnurl as xs:string, $file as xs:string, $group as xs:string) {
 
 let $credentials := request:header("Authorization")
                     => substring(6)
@@ -782,10 +779,11 @@ let $credentials := request:header("Authorization")
     $username := $credentials[1],
     $password := $credentials[2],
     
-    $file := doc("control.xml"),
-    $selected-repo := tokenize($svnurl,'/')[position() = 5],
-    $selected-filepath := $filepath,
-    $updated-access := $file update {delete node //control:rels/control:rel
+    $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
+    $selected-filepath := replace(replace(replace(string-join(($svnurl,$file),'/'),'/$',''),svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,''),'^/',''),
+    
+    $control-file := doc("control.xml"),
+    $updated-access := $control-file update {delete node //control:rels/control:rel
                                       [control:repo = $selected-repo]
                                       [control:file = $selected-filepath]
                                       [control:group = $group]},
@@ -798,7 +796,7 @@ let $credentials := request:header("Authorization")
     $btntarget :=
       if ($result/code = 0)
       then
-        ($control:siteurl || '/access?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;action=access' || '&amp;file=' || tokenize($filepath,'/')[last()] )
+        ($control:siteurl || '/access?svnurl=' || $svnurl || '&amp;action=access' || '&amp;file=' || $file )
       else
         ($control:siteurl || '/user?svnurl=' || $svnurl),
     $btntext :=
@@ -1165,7 +1163,7 @@ function control:writetoauthz($access) {
       return concat(
                '[',
                $a/control:repo,':/',
-               $a/control:file,
+               replace($a/control:file,'^/',''),
                ']',
                $control:nl,
                concat('@',$a/control:group),' = ', $selected-permission,$control:nl

@@ -89,12 +89,11 @@ declare function control-util:create-path-index($svnurl as xs:string,
   }
 };
 
-declare function control-util:get-permissions-for-file($svnurl as xs:string, 
-                                                       $repopath as xs:string?, 
-                                                       $filepath as xs:string?,
+declare function control-util:get-permissions-for-file($svnurl as xs:string,
+                                                       $file as xs:string,
                                                        $access){
-  let $selected-repo := tokenize($svnurl,'/')[position() = 5],
-      $selected-filepath := $filepath,
+  let $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
+      $selected-filepath := replace(replace(replace(string-join(($svnurl,$file),'/'),'/$',''),svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,''),'^/',''),
       $admin-group := $access//control:groups/control:group[control:name = 'admin'],
       $explicit-permissions := for $group in $access//control:groups/control:group except $admin-group
                                let $p := $access//control:rels/control:rel[control:file = $selected-filepath]
@@ -162,6 +161,10 @@ declare function control-util:pad-text($string as xs:string?, $length as xs:inte
 
 declare function control-util:create-download-link($svnurl as xs:string, $repopath as xs:string?, $file as xs:string?) as xs:string{
   let $result := string-join((replace(replace($svnurl,'127.0.0.1','localhost:' || $control:port),$control:svnbasewerke,$control:repobase),$repopath,$file),'/')
+  return $result
+};
+declare function control-util:get-local-path($svnurl as xs:string) as xs:string{
+  let $result := replace($svnurl,'http://127.0.0.1/content/','/data/svn/')
   return $result
 };
 
