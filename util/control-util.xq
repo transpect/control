@@ -64,8 +64,8 @@ declare function control-util:create-path-index($svnurl as xs:string,
                                                 $mount-point as xs:string?){
   element {$type} {
     attribute name {$name},
-    attribute svnurl {$svnurl},
-    attribute virtual-path {$virtual-path},
+    attribute svnurl {control-util:get-local-path($svnurl)},
+    attribute virtual-path {control-util:get-local-path($virtual-path)},
     if ($type = 'file') then attribute mount-point {$mount-point}
     else (
     for $d in svn:list($svnurl,$control:svnauth, false())/*
@@ -77,7 +77,7 @@ declare function control-util:create-path-index($svnurl as xs:string,
     return $sub,
     for $e in control-util:parse-externals-property(svn:propget($svnurl, $control:svnauth, 'svn:externals', 'HEAD'))
     return 
-      <external path="{$e/@url}" mount-point="{$svnurl || '/' || $e/@mount}" svnurl="{$svnurl}">
+      <external name="{$e/@mount}" path="{control-util:get-local-path($e/@url)}" mount-point="{control-util:get-local-path($svnurl || '/' || $e/@mount)}" svnurl="{control-util:get-local-path($svnurl)}">
         {for $f in svn:list(xs:string($e/@url),$control:svnauth, false())/*
          let $subf := control-util:create-path-index(string-join((xs:string($e/@url),$f/@name),'/'),
                                                      $f/@name,
@@ -129,6 +129,10 @@ declare function control-util:is-file($file as xs:string?) as xs:boolean{
 declare function control-util:split-string-at-length($str as xs:string?, $length as xs:integer) as xs:string* {
   for $i in (1 to (xs:integer(ceiling(string-length($str) div $length))))
   return substring($str, ($i - 1) * $length + 1, $length)
+};
+
+declare function control-util:svnurl-to-link($svnurl as xs:string) as element(a){
+  <a href="{$control:siteurl || '?svnurl=' || $svnurl}">{$svnurl}</a>
 };
 
 declare function control-util:get-short-string($str as xs:string, $length as xs:integer) as xs:string {
