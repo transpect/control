@@ -97,7 +97,7 @@ function control-actions:copy( $svnurl as xs:string, $repopath as xs:string?, $f
      else ()}
     <main>
       {control:get-message( $control:msg, $control:msgtype ),
-       control-widgets:get-dir-list( $svnurl, $repopath, $control:path || '/../',control-util:is-svn-repo($svnurl), $auth)}
+       control-widgets:get-dir-list( $svnurl, $control:path || '/../',control-util:is-svn-repo($svnurl), $auth)}
     </main>
     {control-widgets:get-page-footer()}
   </body>
@@ -138,7 +138,7 @@ function control-actions:delete( $svnurl as xs:string, $repopath as xs:string, $
 let 
     $auth := map {"username": $control:svnusername, 
                   'password': $control:svnpassword},
-    $resu := svn:delete(concat('http://127.0.0.1/', control-util:create-download-link($svnurl,$repopath, '')), $auth, $file, true(), 'deleted by me')
+    $resu := svn:delete(concat('http://127.0.0.1/', control-util:create-download-link($svnurl, '')), $auth, $file, true(), 'deleted by me')
 return <html>
 <head>Deleted; Go Back In Browser and Reload</head>
 <body>
@@ -155,7 +155,7 @@ function control-actions:delete-not-working( $svnurl as xs:string, $repopath as 
 let 
     $auth := map {"username": xs:string(doc('../config.xml')/control:config/control:svnusername), 
                   'password': xs:string(doc('../config.xml')/control:config/control:svnpassword)},
-    $resu := svn:delete(concat('http://127.0.0.1/', control-util:create-download-link($svnurl,$repopath, '')), $auth, $file, true(), 'deleted by me')
+    $resu := svn:delete(concat('http://127.0.0.1/', control-util:create-download-link($svnurl, '')), $auth, $file, true(), 'deleted by me')
 return <html>
 <head>{control-widgets:get-html-head( )}</head>
 <body>
@@ -176,7 +176,7 @@ declare
 function control-actions:rename( $svnurl as xs:string, $repopath as xs:string?, $file as xs:string, $target as xs:string ) {
 let $auth := map {"username": xs:string(doc('../config.xml')/control:config/control:svnusername), 
                   'password': xs:string(doc('../config.xml')/control:config/control:svnpassword)},
-    $resu := svn:move(concat('http://127.0.0.1/', control-util:create-download-link($svnurl,$repopath, '')), $auth, $file, $target, 'renamed by' || $control:svnusername )
+    $resu := svn:move(concat('http://127.0.0.1/', control-util:create-download-link($svnurl, '')), $auth, $file, $target, 'renamed by' || $control:svnusername )
 return <html>
 <head>Renamed; Go Back In Browser</head>
 <body>

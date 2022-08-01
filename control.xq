@@ -45,10 +45,9 @@ declare variable $control:nl              := "
 declare
 %rest:path('/control')
 %rest:query-param("svnurl", "{$svnurl}")
-%rest:query-param("repopath", "{$repopath}")
 %output:method('html')
 %output:version('5.0')
-function control:control($svnurl as xs:string?, $repopath as xs:string?) as element() {
+function control:control($svnurl as xs:string?) as element() {
   let $credentials := request:header("Authorization")
                     => substring(6)
                     => xs:base64Binary()
@@ -56,33 +55,13 @@ function control:control($svnurl as xs:string?, $repopath as xs:string?) as elem
                     => tokenize(':'),
        $username := $credentials[1],
        $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
-  return control:main( $svnurl, $repopath ,$auth)
+  return control:main( $svnurl ,$auth)
 };
-(:
-declare
-%rest:path('/control/setposition')
-%rest:query-param("svnurl", "{$svnurl}")
-%rest:query-param("repopath", "{$repopath}")
-%output:method('html')
-%output:version('5.0')
-function control:setposition($svnurl as xs:string?, $repopath as xs:string?) as element() {
-  let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-       $username := $credentials[1],
-       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
-       $session := session:set('svnurl',$svnurl),
-       $session2 := session:set('repopath',$repopath)
-       
-  return web:redirect('/basex/control')
-};:)
 
 (:
  : this is where the "fun" starts...
  :)
-declare function control:main( $svnurl as xs:string?, $repopath as xs:string?, $auth as map(*)) as element(html) {
+declare function control:main( $svnurl as xs:string?, $auth as map(*)) as element(html) {
   let $used-svnurl := control-util:get-current-svnurl(map:get($auth,'username'), $svnurl)
   return
   <html>
@@ -98,7 +77,7 @@ declare function control:main( $svnurl as xs:string?, $repopath as xs:string?, $
         {
          control:get-message( $control:msg, $control:msgtype ),
          if(normalize-space( $used-svnurl ))
-         then control-widgets:get-dir-list( $used-svnurl, $repopath, $control:path, control-util:is-local-repo($used-svnurl), $auth)
+         then control-widgets:get-dir-list( $used-svnurl, $control:path, control-util:is-local-repo($used-svnurl), $auth)
          else 'URL parameter empty!'}
       </main>
       {control-widgets:get-page-footer(),
@@ -112,11 +91,10 @@ declare function control:main( $svnurl as xs:string?, $repopath as xs:string?, $
 declare
 %rest:path('/control/getsvnlog')
 %rest:query-param("svnurl", "{$svnurl}")
-%rest:query-param("repopath", "{$repopath}")
 %rest:query-param("file", "{$file}")
 %output:method('html')
 %output:version('5.0')
-function control:get-svnlog($svnurl as xs:string?, $repopath as xs:string?, $file as xs:string?) as element() {
+function control:get-svnlog($svnurl as xs:string?, $file as xs:string?) as element() {
   let $credentials := request:header("Authorization")
                     => substring(6)
                     => xs:base64Binary()
@@ -124,7 +102,7 @@ function control:get-svnlog($svnurl as xs:string?, $repopath as xs:string?, $fil
                     => tokenize(':'),
        $username := $credentials[1],
        $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
-       $svnlog := svn:log( $svnurl || $repopath || '/' || $file,$auth,0,0,0),
+       $svnlog := svn:log( $svnurl || '/' || $file,$auth,0,0,0),
        $monospace-width := 70
   return <pre class="monospace">
   {for $le in $svnlog/*:logEntry
@@ -187,11 +165,10 @@ function control:get-svnlog($svnurl as xs:string?, $repopath as xs:string?, $fil
 declare
 %rest:path('/control/getsvninfo')
 %rest:query-param("svnurl", "{$svnurl}")
-%rest:query-param("repopath", "{$repopath}")
 %rest:query-param("file", "{$file}")
 %output:method('html')
 %output:version('5.0')
-function control:get-svninfo($svnurl as xs:string?, $repopath as xs:string?, $file as xs:string?) as element() {
+function control:get-svninfo($svnurl as xs:string?, $file as xs:string?) as element() {
   let $credentials := request:header("Authorization")
                     => substring(6)
                     => xs:base64Binary()
@@ -199,7 +176,7 @@ function control:get-svninfo($svnurl as xs:string?, $repopath as xs:string?, $fi
                     => tokenize(':'),
        $username := $credentials[1],
        $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
-       $svninfo := svn:info( $svnurl || $repopath || '/' || $file,$auth),
+       $svninfo := svn:info( $svnurl ||  '/' || $file,$auth),
        $monospace-width := 70
   return 
   <pre class="monospace">
@@ -212,50 +189,13 @@ function control:get-svninfo($svnurl as xs:string?, $repopath as xs:string?, $fi
           $url  := xs:string($svninfo/*:param[matches(@name, '^url')]/@value)
       return 
         ('Path: ', $path,<br/>,
-        'URL: ', $url,<br/>,
-        'Root URL: ', $root-url,<br/>,
+        'URL: ', control-util:svnurl-to-link($url),<br/>,
+        'Root URL: ', control-util:svnurl-to-link($root-url),<br/>,
         'Revision: ', $rev,<br/>,
-        'Author: ', $rev,<br/>,
+        'Author: ', $author,<br/>,
         'Date: ', $date)
     }
   </pre>
-    (:<table> 
-      <thead>
-        <th>Author</th>
-        <th>Message</th>
-        <th>Date</th>
-        <th>Revision</th>
-      </thead>
-      <tbody>{
-      for $le in $svnlog/*:logEntry
-      return
-         (<tr>
-            <td>{xs:string($le/@author)}</td>
-            <td>{xs:string($le/@message)}</td>
-            <td>{xs:string($le/@date)}</td>
-            <td>{xs:string($le/@revision)}</td>
-          </tr>,
-          <tr>
-            <td colspan="4">
-              <div class="table">
-                <div class="table-row">
-                  <div class="table-cell">Path</div>
-                  <div class="table-cell">Type</div>
-                </div>{
-                for $changedPath in $le//*:changedPath
-                let $path := xs:string($changedPath/@name),
-                    $type := xs:string($changedPath/@type)
-                return 
-                  <div class="table-row">
-                    <div class="table-cell">{$path}</div>
-                    <div class="table-cell">{$type}</div>
-                  </div>}
-              </div>
-            </td>
-          </tr>)
-      }
-      </tbody>
-    </table>:)
 };
 (:
  : displays a message
@@ -336,10 +276,9 @@ return
 declare
 %rest:path("/control/config")
 %rest:query-param("svnurl", "{$svnurl}")
-%rest:query-param("repopath", "{$repopath}")
 %output:method('html')
 %output:version('5.0')
-function control:configmgmt($svnurl as xs:string, $repopath as xs:string?) as element(html) {
+function control:configmgmt($svnurl as xs:string) as element(html) {
 let $credentials := request:header("Authorization")
                     => substring(6)
                     => xs:base64Binary()
@@ -363,7 +302,7 @@ return
              control-widgets:create-new-group($svnurl),
              control-widgets:customize-groups($svnurl),
              control-widgets:remove-groups($svnurl),
-             control-widgets:rebuild-index($svnurl, $repopath, 'root'),
+             control-widgets:rebuild-index($svnurl, 'root'),
              <div>{'session-id: '||session:id()}</div>)
        else ''}
     </body>
@@ -711,11 +650,10 @@ return
 declare
 %rest:path("/control/config/rebuildindex")
 %rest:query-param("svnurl", "{$svnurl}")
-%rest:query-param("repopath", "{$repopath}")
 %rest:query-param("name", "{$name}")
 %output:method('html')
 %output:version('5.0')
-function control:rebuildindex($svnurl as xs:string, $repopath as xs:string?, $name as xs:string) {
+function control:rebuildindex($svnurl as xs:string, $name as xs:string) {
 
 let $credentials := request:header("Authorization")
                     => substring(6)

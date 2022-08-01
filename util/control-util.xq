@@ -163,8 +163,8 @@ declare function control-util:pad-text($string as xs:string?, $length as xs:inte
   concat($string, string-join(for $x in 1 to ($length - string-length($string)) return ' ', ""))
 };
 
-declare function control-util:create-download-link($svnurl as xs:string, $repopath as xs:string?, $file as xs:string?) as xs:string{
-  let $result := string-join((replace(replace($svnurl,'127.0.0.1','localhost:' || $control:port),$control:svnbasewerke,$control:repobase),$repopath,$file),'/')
+declare function control-util:create-download-link($svnurl as xs:string, $file as xs:string?) as xs:string{
+  let $result := string-join((replace(replace($svnurl,'127.0.0.1','localhost:' || $control:port),$control:svnbasewerke,$control:repobase),$file),'/')
   return $result
 };
 declare function control-util:get-local-path($svnurl as xs:string) as xs:string{

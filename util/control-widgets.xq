@@ -84,12 +84,11 @@ declare function control-widgets:get-back-to-svndir-button( $svnurl as xs:string
 };
 
 declare function control-widgets:rebuild-index($svnurl as xs:string,
-                                               $repopath as xs:string?, 
                                                $name as xs:string) as element(div){
   <div class="adminmgmt">
     <h2>{control-i18n:localize('rebuildindex', $control:locale)}</h2>
     <button class="btn ok" >
-      <a href="{$control:siteurl}/config/rebuildindex?svnurl={$svnurl}&amp;repopath={$repopath}&amp;name={$name}">
+      <a href="{$control:siteurl}/config/rebuildindex?svnurl={$svnurl}&amp;name={$name}">
         {control-i18n:localize('rebuildindexbtn', $control:locale)}
       </a>
     </button>
@@ -98,7 +97,7 @@ declare function control-widgets:rebuild-index($svnurl as xs:string,
 (:
  : get file action dropdown button
  :)
-declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $repopath as xs:string?, $file as attribute(*)? ) as element(details){
+declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $file as attribute(*)? ) as element(details){
   <details class="file action dropdown">
     <summary class="btn">
       {control-i18n:localize('actions', $control:locale)}<span class="spacer"/>▼
@@ -139,11 +138,11 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
             <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
           </li>,
           <li>
-            <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;repopath=' || $repopath || '&amp;file=' || $file || '&amp;action=delete'}">{control-i18n:localize('delete', $control:locale)}</a>
+            <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;file=' || $file || '&amp;action=delete'}">{control-i18n:localize('delete', $control:locale)}</a>
           </li>,
           if (control-util:is-file($file))
           then (<li>
-            <a class="btn" download="" href="{control-util:create-download-link($svnurl, $repopath, $file)}">{control-i18n:localize('download', $control:locale)}</a>
+            <a class="btn" download="" href="{control-util:create-download-link($svnurl, $file)}">{control-i18n:localize('download', $control:locale)}</a>
           </li>)
         )
       }</ul>
@@ -240,15 +239,15 @@ declare function control-widgets:get-choose-directory-button( $svnurl as xs:stri
 (:
  : returns a html directory listing
 :)
-declare function control-widgets:get-dir-list( $svnurl as xs:string, $repopath as xs:string?, $control-dir as xs:string, $is-svn as xs:boolean, $auth as map(*)) as element(div) {
+declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-dir as xs:string, $is-svn as xs:boolean, $auth as map(*)) as element(div) {
   <div class="directory-list-wrapper">
-  {control-widgets:get-dir-menu( $svnurl, $repopath, $control-dir, $auth )}
+  {control-widgets:get-dir-menu( $svnurl, $control-dir, $auth )}
     <div class="directory-list table">
        {(svn:list( $svnurl, $auth, true())/*,
-           control-util:parse-externals-property(svn:propget($svnurl || $repopath, $auth, 'svn:externals', 'HEAD')))}
+           control-util:parse-externals-property(svn:propget($svnurl, $auth, 'svn:externals', 'HEAD')))}
       <div class="table-body">
-        {if ($is-svn) then control-widgets:list-admin-dir-entries( replace($svnurl,'http://127\.0\.0\.1\content','/data/svn'),if ($repopath != '') then $repopath else "", $control-dir, map{'show-externals': true()} )
-                      else control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': true()}, $repopath )}
+        {(:if ($is-svn) then control-widgets:list-admin-dir-entries( replace($svnurl,'http://127\.0\.0\.1\content','/data/svn')1, $control-dir, map{'show-externals': true()} )
+                      else :) control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': true()})}
       </div>
     </div>
   </div>
@@ -336,22 +335,22 @@ declare function control-widgets:file-access( $svnurl as xs:string, $file as xs:
 (:
  : get dir menu
  :)
-declare function control-widgets:get-dir-menu( $svnurl as xs:string, $repopath as xs:string?, $control-dir as xs:string, $auth as map(*) ) {
+declare function control-widgets:get-dir-menu( $svnurl as xs:string, $control-dir as xs:string, $auth as map(*) ) {
   <div class="dir-menu">
     <div class="dir-menu-left">
       {control-widgets:get-svnhome-button( $svnurl, $control-dir, $auth )}
-      <div class="path">{tokenize( string-join(($svnurl,$repopath), '/'),'/')[last()]}&#xa0;/ </div>
+      <div class="path">{tokenize($svnurl,'/')[last()]}&#xa0;/ </div>
       {control-widgets:create-dir-form( $svnurl, $control-dir )}
     </div>
     <div class="dir-menu-right">
-      {control-widgets:get-dir-actions( $svnurl, $control-dir, $repopath )}
+      {control-widgets:get-dir-actions( $svnurl, $control-dir )}
     </div>
   </div>
 };
 (:
  : get action buttons to add new files, create dirs etc.
  :)
-declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control-dir as xs:string?, $repopath as xs:string?) as element(div )* {
+declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control-dir as xs:string?) as element(div )* {
   <div class="directory-actions">
     <a href="/control/new-file?svnurl={$svnurl}">
       <button class="new-file action btn">
@@ -370,8 +369,7 @@ declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control
  :)
 declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                                            $control-dir as xs:string,
-                                           $options as map(xs:string, item()*)?,
-                                           $repopath as xs:string?) as element(div )* {
+                                           $options as map(xs:string, item()*)?) as element(div )* {
   control-widgets:get-dir-parent( $svnurl, $control-dir, '' ),
   let $filename-filter-regex as xs:string? := $options?filename-filter-regex,
       $dirs-only as xs:boolean? := $options?dirs-only = true(),
@@ -388,14 +386,12 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
   for $files in (
     svn:list( $svnurl, $auth, true())/*,
     if ($show-externals) then
-      control-util:parse-externals-property(svn:propget($svnurl || $repopath, $auth, 'svn:externals', 'HEAD'))
+      control-util:parse-externals-property(svn:propget($svnurl, $auth, 'svn:externals', 'HEAD'))
     else ()
   )
   order by lower-case( $files/(@name | @mount) )
   order by $files/local-name()
-  let $from-expression := if ($repopath)
-                         then '&amp;fromsvnurl=' || $svnurl || '&amp;fromrepopath=' || $repopath
-                         else '&amp;fromsvnurl=' || $svnurl,
+  let $from-expression := '&amp;fromsvnurl=' || $svnurl,
       $href := if ($files/self::external)
                then 
                  if (starts-with($files/@url, 'https://github.com/'))
@@ -426,7 +422,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
         </a>
       </div>
       <div class="name table-cell">
-        <a href="{if ($files/local-name() eq 'file') then control-util:create-download-link($svnurl, $repopath, $files/@name) else $href}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a></div>
+        <a href="{if ($files/local-name() eq 'file') then control-util:create-download-link($svnurl, $files/@name) else $href}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a></div>
       <div class="author table-cell">{xs:string( $files/@author )}</div>
       <div class="date table-cell">{xs:string( $files/@date )}</div>
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>
@@ -435,7 +431,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
                      $auth)/*:param[@name eq 'root-url']/@value
                     }</div>
       <div class="action table-cell">{if (control-util:get-rights($username, xs:string($files/@name)) = "write") 
-                                      then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], '', $files/(@name | @mount) ) 
+                                      then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files/(@name | @mount) ) 
                                       else ""}</div>
     </div> 
     else ()
@@ -443,7 +439,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
 (:
  : provide directory listing for local repo
  :)
-declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
+(:declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
                                            $repopath as xs:string,
                                            $control-dir as xs:string,
                                            $options as map(xs:string, item()*)? ) as element(div)* {
@@ -461,12 +457,12 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
   return
   for $files in (
-    (:if (not(matches($svnurl, '^http')))
+    (\:if (not(matches($svnurl, '^http')))
     then 
       svn:list( $svnurl, $auth, false())/*,
       if ($show-externals) then
         control-util:parse-externals-property(svn:propget( $svnurl, $auth, 'svn:externals', 'HEAD'))
-    else:)
+    else:\)
       svn:look( $svnurl,$repopath, $auth, false())/*,
       if ($show-externals) then
         control-util:parse-externals-property(svn:propget( $svnurl || $repopath, $auth, 'svn:externals', 'HEAD'))
@@ -518,7 +514,7 @@ declare function control-widgets:list-admin-dir-entries( $svnurl as xs:string,
                                       else ""}</div>
     </div>
     else()
-};
+};:)
 
 (:
  : provides a row in the html direcory listing 
