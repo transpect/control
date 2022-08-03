@@ -266,6 +266,48 @@ declare function control-util:parse-externals-property($prop as element(*)) as e
   }</external>
 };
 
+declare function control-util:post-file-to-converter($svnurl as xs:string, $file as xs:string, $converter as xs:string, $type as xs:string) as element(conversion) {
+(: $converter := hobots, $type := idml2tex:)
+  let $filepath      := '/home/transpect-control/upload',
+      $convertertype := $control:converters/*[@name = $converter]/types/type[@name = $type],
+      $prepare-file  := proc:execute('mkdir', ($filepath, '-p')),
+      $checkout      := proc:execute('svn',('co', $svnurl, $filepath, '--username',$control:svnusername,'--password',$control:svnpassword)),
+      $upload        := proc:execute('curl',('-F', 'type='||$convertertype/@type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'upload'))),
+      $upload_res    := json:parse($upload/output),
+      $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'status')||'?input_file='||$file||'&amp;type='||$convertertype/@type)),
+      $status_res    := json:parse($status/output),
+      $result_xml    := 
+        <conversion>
+          <type>{$upload_res/json/conversion__type/text()}</type>
+          <status>{if ($upload_res/json/status/text()) then $upload_res/json/status/text() else 'failed'}</status>
+          <callback>{$upload_res/json/callback__uri/text()}</callback>
+          <delete>{$status_res/json/delete__uri/text()}</delete>
+          <result_list>{$status_res/json/result__list__uri/text()}</result_list>
+        </conversion>
+  return $result_xml
+};
+
+declare function control-util:get-converters-for-file($file as xs:string) as xs:string* {
+     let $ext := replace($file,'.*\.([^\.]+)','$1')
+  return $control:converters//type[matches(@name,concat('^',$ext))]/@type
+};
+
+declare function control-util:add-conversion($conv as element(conversion)) {
+  let $file := doc($control:mgmtfile),
+      $updated-conversions := $file update {insert node $conv into //control:conversions}
+      
+  return file:write("basex/webapp/control/"||$control:mgmtfile, $updated-conversions)
+};
+
+declare function control-util:get-converter-for-type($type as xs:string) as element(converter)? {
+  $control:converters/converter[//type[@type = $type]]
+};
+
+declare function control-util:get-converter-function-url($name as xs:string, $type as xs:string){
+  let $converter := $control:converters/converter[@name = $name]
+  return $converter/base/text()||$converter/endpoints/*[local-name(.) = $type]/text()
+};
+
 declare function control-util:writegroups($access) as xs:string {
     string-join(('[groups]',
     for $group in $access//control:groups/control:group (:groups:)

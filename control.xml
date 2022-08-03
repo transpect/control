@@ -1,25 +1,23 @@
 <!-- User, group and repository access control -->
-<access xmlns="http://transpect.io/control">
-  <users>
-    <user>
-      <name>admin</name>
-    </user>
-  </users>
-  <groups>
-    <group>
-      <name>admin</name>
-    </group>
-  </groups>
-  <rels>
-    <rel>
-      <group>
-        admin
-      </group>
+<management xmlns="http://transpect.io/control">
+  <access>
+    <users>
       <user>
-        admin
+        <name>admin</name>
       </user>
-    </rel>
-  </rels>
-  <repos>
-  </repos>
-</access>
+    </users>
+    <groups>
+      <group>
+        <name>admin</name>
+      </group>
+    </groups>
+    <rels>
+      <rel>
+        <group> admin </group>
+        <user> admin </user>
+      </rel>
+    </rels>
+    <repos> </repos>
+  </access>
+  <conversions/>
+</management>

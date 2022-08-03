@@ -19,6 +19,23 @@ declare function control-widgets:get-page-footer( ) as element(footer) {
     
   </footer>
 };
+
+(:
+ : get running conversions
+ :)
+declare function control-widgets:get-running-conversions($file as xs:string, $type as xs:string) {
+  let $conversions := $control:conversions
+  return $conversions
+};
+
+(:
+ : start new conversion
+ :)
+declare function control-widgets:start-new-conversion($svnurl as xs:string, $file as xs:string, $type as xs:string) {
+  let $conv := control-util:post-file-to-converter($svnurl, $file, control-util:get-converter-for-type($type), $type)
+  return $conv
+};
+
 (:
  : get the fancy page head
  :)
@@ -42,8 +59,7 @@ return
     <div class="nav-wrapper">
       <nav class="nav">
         <ol class="nav-ol">
-          <li class="nav-tab"><a href="{ 'control/projects?svnurl=' || $control:svnurl   }">{control-i18n:localize('projects', $control:locale)}</a></li>
-          <li class="nav-tab"><a>{control-i18n:localize('files', $control:locale)}</a></li>
+          <li class="nav-tab"><a href="{ $control:siteurl|| '?svnurl=http://127.0.0.1/content/hierarchy' }">{control-i18n:localize('files', $control:locale)}</a></li>
           <li class="nav-tab">{
             if (control-util:is-admin($username))
             then 
@@ -141,9 +157,17 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
             <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;file=' || $file || '&amp;action=delete'}">{control-i18n:localize('delete', $control:locale)}</a>
           </li>,
           if (control-util:is-file($file))
-          then (<li>
+          then (
+          <li>
             <a class="btn" download="" href="{control-util:create-download-link($svnurl, $file)}">{control-i18n:localize('download', $control:locale)}</a>
-          </li>)
+          </li>,
+          for $c in control-util:get-converters-for-file($file)
+          let $type := $control:converters/converter/types/type[@type = $c]
+          return 
+            <li>
+              <a class="btn" href="{$control:path || '/convert?svnurl=' || $svnurl || '&amp;file=' || $file || '&amp;type=' || $c}">{control-i18n:localize($type/@text, $control:locale)}</a>
+            </li>
+          )
         )
       }</ul>
     </div>

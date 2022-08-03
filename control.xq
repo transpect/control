@@ -18,7 +18,9 @@ declare variable $control:path            := doc('config.xml')/control:config/co
 declare variable $control:datadir         := doc('config.xml')/control:config/control:datadir;
 declare variable $control:db              := doc('config.xml')/control:config/control:db;
 declare variable $control:max-upload-size := doc('config.xml')/control:config/control:max-upload-size;
-declare variable $control:access          := doc('control.xml')/control:access;
+declare variable $control:mgmtfile        := 'control.xml';
+declare variable $control:access          := doc($control:mgmtfile)//control:access;
+declare variable $control:conversions     := doc($control:mgmtfile)//control:conversions;
 declare variable $control:index           := doc('index.xml')/root;
 declare variable $control:svnbasehierarchy:= "/data/svn/hierarchy";
 declare variable $control:svnurlhierarchy := "http://127.0.0.1/content/hierarchy";
@@ -36,7 +38,21 @@ declare variable $control:msgtype         := request:parameter('msgtype');
 declare variable $control:action          := request:parameter('action');
 declare variable $control:file            := request:parameter('file');
 declare variable $control:dest-svnurl     := request:parameter('dest-svnurl');
-declare variable $control:svnauthfile         := "/etc/svn/default.authz";
+declare variable $control:svnauthfile     := "/etc/svn/default.authz";
+declare variable $control:converters   := 
+<converters>
+  <converter name="hobots">
+    <base>https://hobots.hogrefe.com/transpect/en/api/</base>
+    <endpoints>
+      <upload>upload_file</upload>
+      <status>get_status</status>
+      <delete>delete</delete>
+    </endpoints>
+    <types>
+      <type name="idml2epub" type="HoBoTS_a6d6d3c094a8" text="convert_to_epub"/>
+    </types>
+  </converter>
+</converters>;
 declare variable $control:default-permission
                                           := "r";
 declare variable $control:nl              := "
@@ -270,6 +286,39 @@ return
     </body>
   </html>
 };
+
+(:
+ : User Management main page
+ : For now contains only Reset Password
+ :)
+declare
+%rest:path("/control/convert")
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("file", "{$file}")
+%rest:query-param("type", "{$type}")
+%output:method('html')
+%output:version('5.0')
+function control:usermgmt($svnurl as xs:string, $file as xs:string, $type as xs:string) as element(html) {
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2]
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head()}
+    </head>
+    <body>
+      {control-widgets:get-page-header(),
+       control-widgets:get-running-conversions($file, $type),
+       control-widgets:start-new-conversion($svnurl, $file, $type)}
+    </body>
+  </html>
+};
+
 (:
  : Configuration main page
  :)
@@ -395,7 +444,7 @@ let $credentials := request:header("Authorization")
     
     $defaultsvnurl := request:parameter("defaultsvnurl"),
     
-    $file := doc("control.xml"),
+    $file := doc($control:mgmtfile),
     
     $updated-access := $file update {delete node //control:rels/control:rel[control:user = $username][control:defaultsvnurl]}
                              update {insert node element rel {element defaultsvnurl {$defaultsvnurl},
@@ -403,7 +452,7 @@ let $credentials := request:header("Authorization")
     
     $result := if ($defaultsvnurl)
       then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access)}}
       else
         element result { element error {"deafultsvnurl is empty."}, element code {1}},
         
@@ -458,7 +507,7 @@ let $credentials := request:header("Authorization")
     $groups := request:parameter("groups"),
     $selected-user := request:parameter("users"),
     
-    $file := doc("control.xml"),
+    $file := doc($control:mgmtfile),
     
     $added-rel := for $group in $groups 
                    return element rel {
@@ -472,7 +521,7 @@ let $credentials := request:header("Authorization")
     $result :=
       if (control-util:is-admin($username))
       then
-       element result { element error {"Updated"}, element code{0}, element text {file:write("basex/webapp/control/control.xml",$updated-access)}}
+       element result { element error {"Updated"}, element code{0}, element text {file:write("basex/webapp/control/"|| $control:mgmtfile, $updated-access)}}
       else
         element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=
@@ -526,7 +575,7 @@ let $credentials := request:header("Authorization")
     
     $selected-group := request:parameter("groups"),
     
-    $file := doc("control.xml"),
+    $file := doc($control:mgmtfile),
     
     $updated-access := $file update {delete node //control:rels/control:rel[control:user][control:group = $selected-group]}
                              update {delete node //control:rels/control:rel[control:repo][control:group = $selected-group]}
@@ -534,7 +583,7 @@ let $credentials := request:header("Authorization")
     $result :=
       if (control-util:is-admin($username))
       then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access)}}
       else
         element result { element error {"You are not an admin."}, element code {1}},
         
@@ -597,7 +646,7 @@ let $credentials := request:header("Authorization")
                                   ,'/')
                                 ,svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value ||'/',''),
     
-    $control-file := doc("control.xml"),
+    $control-file := doc($control:mgmtfile),
     $updated-access := $control-file update {delete node //control:rels/control:rel
                                       [control:repo = $selected-repo]
                                       [control:file = $selected-filepath]
@@ -610,7 +659,7 @@ let $credentials := request:header("Authorization")
     $result :=
       if (control-util:is-admin($username))
       then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
       else
         element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=
@@ -720,7 +769,7 @@ let $credentials := request:header("Authorization")
     $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
     $selected-filepath := replace(replace(replace(string-join(($svnurl,$file),'/'),'/$',''),svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,''),'^/',''),
     
-    $control-file := doc("control.xml"),
+    $control-file := doc($control:mgmtfile),
     $updated-access := $control-file update {delete node //control:rels/control:rel
                                       [control:repo = $selected-repo]
                                       [control:file = $selected-filepath]
@@ -728,7 +777,7 @@ let $credentials := request:header("Authorization")
     $result :=
       if (control-util:is-admin($username))
       then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
       else
         element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=
@@ -781,14 +830,14 @@ let $credentials := request:header("Authorization")
     
     $selected-user := request:parameter("users"),
     
-    $file := doc("control.xml"),
+    $file := doc($control:mgmtfile),
     
     $updated-access := $file update {delete node //control:rels/control:rel[control:group][control:user = $selected-user]}
                              update {delete node //control:users/control:user[control:name = $selected-user]},
     $result :=
       if (control-util:is-admin($username))
       then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/control.xml",$updated-access)}}
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
       else
         element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=
@@ -826,8 +875,8 @@ return
  :)
 declare function control:createuser-bg($newusername as xs:string, $newpassword as xs:string, $defaultsvnurl as xs:string?) {
   let $callres := proc:execute('htpasswd', ('-b', '/etc/svn/default.htpasswd', $newusername, $newpassword)),
-      $fileupdate := file:write("basex/webapp/control/control.xml",
-                     let $file := doc("control.xml")
+      $fileupdate := file:write("basex/webapp/control/"||$control:mgmtfile,
+                     let $file := doc($control:mgmtfile)
                      return if (not($file//control:users/control:user[control:name = $newusername]))
                             then if ($defaultsvnurl)
                                  then $file update {insert node element user {element name {$newusername}} into .//*:users}
@@ -899,8 +948,8 @@ return
  :)
 declare function control:creategroup-bg($newgroupname as xs:string?,$newgroupreporegex as xs:string?) {
 let $callres := element result { element error {"Group created."}, element code {0}},
-    $fileupdate := file:write("basex/webapp/control/control.xml",
-          let $file := doc("control.xml")
+    $fileupdate := file:write("basex/webapp/control/"||$control:mgmtfile,
+          let $file := doc($control:mgmtfile)
           return $file update {insert node element group {element name {$newgroupname}} into .//*:groups}
                        update {insert node element rel {element group {$newgroupname}, element repo {$newgroupreporegex}} into .//*:rels}
         )
@@ -982,7 +1031,7 @@ let $credentials := request:header("Authorization")
     $reporegex := request:parameter("grouprepo"),
     $selected-group := request:parameter("groups"),
     
-    $file := doc("control.xml"),
+    $file := doc($control:mgmtfile),
     
     $added-rel := element rel {
                     element group {$selected-group},
@@ -993,7 +1042,7 @@ let $credentials := request:header("Authorization")
                                           [control:group = $selected-group]}
                              update {insert nodes $added-rel into //control:rels},
     
-    $filedel := file:write("basex/webapp/control/control.xml",$updated-access),
+    $filedel := file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
     $result :=
       if (control-util:is-admin($username))
       then

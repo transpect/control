@@ -88,6 +88,10 @@
     <locale lang="de">Info anzeigen</locale>
     <locale lang="en">Show info</locale>
   </entry>
+  <entry name="convert_to_epub">
+    <locale lang="de">nach epub konvertieren</locale>
+    <locale lang="en">Convert To Epub</locale>
+  </entry>
   <entry name="copy">
     <locale lang="de">Kopieren</locale>
     <locale lang="en">Copy</locale>
