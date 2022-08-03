@@ -84,6 +84,18 @@
     <locale lang="de">Log anzeigen</locale>
     <locale lang="en">Show log</locale>
   </entry>
+  <entry name="status">
+    <locale lang="de">Status</locale>
+    <locale lang="en">Status</locale>
+  </entry>
+  <entry name="converter">
+    <locale lang="de">Konverter</locale>
+    <locale lang="en">Converter</locale>
+  </entry>
+  <entry name="cancel">
+    <locale lang="de">Abbrechen</locale>
+    <locale lang="en">Cancel</locale>
+  </entry>
   <entry name="showInfo">
     <locale lang="de">Info anzeigen</locale>
     <locale lang="en">Show info</locale>

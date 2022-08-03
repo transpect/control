@@ -40,18 +40,18 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
     {control-i18n:localize('running_conversions', $control:locale )}
       <div class="table-body">
         <div class="table-row">
-          <div class="table-cell">{control-i18n:localize('group', $control:locale )}</div>
-          <div class="table-cell">{control-i18n:localize('permission', $control:locale )}</div>
-          <div class="table-cell">{control-i18n:localize('implicit', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('status', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('converter', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('cancel', $control:locale )}</div>
           <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
         </div>
       </div>
       {for $conversion in control-util:get-running-conversions($svnurl, $file, $type)
        return <div class="table-row">
-                <div class="table-cell">{$conversion/control:type}</div>
                 <div class="table-cell">{$conversion/control:status}</div>
-                <div class="table-cell">{$conversion/control:callback}</div>
+                <div class="table-cell">{$conversion/control:type}</div>
                 <div class="table-cell">{$conversion/control:delete}</div>
+                <div class="table-cell">{$conversion/control:callback}</div>
               </div>}
       </div>
       

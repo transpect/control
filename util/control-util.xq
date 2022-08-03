@@ -168,8 +168,11 @@ declare function control-util:create-download-link($svnurl as xs:string, $file a
   return $result
 };
 declare function control-util:get-local-path($svnurl as xs:string) as xs:string{
-  let $result := replace($svnurl,'http://127.0.0.1/content/','/data/svn/')
-  return $result
+  replace($svnurl,'^http://127.0.0.1/content/','/data/svn/')
+};
+
+declare function control-util:get-canonical-path($svnurl as xs:string) as xs:string{
+  replace($svnurl, '^/data/svn/', 'http://127.0.0.1/content/')
 };
 
 declare function control-util:get-permission-for-group($group as xs:string, $repo as xs:string, $access) as xs:string?{
@@ -285,6 +288,7 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
           <callback>{$upload_res/json/callback__uri/text()}</callback>
           <delete>{$status_res/json/delete__uri/text()}</delete>
           <result_list>{$status_res/json/r1esult__list__uri/text()}</result_list>
+          <date>{$status_res/json/r1esult__list__uri/text()}</date>
         </conversion>
   return $result_xml
 };
@@ -292,7 +296,7 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
 (:
  : get running conversions
  :)
-declare function control-util:get-running-conversions($svnurl as xs:string, $file as xs:string, $type as xs:string) {
+ declare function control-util:get-running-conversions($svnurl as xs:string, $file as xs:string, $type as xs:string) {
   let $conversions := $control:conversions//control:conversion[control:type = $type][control:file = $file][control:svnurl = $svnurl]
   return $conversions
 };
