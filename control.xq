@@ -313,8 +313,7 @@ return
     </head>
     <body>
       {control-widgets:get-page-header(),
-       control-widgets:get-running-conversions($file, $type),
-       control-widgets:start-new-conversion($svnurl, $file, $type)}
+       control-widgets:manage-conversions($svnurl, $file, $type)}
     </body>
   </html>
 };
@@ -675,6 +674,79 @@ let $credentials := request:header("Authorization")
       else
         ("Zurück"),
     $writetofile := control:writeauthtofile($updated-access)
+return
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <div class="result">
+        {$result/error}
+        <br/>
+         <a href="{$btntarget }">
+          <input type="button" value="{$btntext}"/>
+        </a>
+      </div>
+    </body>
+  </html>
+};
+
+(:
+ : start conversion result
+ :)
+declare
+%rest:path("/control/convert/start")
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("file", "{$file}")
+%rest:query-param("type", "{$type}")
+%output:method('html')
+%output:version('5.0')
+function control:startconversion($svnurl as xs:string, $file as xs:string, $type as xs:string) {
+let $credentials := request:header("Authorization")
+                    => substring(6)
+                    => xs:base64Binary()
+                    => bin:decode-string()
+                    => tokenize(':'),
+    $username := $credentials[1],
+    $password := $credentials[2], 
+    
+    $selected-group := request:parameter("groups"),
+    $selected-permission := request:parameter("access"),
+    
+    $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
+    
+    $selected-filepath := replace(
+                                string-join(
+                                  ($svnurl,$file)
+                                  ,'/')
+                                ,svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value ||'/',''),
+    
+    $started-conversion := control-util:start-new-conversion($svnurl, $file, $type),
+    $control-file := doc($control:mgmtfile),
+    $updated-access := $control-file update {delete node //control:conversion
+                                                             [control:file = $file]
+                                                             [control:svnurl = $svnurl]
+                                                             [control:type = $type]}
+                             update {insert node $started-conversion into .//control:conversions},
+    $result :=
+      if (control-util:is-admin($username))
+      then
+       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
+      else
+        element result { element error {"You are not an admin."}, element code {1}},
+    $btntarget :=
+      if ($result/code = 0)
+      then
+        ($control:siteurl || '/convert?svnurl=' || $svnurl ||  '&amp;file=' || $file|| '&amp;type=' || $type )
+      else
+        ($control:siteurl || '/convert?svnurl=' || $svnurl),
+    $btntext :=
+      if ($result/code = 0)
+      then
+        ("OK")
+      else
+        ("Zurück")
 return
   <html>
     <head>

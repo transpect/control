@@ -269,22 +269,40 @@ declare function control-util:parse-externals-property($prop as element(*)) as e
 declare function control-util:post-file-to-converter($svnurl as xs:string, $file as xs:string, $converter as xs:string, $type as xs:string) as element(conversion) {
 (: $converter := hobots, $type := idml2tex:)
   let $filepath      := '/home/transpect-control/upload',
-      $convertertype := $control:converters/*[@name = $converter]/types/type[@name = $type],
       $prepare-file  := proc:execute('mkdir', ($filepath, '-p')),
       $checkout      := proc:execute('svn',('co', $svnurl, $filepath, '--username',$control:svnusername,'--password',$control:svnpassword)),
-      $upload        := proc:execute('curl',('-F', 'type='||$convertertype/@type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'upload'))),
+      $upload-call   := ('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'upload')),
+      $upload        := proc:execute('curl',('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'upload'))),
       $upload_res    := json:parse($upload/output),
-      $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'status')||'?input_file='||$file||'&amp;type='||$convertertype/@type)),
+      $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'status')||'?input_file='||$file||'&amp;type='||$type)),
       $status_res    := json:parse($status/output),
       $result_xml    := 
         <conversion>
           <type>{$upload_res/json/conversion__type/text()}</type>
+          <file>{$file}</file>
+          <svnurl>{$svnurl}</svnurl>
           <status>{if ($upload_res/json/status/text()) then $upload_res/json/status/text() else 'failed'}</status>
           <callback>{$upload_res/json/callback__uri/text()}</callback>
           <delete>{$status_res/json/delete__uri/text()}</delete>
-          <result_list>{$status_res/json/result__list__uri/text()}</result_list>
+          <result_list>{$status_res/json/r1esult__list__uri/text()}</result_list>
         </conversion>
   return $result_xml
+};
+
+(:
+ : get running conversions
+ :)
+declare function control-util:get-running-conversions($svnurl as xs:string, $file as xs:string, $type as xs:string) {
+  let $conversions := $control:conversions//control:conversion[control:type = $type][control:file = $file][control:svnurl = $svnurl]
+  return $conversions
+};
+
+(:
+ : start new conversion and save it
+ :)
+declare function control-util:start-new-conversion($svnurl as xs:string, $file as xs:string, $type as xs:string) {
+  let $conv := control-util:post-file-to-converter($svnurl, $file, control-util:get-converter-for-type($type)/@name, $type)
+  return $conv
 };
 
 declare function control-util:get-converters-for-file($file as xs:string) as xs:string* {
@@ -299,8 +317,8 @@ declare function control-util:add-conversion($conv as element(conversion)) {
   return file:write("basex/webapp/control/"||$control:mgmtfile, $updated-conversions)
 };
 
-declare function control-util:get-converter-for-type($type as xs:string) as element(converter)? {
-  $control:converters/converter[//type[@type = $type]]
+declare function control-util:get-converter-for-type($type as xs:string) {
+  $control:converters/converter[descendant::type[@type = $type]]
 };
 
 declare function control-util:get-converter-function-url($name as xs:string, $type as xs:string){

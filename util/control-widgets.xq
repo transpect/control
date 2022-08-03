@@ -19,22 +19,54 @@ declare function control-widgets:get-page-footer( ) as element(footer) {
     
   </footer>
 };
-
 (:
- : get running conversions
+ :
  :)
-declare function control-widgets:get-running-conversions($file as xs:string, $type as xs:string) {
-  let $conversions := $control:conversions
-  return $conversions
+declare function control-widgets:manage-conversions($svnurl as xs:string, $file as xs:string, $type as xs:string){
+  let $repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
+      $filepath := replace(
+                     replace(
+                       string-join(
+                         ($svnurl,$file),'/'),'/$','')
+                         ,svn:info(
+                           $svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value
+                         ,'')
+  return
+    <div class="conversion-widget">
+    <h1> {control-i18n:localize('convert-title', $control:locale ) || ' ' || $filepath }</h1>
+    <div id="streamed-data" class="hidden">
+    {control-util:get-running-conversions($svnurl, $file, $type)}</div>
+    <div class="table">
+    {control-i18n:localize('running_conversions', $control:locale )}
+      <div class="table-body">
+        <div class="table-row">
+          <div class="table-cell">{control-i18n:localize('group', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('permission', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('implicit', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
+        </div>
+      </div>
+      {for $conversion in control-util:get-running-conversions($svnurl, $file, $type)
+       return <div class="table-row">
+                <div class="table-cell">{$conversion/control:type}</div>
+                <div class="table-cell">{$conversion/control:status}</div>
+                <div class="table-cell">{$conversion/control:callback}</div>
+                <div class="table-cell">{$conversion/control:delete}</div>
+              </div>}
+      </div>
+      
+      <h2> {control-i18n:localize('start_conversion', $control:locale ) || ' ' || $filepath }</h2>
+      <form action="{$control:siteurl}/convert/start?svnurl={$svnurl}&amp;file={$file}&amp;type={$type}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+        <div class="start-new-conversion">
+          <input type="submit" value="{control-i18n:localize('start_conversion', $control:locale)}"/>
+        </div>
+      </form>
+      <button class="btn">
+        <a href="{$control:siteurl}?svnurl={$svnurl}">{control-i18n:localize('back', $control:locale)}</a>
+      </button>
+    </div>
 };
 
-(:
- : start new conversion
- :)
-declare function control-widgets:start-new-conversion($svnurl as xs:string, $file as xs:string, $type as xs:string) {
-  let $conv := control-util:post-file-to-converter($svnurl, $file, control-util:get-converter-for-type($type), $type)
-  return $conv
-};
 
 (:
  : get the fancy page head

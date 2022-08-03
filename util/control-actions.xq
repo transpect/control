@@ -125,6 +125,7 @@ function control-actions:access( $svnurl as xs:string, $file as xs:string) {
   </body>
 </html>
 };
+
 (:
  : quietly deletes a file -> needs url http://localhost:9081/content/werke/01991/images/
  :)

@@ -88,9 +88,21 @@
     <locale lang="de">Info anzeigen</locale>
     <locale lang="en">Show info</locale>
   </entry>
+  <entry name="convert-title">
+    <locale lang="de">Konvertieren</locale>
+    <locale lang="en">Convert</locale>
+  </entry>
   <entry name="convert_to_epub">
     <locale lang="de">nach epub konvertieren</locale>
     <locale lang="en">Convert To Epub</locale>
+  </entry>
+  <entry name="running_conversions">
+    <locale lang="de">Laufende Konvertierungen</locale>
+    <locale lang="en">Running Conversions</locale>
+  </entry>
+  <entry name="start_conversion">
+    <locale lang="de">Konvertierung starten</locale>
+    <locale lang="en">Start Conversion</locale>
   </entry>
   <entry name="copy">
     <locale lang="de">Kopieren</locale>
