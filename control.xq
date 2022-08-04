@@ -18,6 +18,7 @@ declare variable $control:path            := doc('config.xml')/control:config/co
 declare variable $control:datadir         := doc('config.xml')/control:config/control:datadir;
 declare variable $control:db              := doc('config.xml')/control:config/control:db;
 declare variable $control:max-upload-size := doc('config.xml')/control:config/control:max-upload-size;
+declare variable $control:default-svnurl  := doc('config.xml')/control:config/control:defaultsvnurl;
 declare variable $control:mgmtfile        := 'control.xml';
 declare variable $control:access          := doc($control:mgmtfile)//control:access;
 declare variable $control:conversions     := doc($control:mgmtfile)//control:conversions;
@@ -732,7 +733,7 @@ let $credentials := request:header("Authorization")
     $result :=
       if (control-util:is-admin($username))
       then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
+       element result { element error {"Uploaded"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
       else
         element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=
