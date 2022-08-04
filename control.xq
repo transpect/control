@@ -74,7 +74,7 @@ function control:control($svnurl as xs:string?) as element() {
        $username := $credentials[1],
        $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
   return 
-  if ($svnurl) 
+  if ($svnurl and control-util:get-canonical-path($svnurl) eq $svnurl) 
   then control:main( $svnurl ,$auth)
   else web:redirect($control:siteurl || '?svnurl=' || control-util:get-canonical-path(control-util:get-current-svnurl(map:get($auth,'username'), $svnurl)))
 };
