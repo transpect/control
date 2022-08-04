@@ -62,31 +62,33 @@ declare function control-util:create-path-index($svnurl as xs:string,
                                                 $type as xs:string, 
                                                 $virtual-path as xs:string,
                                                 $mount-point as xs:string?){
-  element {$type} {
-    attribute name {$name},
-    attribute svnurl {control-util:get-local-path($svnurl)},
-    attribute virtual-path {control-util:get-local-path($virtual-path)},
-    if ($type = 'file') then attribute mount-point {$mount-point}
-    else (
-    for $d in svn:list($svnurl,$control:svnauth, false())/*
-    let $sub := control-util:create-path-index(concat($svnurl,'/',$d/@name),
-                                               $d/@name,
-                                               $d/local-name(), 
-                                               $virtual-path || '/' || $d/@name,
-                                               $mount-point)
-    return $sub,
-    for $e in control-util:parse-externals-property(svn:propget($svnurl, $control:svnauth, 'svn:externals', 'HEAD'))
-    return 
-      <external name="{$e/@mount}" path="{control-util:get-local-path($e/@url)}" mount-point="{control-util:get-local-path($svnurl || '/' || $e/@mount)}" svnurl="{control-util:get-local-path($svnurl)}">
-        {for $f in svn:list(xs:string($e/@url),$control:svnauth, false())/*
-         let $subf := control-util:create-path-index(string-join((xs:string($e/@url),$f/@name),'/'),
-                                                     $f/@name,
-                                                     $f/local-name(),
-                                                     $virtual-path || '/' || $e/@mount ||  '/' || $f/@name,
-                                                     $svnurl || '/' || $e/@mount)
-         return $subf}
-      </external>)
-  }
+  if (svn:list($svnurl, $control:svnauth, false())[not(*:error)])
+  then 
+    element {$type} {
+      attribute name {$name},
+      attribute svnurl {control-util:get-local-path($svnurl)},
+      attribute virtual-path {control-util:get-local-path($virtual-path)},
+      if ($type = 'file') then attribute mount-point {$mount-point}
+      else (
+      for $d in svn:list($svnurl,$control:svnauth, false())/*[not(self::*:error)]
+      let $sub := control-util:create-path-index(concat($svnurl,'/',$d/@name),
+                                                 $d/@name,
+                                                 $d/local-name(), 
+                                                 $virtual-path || '/' || $d/@name,
+                                                 $mount-point)
+      return $sub,
+      for $e in control-util:parse-externals-property(svn:propget($svnurl, $control:svnauth, 'svn:externals', 'HEAD'))
+      return 
+        <external name="{$e/@mount}" path="{control-util:get-local-path($e/@url)}" mount-point="{control-util:get-local-path($svnurl || '/' || $e/@mount)}" svnurl="{control-util:get-local-path($svnurl)}">
+          {for $f in svn:list(xs:string($e/@url),$control:svnauth, false())/*
+           let $subf := control-util:create-path-index(string-join((xs:string($e/@url),$f/@name),'/'),
+                                                       $f/@name,
+                                                       $f/local-name(),
+                                                       $virtual-path || '/' || $e/@mount ||  '/' || $f/@name,
+                                                       $svnurl || '/' || $e/@mount)
+           return $subf}
+        </external>)
+    }
 };
 
 declare function control-util:get-permissions-for-file($svnurl as xs:string,
