@@ -285,8 +285,14 @@ div.form {
   margin: 1rem 3rem 1.5rem 3rem;
   border-top: 1px solid grey;
 }
-.adminmgmt:first-child {
+.adminmgmt:first-child{
   border-top: none;
+}
+
+.form-wrapper{
+  margin: 2rem 0 1.5rem 1rem;
+  padding-top: 2rem;
+  border-top: 1px solid grey;
 }
 
 .leftlabel {
