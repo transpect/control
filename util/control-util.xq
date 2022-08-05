@@ -65,11 +65,10 @@ declare function control-util:create-path-index($svnurl as xs:string,
   if (svn:list($svnurl, $control:svnauth, false())[not(*:error)])
   then 
     element {$type} {
+(:      attribute raw {$svnurl || '--' || $name || '--' || $type || '--' || $virtual-path || '--' ||$mount-point},:)
       attribute name {$name},
       attribute svnurl {control-util:get-local-path($svnurl)},
       attribute virtual-path {control-util:get-local-path($virtual-path)},
-      if ($type = 'file') then attribute mount-point {$mount-point}
-      else (
       for $d in svn:list($svnurl,$control:svnauth, false())/*[not(self::*:error)]
       let $sub := control-util:create-path-index(concat($svnurl,'/',$d/@name),
                                                  $d/@name,
@@ -79,7 +78,10 @@ declare function control-util:create-path-index($svnurl as xs:string,
       return $sub,
       for $e in control-util:parse-externals-property(svn:propget($svnurl, $control:svnauth, 'svn:externals', 'HEAD'))
       return 
-        <external name="{$e/@mount}" path="{control-util:get-local-path($e/@url)}" mount-point="{control-util:get-local-path($svnurl || '/' || $e/@mount)}" svnurl="{control-util:get-local-path($svnurl)}">
+        <external name="{$e/@mount}" path="{control-util:get-local-path($e/@url)}" 
+                  mount-point="{control-util:get-local-path($svnurl || '/' || $e/@mount)}" 
+                  svnurl="{control-util:get-local-path($svnurl)}"
+                  virtual-path="{$virtual-path || '/' || $e/@mount}">
           {for $f in svn:list(xs:string($e/@url),$control:svnauth, false())/*
            let $subf := control-util:create-path-index(string-join((xs:string($e/@url),$f/@name),'/'),
                                                        $f/@name,
@@ -87,8 +89,12 @@ declare function control-util:create-path-index($svnurl as xs:string,
                                                        $virtual-path || '/' || $e/@mount ||  '/' || $f/@name,
                                                        $svnurl || '/' || $e/@mount)
            return $subf}
-        </external>)
+        </external>
     }
+};
+
+declare function control-util:get-svnurl-parent-from-index($svnurl as xs:string) {
+  db:open('INDEX')//*[@svnurl eq $svnurl]/parent::*/@svnurl
 };
 
 declare function control-util:get-permissions-for-file($svnurl as xs:string,
@@ -169,6 +175,7 @@ declare function control-util:create-download-link($svnurl as xs:string, $file a
   let $result := string-join((replace(replace($svnurl,'127.0.0.1','localhost:' || $control:port),$control:svnbasewerke,$control:repobase),$file),'/')
   return $result
 };
+
 declare function control-util:get-local-path($svnurl as xs:string) as xs:string{
   replace($svnurl,'^http://127.0.0.1/content/','/data/svn/')
 };
@@ -245,6 +252,7 @@ declare function control-util:get-current-svnurl($username as xs:string, $svnurl
   ($svnurl,
     session:get('svnurl'),
     control-util:get-defaultsvnurl-from-user($username),
+    $control:default-svnurl,
     $control:svnurlhierarchy)[. != ''][1]
 };
 
@@ -274,6 +282,7 @@ declare function control-util:parse-externals-property($prop as element(*)) as e
 declare function control-util:post-file-to-converter($svnurl as xs:string, $file as xs:string, $converter as xs:string, $type as xs:string) as element(conversion) {
 (: $converter := hobots, $type := idml2tex:)
   let $filepath      := '/home/transpect-control/upload',
+      $remove-folder := proc:execute('rm -r', ($filepath)),
       $prepare-file  := proc:execute('mkdir', ($filepath, '-p')),
       $checkout      := proc:execute('svn',('co', $svnurl, $filepath, '--username',$control:svnusername,'--password',$control:svnpassword)),
       $upload-call   := ('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'upload')),
@@ -283,6 +292,7 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
       $status_res    := json:parse($status/output),
       $result_xml    := 
         <conversion>
+          <id>{random:uuid()}</id>
           <type>{$upload_res/json/conversion__type/text()}</type>
           <file>{$file}</file>
           <svnurl>{$svnurl}</svnurl>
@@ -290,7 +300,6 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
           <callback>{$upload_res/json/callback__uri/text()}</callback>
           <delete>{$status_res/json/delete__uri/text()}</delete>
           <result_list>{$status_res/json/r1esult__list__uri/text()}</result_list>
-          <date>{$status_res/json/r1esult__list__uri/text()}</date>
         </conversion>
   return $result_xml
 };
@@ -321,6 +330,26 @@ declare function control-util:add-conversion($conv as element(conversion)) {
       $updated-conversions := $file update {insert node $conv into //control:conversions}
       
   return file:write("basex/webapp/control/"||$control:mgmtfile, $updated-conversions)
+};
+
+declare function control-util:update-conversion($id as xs:string) as element(conversion){
+  let $conversion := $control:conversions//control:conversion[id/text() eq $id],
+      $converter  := control-util:get-converter-for-type($conversion/control:type),
+      $type  := $conversion/control:type,
+      $file       := $conversion/control:file/text(),
+      $status     := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'status')||'?input_file='||$file||'&amp;type='||$type)),
+      $status_res := json:parse($status/output),
+      $updated-conversion := 
+        copy $old := $conversion
+        modify (
+          replace value of node $old//control:status with if ($status_res/json/status/text()) then $status_res/json/status/text() else 'failed'
+        )
+        return $old,
+      $file := doc($control:mgmtfile),
+      $updated-access := $file update {delete node //control:conversion[control:id = $id]}
+                               update {insert node $updated-conversion into .//control:rels},
+      $updated-file := file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access)
+  return $updated-conversion
 };
 
 declare function control-util:get-converter-for-type($type as xs:string) {

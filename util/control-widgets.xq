@@ -82,16 +82,16 @@ return
   <header class="page-header">
     <div class="header-wrapper">
       <div id="logo">
-        <a href="{ $control:siteurl|| '?svnurl=http://127.0.0.1/content/hierarchy/hogrefe.ch' }">
+        <a href="{ $control:siteurl }">
           <img src="{ $control:siteurl || '/static/icons/transpect.svg'}" alt="transpect logo"/>
         </a>
       </div>
-      <h1><a href="{$control:siteurl || '?svnurl=http://127.0.0.1/content/hierarchy/hogrefe.de' }"><span class="thin">transpect</span>control</a></h1>
+      <h1><a href="{ $control:siteurl }"><span class="thin">transpect</span>control</a></h1>
     </div>
     <div class="nav-wrapper">
       <nav class="nav">
         <ol class="nav-ol">
-          <li class="nav-tab"><a href="{ $control:siteurl|| '?svnurl=http://127.0.0.1/content/hierarchy' }">{control-i18n:localize('files', $control:locale)}</a></li>
+          <li class="nav-tab"><a href="{ $control:siteurl|| '?svnurl=' || $control:svnurlhierarchy }">{control-i18n:localize('files', $control:locale)}</a></li>
           <li class="nav-tab">{
             if (control-util:is-admin($username))
             then 
@@ -302,8 +302,7 @@ declare function control-widgets:get-dir-list( $svnurl as xs:string, $control-di
        {(svn:list( $svnurl, $auth, true())/*,
            control-util:parse-externals-property(svn:propget($svnurl, $auth, 'svn:externals', 'HEAD')))}
       <div class="table-body">
-        {(:if ($is-svn) then control-widgets:list-admin-dir-entries( replace($svnurl,'http://127\.0\.0\.1\content','/data/svn')1, $control-dir, map{'show-externals': true()} )
-                      else :) control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': true()})}
+        {control-widgets:list-dir-entries( $svnurl, $control-dir, map{'show-externals': true()})}
       </div>
     </div>
   </div>
