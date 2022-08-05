@@ -349,13 +349,15 @@ return
     <body>
       {control-widgets:get-page-header( ),
        if (control-util:is-admin($username))
-       then (control-widgets:create-new-user($svnurl),
-             control-widgets:customize-users($svnurl),
-             control-widgets:remove-users($svnurl),
-             control-widgets:create-new-group($svnurl),
-             control-widgets:customize-groups($svnurl),
-             control-widgets:remove-groups($svnurl),
-             control-widgets:rebuild-index($svnurl, 'root'),
+       then (<div class="adminmgmt-wrapper"> {
+              control-widgets:create-new-user($svnurl),
+              control-widgets:customize-users($svnurl),
+              control-widgets:remove-users($svnurl),
+              control-widgets:create-new-group($svnurl),
+              control-widgets:customize-groups($svnurl),
+              control-widgets:remove-groups($svnurl),
+              control-widgets:rebuild-index($svnurl, 'root')
+             }</div>,
              <div>{'session-id: '||session:id()}</div>)
        else ''}
     </body>
