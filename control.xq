@@ -85,7 +85,8 @@ function control:control($svnurl as xs:string?) as element() {
  :)
 declare function control:main( $svnurl as xs:string?, $auth as map(*)) as element(html) {
   let $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl(map:get($auth,'username'), $svnurl)),
-      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?) as item()* := control-util:function-lookup('search-form-widget')
+      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?) as item()* 
+        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#4)[1]
   return
   <html>
     <head>
