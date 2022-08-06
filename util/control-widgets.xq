@@ -831,3 +831,24 @@ declare function control-widgets:get-groups-and-admin( $svnurl as xs:string ) as
   return
     <option value="{$group/control:name}">{$group/control:name}</option>
 };
+
+(:
+  returns the default search form. This function can be overridden in the configuration, in config/functions:
+  <function role="search-form-widget" name="my-customization:search-form" arity="4"/>
+:)
+declare function control-widgets:search-input ( $svnurl as xs:string?, $control-dir as xs:string, 
+                                                $auth as map(xs:string, xs:string), $params as map(*)? ) {
+  <div class="form-wrapper">
+    <form method="get" action="{$control-dir}/ftsearch" id="ftsearch-form">
+      <div style="display:flex">
+        <svg xmlns="http://www.w3.org/2000/svg" id="search-icon" style="position:relative; top:0.3em; display:inline-block" viewBox="0 0 24 24" width="20" height="20">
+          <path d="M16.32 14.9l5.39 5.4a1 1 0 0 1-1.42 1.4l-5.38-5.38a8 8 0 1 1 1.41-1.41zM10 16a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/>
+        </svg>
+        <div class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list" aria-haspopup="true" aria-expanded="false">
+          <input id="search" type="text" name="term" autocomplete="off" size="26" autocapitalize="none" aria-controls="autoComplete_list" aria-autocomplete="both" />
+          <ul id="autoComplete_list" role="listbox" class="autoComplete_list" hidden=""></ul>
+        </div>
+      </div>
+    </form>
+  </div>
+};

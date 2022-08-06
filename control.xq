@@ -20,6 +20,7 @@ declare variable $control:db              := doc('config.xml')/control:config/co
 declare variable $control:max-upload-size := doc('config.xml')/control:config/control:max-upload-size;
 declare variable $control:default-svnurl  := doc('config.xml')/control:config/control:defaultsvnurl;
 declare variable $control:repos           := doc('config.xml')/control:repos;
+declare variable $control:config          := doc('config.xml')/control:config;
 declare variable $control:mgmtfile        := 'control.xml';
 declare variable $control:access          := doc($control:mgmtfile)//control:access;
 declare variable $control:conversions     := doc($control:mgmtfile)//control:conversions;
@@ -84,7 +85,9 @@ function control:control($svnurl as xs:string?) as element() {
  : this is where the "fun" starts...
  :)
 declare function control:main( $svnurl as xs:string?, $auth as map(*)) as element(html) {
-  let $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl(map:get($auth,'username'), $svnurl))
+  let $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl(map:get($auth,'username'), $svnurl)),
+      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?) as item()* 
+        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#4)[1]
   return
   <html>
     <head>
@@ -95,13 +98,14 @@ declare function control:main( $svnurl as xs:string?, $auth as map(*)) as elemen
        if( normalize-space($control:action) and normalize-space($control:file) )
        then control-widgets:manage-actions( $used-svnurl, ($control:dest-svnurl, $used-svnurl)[1], $control:action, $control:file )
        else ()}
-      <main>
-        {
+      <main>{
          control:get-message( $control:msg, $control:msgtype ),
          if(normalize-space( $used-svnurl ))
          then control-widgets:get-dir-list( $used-svnurl, $control:path, control-util:is-local-repo($used-svnurl), $auth)
-         else 'URL parameter empty!'}
-      </main>
+         else 'URL parameter empty!',
+         $search-widget-function( $used-svnurl, $control:path, $auth, 
+                                  map:merge(request:parameter-names() ! map:entry(., request:parameter(.))) )  
+      }</main>
       {control-widgets:get-page-footer(),
        control-widgets:create-infobox()}
     </body>
@@ -350,13 +354,15 @@ return
     <body>
       {control-widgets:get-page-header( ),
        if (control-util:is-admin($username))
-       then (control-widgets:create-new-user($svnurl),
-             control-widgets:customize-users($svnurl),
-             control-widgets:remove-users($svnurl),
-             control-widgets:create-new-group($svnurl),
-             control-widgets:customize-groups($svnurl),
-             control-widgets:remove-groups($svnurl),
-             control-widgets:rebuild-index($svnurl, 'root'),
+       then (<div class="adminmgmt-wrapper"> {
+              control-widgets:create-new-user($svnurl),
+              control-widgets:customize-users($svnurl),
+              control-widgets:remove-users($svnurl),
+              control-widgets:create-new-group($svnurl),
+              control-widgets:customize-groups($svnurl),
+              control-widgets:remove-groups($svnurl),
+              control-widgets:rebuild-index($svnurl, 'root')
+             }</div>,
              <div>{'session-id: '||session:id()}</div>)
        else ''}
     </body>

@@ -3,6 +3,9 @@ import module namespace svn          = 'io.transpect.basex.extensions.subversion
 import module namespace control      = 'http://transpect.io/control' at '../control.xq';
 import module namespace control-i18n = 'http://transpect.io/control/util/control-i18n' at 'control-i18n.xq';
 
+declare namespace control-widgets = 'http://transpect.io/control/util/control-widgets';
+declare namespace control-custom = 'http://transpect.io/control/control-customization';
+
 declare namespace c = 'http://www.w3.org/ns/xproc-step';
 
 (: 
@@ -369,4 +372,9 @@ declare function control-util:writegroups($access) as xs:string {
       for $rel in $access//control:rels/control:rel[control:user][control:group = $group/control:name] (:user:)
       return $rel/*:user,', ')
     )),$control:nl)
+};
+
+declare function control-util:function-lookup ( $role as xs:string ) as function(*)? {
+  $control:config/control:functions/control:function[@role = $role]
+    ! function-lookup(xs:QName(@name), @arity)
 };
