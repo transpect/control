@@ -176,7 +176,7 @@ declare function control-util:pad-text($string as xs:string?, $length as xs:inte
 };
 
 declare function control-util:create-download-link($svnurl as xs:string, $file as xs:string?) as xs:string{
-  let $result := string-join((replace(replace($svnurl,'127.0.0.1','localhost:' || $control:port),$control:svnbasewerke,$control:repobase),$file),'/')
+  let $result := string-join((control-util:get-canonical-path($svnurl),$file),'/')
   return $result
 };
 
