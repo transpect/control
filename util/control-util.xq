@@ -188,7 +188,7 @@ return if ($repo)  then replace($svnurl,'^'||$canon-path, $local-path) else $svn
 };
 
 declare function control-util:get-canonical-path($svnurl as xs:string) as xs:string{
-let $repo := $control:repos/control:repo[contains($svnurl, replace(@url,'/$','')],
+let $repo := $control:repos/control:repo[contains($svnurl, replace(@url,'/$',''))],
     $local-path := replace($repo/@url,'/$',''),
     $canon-path := replace($repo/@canon-path,'/$','')
 return if ($repo) then replace($svnurl, '^'||$local-path, $canon-path) else $svnurl
