@@ -70,6 +70,7 @@ declare function control-util:create-path-index($svnurl as xs:string,
     element {$type} {
 (:      attribute raw {$svnurl || '--' || $name || '--' || $type || '--' || $virtual-path || '--' ||$mount-point},:)
       attribute name {$name},
+      prof:dump($svnurl),
       attribute svnurl {control-util:get-local-path($svnurl)},
       attribute virtual-path {control-util:get-local-path($virtual-path)},
       for $d in svn:list($svnurl,$control:svnauth, false())/*[not(self::*:error)]
@@ -180,11 +181,13 @@ declare function control-util:create-download-link($svnurl as xs:string, $file a
 };
 
 declare function control-util:get-local-path($svnurl as xs:string) as xs:string{
-  replace($svnurl,'^http://127.0.0.1/content/','/data/svn/')
+let $repo := $control:repos/control:repo[contains($svnurl, (@parent-path, @path)[1])]
+return replace($svnurl,'^'||$repo/@canon-path,($repo/@parent-path, $repo/@path)[1])
 };
 
 declare function control-util:get-canonical-path($svnurl as xs:string) as xs:string{
-  replace($svnurl, '^/data/svn/', 'http://127.0.0.1/content/')
+let $repo := $control:repos/control:repo[contains($svnurl, (@parent-path, @path)[1])]
+return replace($svnurl, '^'||($repo/@parent-path, $repo/@path)[1], $repo/@canon-path)
 };
 
 declare function control-util:get-permission-for-group($group as xs:string, $repo as xs:string, $access) as xs:string?{
