@@ -71,7 +71,7 @@ declare function control-util:create-path-index($svnurl as xs:string,
 (:      attribute raw {$svnurl || '--' || $name || '--' || $type || '--' || $virtual-path || '--' ||$mount-point},:)
       attribute name {$name},
       prof:dump($svnurl),
-      attribute svnurl {control-util:get-local-path($svnurl)},
+      attribute svnpath {control-util:get-local-path($svnurl)},
       attribute virtual-path {control-util:get-local-path($virtual-path)},
       for $d in svn:list($svnurl,$control:svnauth, false())/*[not(self::*:error)]
       let $sub := control-util:create-path-index(concat($svnurl,'/',$d/@name),
@@ -84,7 +84,7 @@ declare function control-util:create-path-index($svnurl as xs:string,
       return 
         <external name="{$e/@mount}" path="{control-util:get-local-path($e/@url)}" 
                   mount-point="{control-util:get-local-path($svnurl || '/' || $e/@mount)}" 
-                  svnurl="{control-util:get-local-path($svnurl)}"
+                  svnpath="{control-util:get-local-path($svnurl)}"
                   virtual-path="{$virtual-path || '/' || $e/@mount}">
           {for $f in svn:list(xs:string($e/@url),$control:svnauth, false())/*
            let $subf := control-util:create-path-index(string-join((xs:string($e/@url),$f/@name),'/'),
@@ -181,13 +181,17 @@ declare function control-util:create-download-link($svnurl as xs:string, $file a
 };
 
 declare function control-util:get-local-path($svnurl as xs:string) as xs:string{
-let $repo := $control:repos/control:repo[contains($svnurl, (@parent-path, @path)[1])]
-return replace($svnurl,'^'||$repo/@canon-path,($repo/@parent-path, $repo/@path)[1])
+let $repo := $control:repos/control:repo[contains($svnurl, replace(@canon-path,'/$',''))],
+    $local-path := replace($repo/@url,'/$',''),
+    $canon-path := replace($repo/@canon-path,'/$','')
+return if ($repo)  then replace($svnurl,'^'||$canon-path, $local-path) else $svnurl
 };
 
 declare function control-util:get-canonical-path($svnurl as xs:string) as xs:string{
-let $repo := $control:repos/control:repo[contains($svnurl, (@parent-path, @path)[1])]
-return replace($svnurl, '^'||($repo/@parent-path, $repo/@path)[1], $repo/@canon-path)
+let $repo := $control:repos/control:repo[contains($svnurl, replace(@url,'/$','')],
+    $local-path := replace($repo/@url,'/$',''),
+    $canon-path := replace($repo/@canon-path,'/$','')
+return if ($repo) then replace($svnurl, '^'||$local-path, $canon-path) else $svnurl
 };
 
 declare function control-util:get-permission-for-group($group as xs:string, $repo as xs:string, $access) as xs:string?{
