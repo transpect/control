@@ -407,7 +407,7 @@ declare function control-widgets:get-dir-menu( $svnurl as xs:string, $control-di
  :)
 declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control-dir as xs:string?) as element(div )* {
   <div class="directory-actions">
-    <a href="/control/new-file?svnurl={$svnurl}">
+    <a href="{$control:siteurl||'/control/new-file?svnurl='||$svnurl}">
       <button class="new-file action btn">
         <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/cloud-upload.svg'}" alt="new-file"/><span class="spacer"/>
         {control-i18n:localize('upload', $control:locale )}
@@ -603,7 +603,7 @@ declare function control-widgets:get-dir-parent( $svnurl as xs:string, $control-
 };
 declare function control-widgets:create-dir-form( $svnurl as xs:string, $control-dir as xs:string ) {
   <div id="create-dir-form-wrapper">
-    <form id="create-dir-form" action="/control/create-dir?url={$svnurl}" method="POST">
+    <form id="create-dir-form" action="{$control:siteurl||'/create-dir?url='||$svnurl}" method="POST">
       <input type="text" id="dirname" name="dirname"/>
       <input type="hidden" name="svnurl" value="{$svnurl}" />
       <button class="btn ok" value="ok">

@@ -54,7 +54,7 @@ declare function control-util:is-local-repo( $svnurl as xs:string ) as xs:boolea
 
 declare
 function control-util:writeindextofile($index) {
-  file:write("/home/transpect-control/basex/webapp/control/index.xml",$index)
+  file:write('basex/webapp/control/'||$control:indexfile,$index)
 };
 
 declare function control-util:create-path-index($svnurl as xs:string,

@@ -43,16 +43,16 @@ function control-forms:create-dir( $dirname as xs:string?, $svnurl as xs:string 
   (: check if dir already exists :)
   if(normalize-space( $dirname ))
   then if(svn:info(concat( $svnurl, '/', $dirname ), $control:svnusername, $control:svnpassword )/local-name() ne 'errors')
-       then web:redirect(concat( '/control?svnurl=', 
+       then web:redirect(concat( $control:siteurl||'/control?svnurl=', 
                                  $svnurl, '?msgtype=warning?msg=', 
                                  encode-for-uri(control-i18n:localize('dir-exists', $control:locale )))
                                  )
        else for $i in svn:mkdir( $svnurl, $control:svnusername, $control:svnpassword, $dirname, true(), 'control: create dir')
             return if( $i/local-name() ne 'errors' )
-                   then web:redirect('/control?svnurl=' || $svnurl )
-                   else web:redirect(concat('/control?svnurl=', $svnurl, '?msgtype=error?msg=',
+                   then web:redirect($control:siteurl||'/control?svnurl=' || $svnurl )
+                   else web:redirect(concat($control:siteurl||'/control?svnurl=', $svnurl, '?msgtype=error?msg=',
                                             encode-for-uri(control-i18n:localize('cannot-create-dir', $control:locale ))))
-  else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('empty-value', $control:locale )) || '?msgtype=warning' )
+  else web:redirect($control:siteurl||'/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('empty-value', $control:locale )) || '?msgtype=warning' )
 };
 
 declare
