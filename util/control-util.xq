@@ -395,3 +395,12 @@ declare function control-util:function-lookup ( $role as xs:string ) as function
   $control:config/control:functions/control:function[@role = $role]
     ! function-lookup(xs:QName(@name), @arity)
 };
+
+declare function control-util:parse-authorization($header as xs:string?) as map(xs:string, xs:string)? {
+  for $h in $header
+  let $credentials := $h => substring(6)
+                         => xs:base64Binary()
+                         => bin:decode-string()
+                         => tokenize(':')
+  return map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
+};
