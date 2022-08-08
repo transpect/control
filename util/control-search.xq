@@ -11,13 +11,13 @@ import module namespace control-util    = 'http://transpect.io/control/util/cont
 import module namespace control-widgets = 'http://transpect.io/control/util/control-widgets' at 'control-widgets.xq';
 
 declare 
-%rest:path('/control/ftsearch')
+%rest:path('/control/ftsearch-raw')
 %rest:query-param("term", "{$term}")
 %rest:query-param("lang", "{$lang}")
 %output:method('xml')
-function control-search:ftsearch($term, $lang) {
+function control-search:ftsearch-raw($term, $lang) {
   let $base-virtual-path := $control:svnurlhierarchy,
-      $ftdb := $control:config/control:ftindexes/control/ftindex[@lang = $lang] => string(),
+      $ftdb := $control:config/control:ftindexes/control:ftindex[@lang = $lang] => string(),
       $normalized := ft:normalize($term),
       $total := count(ft:search($ftdb,
                                 $normalized, 
@@ -46,3 +46,4 @@ function control-search:ftsearch($term, $lang) {
       $results
     }</search-results>
 };
+
