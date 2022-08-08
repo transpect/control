@@ -26,7 +26,7 @@ function control-search:ftsearch-raw($term, $lang) {
     for $result score $score in ft:search('hobotscontrol_FT_de', $term,
     map{'wildcards':'true', 'mode':'all words'})
     let $path := '/' || $result/db:path(.),
-    $virtual-path := db:attribute('INDEX', $path, 'svnpath')/../@virtual-path
+    $virtual-path := (db:attribute('INDEX', $path, 'svnpath'))[1]/../@virtual-path
     order by $score descending
     return <result> {
       $result/../@id,
