@@ -16,7 +16,7 @@ declare
 %rest:query-param("lang", "{$lang}")
 %output:method('xml')
 function control-search:ftsearch-raw($term, $lang) {
-  let $base-virtual-path := $control:svnurlhierarchy,
+  let $base-virtual-path := control-util:get-local-path($control:svnurlhierarchy),
       $ftdb := $control:config/control:ftindexes/control:ftindex[@lang = $lang] => string(),
       $normalized := ft:normalize($term),
       $total := count(ft:search($ftdb,
