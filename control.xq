@@ -33,6 +33,7 @@ declare variable $control:protocol        := if ($control:port = '443') then 'ht
 declare variable $control:siteurl         := $control:protocol || '://' || $control:host || ':' || $control:port || $control:path;
 declare variable $control:svnusername     := xs:string($control:config/control:svnusername);
 declare variable $control:svnpassword     := xs:string($control:config/control:svnpassword);
+declare variable $control:htpasswd        := $control:config/control:htpasswd;
 declare variable $control:svnauth         := map{'username':$control:svnusername,'cert-path':'', 'password': $control:svnpassword};
 declare variable $control:svnurl          := (request:parameter('svnurl'), xs:string(doc('config.xml')/control:config/control:svnurl))[1];
 declare variable $control:msg             := request:parameter('msg');
@@ -85,7 +86,8 @@ function control:control($svnurl as xs:string?) as element() {
 declare function control:main( $svnurl as xs:string?, $auth as map(*)) as element(html) {
   let $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl(map:get($auth,'username'), $svnurl)),
       $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?) as item()* 
-        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#4)[1]
+        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#4)[1],
+      $known-user := control-util:add-user-to-mgmt(xs:string(map:get($auth,'username')),())
   return
   <html>
     <head>
@@ -391,7 +393,7 @@ let $credentials := request:header("Authorization")
     $iscorrectuser :=
       if ($password = $oldpw)
       then
-        proc:execute( 'htpasswd', ('-vb', '/etc/svn/default.htpasswd', $username, $password))
+        proc:execute( 'htpasswd', ('-vb', $control:htpasswd, $username, $password))
       else
         element result { element error {"The provided old passwort is not correct."}, element code {1}},
     (: tries to set the new password and returns an error message if it fails :)
@@ -400,7 +402,7 @@ let $credentials := request:header("Authorization")
       then (
         if ($newpw = $newpwre)
         then
-          (proc:execute('htpasswd', ('-b', '/etc/svn/default.htpasswd', $username, $newpw)))
+          (proc:execute('htpasswd', ('-b', $control:htpasswd, $username, $newpw)))
         else
           (element result { element error {"The provided new passwords are not the same."}, element code {1}})
       )
@@ -956,17 +958,8 @@ return
  : create new user
  :)
 declare function control:createuser-bg($newusername as xs:string, $newpassword as xs:string, $defaultsvnurl as xs:string?) {
-  let $callres := proc:execute('htpasswd', ('-b', '/etc/svn/default.htpasswd', $newusername, $newpassword)),
-      $fileupdate := file:write("basex/webapp/control/"||$control:mgmtfile,
-                     let $file := doc($control:mgmtfile)
-                     return if (not($file//control:users/control:user[control:name = $newusername]))
-                            then if ($defaultsvnurl)
-                                 then $file update {insert node element user {element name {$newusername}} into .//*:users}
-                                            update {insert node element rel  {element user {$newusername},
-                                                                              element defaultsvnurl {$defaultsvnurl}} into .//*:rels}
-                                 else $file update insert node element user {element name {$newusername}} into .//*:users
-                            else $file
-                      )
+  let $callres := proc:execute('htpasswd', ('-b', $control:htpasswd, $newusername, $newpassword)),
+      $fileupdate := control-util:add-user-to-mgmt($newusername, $defaultsvnurl)
   return $callres
 };
 (:
