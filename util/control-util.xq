@@ -70,7 +70,7 @@ declare function control-util:create-path-index($svnurl as xs:string,
     element {$type} {
 (:      attribute raw {$svnurl || '--' || $name || '--' || $type || '--' || $virtual-path || '--' ||$mount-point},:)
       attribute name {$name},
-      if ($type = 'directory') then prof:dump(string-join((convert:integer-to-dateTime(prof:current-ms()), $svnurl), ' ')) else (),
+      if ($type = 'directory') then prof:dump(string-join((convert:integer-to-dateTime(prof:current-ms()), $svnurl, control-util:get-local-path($svnurl)), ' ')) else (),
       attribute svnpath {control-util:get-local-path($svnurl)},
       attribute virtual-path {control-util:get-local-path($virtual-path)},
       for $d in svn:list($svnurl,$control:svnauth, false())/*[not(self::*:error)]
