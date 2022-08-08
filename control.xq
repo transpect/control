@@ -22,8 +22,9 @@ declare variable $control:max-upload-size := $control:config/control:max-upload-
 declare variable $control:default-svnurl  := $control:config/control:defaultsvnurl;
 declare variable $control:repos           := $control:config/control:repos;
 declare variable $control:mgmtfile        := 'control.xml';
-declare variable $control:access          := doc($control:mgmtfile)//control:access;
-declare variable $control:conversions     := doc($control:mgmtfile)//control:conversions;
+declare variable $control:mgmtdoc         := doc('control.xml');
+declare variable $control:access          := $control:mgmtdoc//control:access;
+declare variable $control:conversions     := $control:mgmtdoc//control:conversions;
 declare variable $control:indexfile       := 'index.xml';
 declare variable $control:index           := doc($control:indexfile)/root;
 declare variable $control:svnurlhierarchy := $control:config/control:svnurlhierarchy;
@@ -115,15 +116,9 @@ declare
 %output:method('html')
 %output:version('5.0')
 function control:get-svnlog($svnurl as xs:string?, $file as xs:string?) as element() {
-  let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-       $username := $credentials[1],
-       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
-       $svnlog := svn:log( $svnurl || '/' || $file,$auth,0,0,0),
-       $monospace-width := 70
+  let $auth := control-util:parse-authorization(request:header("Authorization")),
+      $svnlog := svn:log( $svnurl || '/' || $file,$auth,0,0,0),
+      $monospace-width := 70
   return <pre class="monospace">
   {for $le in $svnlog/*:logEntry
                    return
@@ -189,15 +184,9 @@ declare
 %output:method('html')
 %output:version('5.0')
 function control:get-svninfo($svnurl as xs:string?, $file as xs:string?) as element() {
-  let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-       $username := $credentials[1],
-       $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]},
-       $svninfo := svn:info( $svnurl ||  '/' || $file,$auth),
-       $monospace-width := 70
+  let $auth := control-util:parse-authorization(request:header("Authorization")),
+      $svninfo := svn:info( $svnurl ||  '/' || $file,$auth),
+      $monospace-width := 70
   return 
   <pre class="monospace">
    {
@@ -271,14 +260,6 @@ declare
 %output:method('html')
 %output:version('5.0')
 function control:usermgmt($svnurl as xs:string?) as element(html) {
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2]
-return
   <html>
     <head>
       {control-widgets:get-html-head()}
@@ -302,15 +283,7 @@ declare
 %rest:query-param("type", "{$type}")
 %output:method('html')
 %output:version('5.0')
-function control:usermgmt($svnurl as xs:string, $file as xs:string, $type as xs:string) as element(html) {
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2]
-return
+function control:convert($svnurl as xs:string, $file as xs:string, $type as xs:string) as element(html) {
   <html>
     <head>
       {control-widgets:get-html-head()}
@@ -331,14 +304,7 @@ declare
 %output:method('html')
 %output:version('5.0')
 function control:configmgmt($svnurl as xs:string) as element(html) {
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2],
-    $auth := map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
+let $auth := control-util:parse-authorization(request:header("Authorization"))
 return
   <html>
     <head>
@@ -347,7 +313,7 @@ return
     </head>
     <body>
       {control-widgets:get-page-header( ),
-       if (control-util:is-admin($username))
+       if (control-util:is-admin(map:get($auth,'username')))
        then (<div class="adminmgmt-wrapper"> {
               control-widgets:create-new-user($svnurl),
               control-widgets:customize-users($svnurl),
@@ -372,13 +338,9 @@ declare
 %output:version('5.0')
 function control:setpw($svnurl as xs:string) {
 
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2], 
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
+    $password := map:get($auth, 'password'),
     $oldpw := request:parameter("oldpw"),
     $newpw := request:parameter("newpw"),
     $newpwre := request:parameter("newpwre"),
@@ -439,18 +401,10 @@ declare
 %output:version('5.0')
 function control:setdefaultsvnurl() {
 
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2],
-    
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
     $defaultsvnurl := request:parameter("defaultsvnurl"),
-    
-    $file := doc($control:mgmtfile),
-    
+    $file := $control:mgmtdoc,
     $updated-access := $file update {delete node //control:rels/control:rel[control:user = $username][control:defaultsvnurl]}
                              update {insert node element rel {element defaultsvnurl {$defaultsvnurl},
                                                               element user {$username}} into .//control:rels},
@@ -501,18 +455,13 @@ declare
 %output:version('5.0')
 function control:setgroups($svnurl as xs:string) {
 
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2], 
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
     
     $groups := request:parameter("groups"),
     $selected-user := request:parameter("users"),
     
-    $file := doc($control:mgmtfile),
+    $file := $control:mgmtdoc,
     
     $added-rel := for $group in $groups 
                    return element rel {
@@ -570,18 +519,10 @@ declare
 %output:version('5.0')
 function control:deletegroups($svnurl as xs:string) {
 
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2], 
-    
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
     $selected-group := request:parameter("groups"),
-    
-    $file := doc($control:mgmtfile),
-    
+    $file := $control:mgmtdoc,
     $updated-access := $file update {delete node //control:rels/control:rel[control:user][control:group = $selected-group]}
                              update {delete node //control:rels/control:rel[control:repo][control:group = $selected-group]}
                              update {delete node //control:groups/control:group[control:name = $selected-group]},
@@ -632,26 +573,17 @@ declare
 %output:method('html')
 %output:version('5.0')
 function control:setaccess($svnurl as xs:string, $file as xs:string) {
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2], 
-    
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
     $selected-group := request:parameter("groups"),
     $selected-permission := request:parameter("access"),
-    
     $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
-    
     $selected-filepath := replace(
                                 string-join(
                                   ($svnurl,$file)
                                   ,'/')
                                 ,svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value ||'/',''),
-    
-    $control-file := doc($control:mgmtfile),
+    $control-file := $control:mgmtdoc,
     $updated-access := $control-file update {delete node //control:rels/control:rel
                                       [control:repo = $selected-repo]
                                       [control:file = $selected-filepath]
@@ -709,32 +641,23 @@ declare
 %output:method('html')
 %output:version('5.0')
 function control:startconversion($svnurl as xs:string, $file as xs:string, $type as xs:string) {
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2], 
-    
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
     $selected-group := request:parameter("groups"),
     $selected-permission := request:parameter("access"),
-    
     $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
-    
     $selected-filepath := replace(
                                 string-join(
                                   ($svnurl,$file)
                                   ,'/')
                                 ,svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value ||'/',''),
-    
     $started-conversion := control-util:start-new-conversion($svnurl, $file, $type),
-    $control-file := doc($control:mgmtfile),
+    $control-file := $control:mgmtdoc,
     $updated-access := $control-file update {delete node //control:conversion
                                                              [control:file = $file]
                                                              [control:svnurl = $svnurl]
                                                              [control:type = $type]}
-                             update {insert node $started-conversion into .//control:conversions},
+                                     update {insert node $started-conversion into .//control:conversions},
     $result :=
       if (control-util:is-admin($username))
       then
@@ -782,13 +705,7 @@ declare
 %output:version('5.0')
 function control:rebuildindex($svnurl as xs:string, $name as xs:string) {
 
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2], 
+let $auth := control-util:parse-authorization(request:header("Authorization")),
     
     $index := control-util:create-path-index($control:svnurlhierarchy, $name, $name, $control:svnurlhierarchy,''),
     $result :=
@@ -836,18 +753,11 @@ declare
 %output:version('5.0')
 function control:removepermission($svnurl as xs:string, $file as xs:string, $group as xs:string) {
 
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2],
-    
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
     $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
     $selected-filepath := replace(replace(replace(string-join(($svnurl,$file),'/'),'/$',''),svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,''),'^/',''),
-    
-    $control-file := doc($control:mgmtfile),
+    $control-file := $control:mgmtdoc,
     $updated-access := $control-file update {delete node //control:rels/control:rel
                                       [control:repo = $selected-repo]
                                       [control:file = $selected-filepath]
@@ -898,18 +808,10 @@ declare
 %output:version('5.0')
 function control:deleteuser($svnurl as xs:string) {
 
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2], 
-    
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
     $selected-user := request:parameter("users"),
-    
-    $file := doc($control:mgmtfile),
-    
+    $file := $control:mgmtdoc,
     $updated-access := $file update {delete node //control:rels/control:rel[control:group][control:user = $selected-user]}
                              update {delete node //control:users/control:user[control:name = $selected-user]},
     $result :=
@@ -965,13 +867,8 @@ declare
 %output:method('html')
 %output:version('5.0')
 function control:createuser($svnurl as xs:string) {
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2],
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
     $newusername := request:parameter("newusername"),
     $newpassword := request:parameter("newpassword"),
     $defaultsvnurl := request:parameter("defaultsvnurl"),
@@ -1018,7 +915,7 @@ return
 declare function control:creategroup-bg($newgroupname as xs:string?,$newgroupreporegex as xs:string?) {
 let $callres := element result { element error {"Group created."}, element code {0}},
     $fileupdate := file:write("basex/webapp/control/"||$control:mgmtfile,
-          let $file := doc($control:mgmtfile)
+          let $file := $control:mgmtdoc
           return $file update {insert node element group {element name {$newgroupname}} into .//*:groups}
                        update {insert node element rel {element group {$newgroupname}, element repo {$newgroupreporegex}} into .//*:rels}
         )
@@ -1033,13 +930,8 @@ declare
 %output:method('html')
 %output:version('5.0')
 function control:creategroup($svnurl as xs:string) {
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2],
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
     $newgroupname := request:parameter("newgroupname"),
     $newgroupreporegex := request:parameter("newgroupname"),
 
@@ -1089,19 +981,11 @@ declare
 %output:version('5.0')
 function control:setreporegex($svnurl as xs:string) {
 
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1],
-    $password := $credentials[2], 
-    
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $username := map:get($auth, 'username'),
     $reporegex := request:parameter("grouprepo"),
     $selected-group := request:parameter("groups"),
-    
-    $file := doc($control:mgmtfile),
-    
+    $file := $control:mgmtdoc,
     $added-rel := element rel {
                     element group {$selected-group},
                     element repo {$reporegex}

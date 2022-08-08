@@ -223,7 +223,7 @@ declare function control-util:get-permission-for-group($group as xs:string, $rep
 };
 
 declare function control-util:add-user-to-mgmt($username as xs:string, $defaultsvnurl as xs:string?){
-  let $file := doc($control:mgmtfile)
+  let $file := $control:mgmtdoc
   return if (not($file//control:users/control:user[control:name = $username]))
          then file:write("basex/webapp/control/"||$control:mgmtfile,
            if ($defaultsvnurl)
@@ -358,7 +358,7 @@ declare function control-util:get-converters-for-file($file as xs:string) as xs:
 };
 
 declare function control-util:add-conversion($conv as element(conversion)) {
-  let $file := doc($control:mgmtfile),
+  let $file := $control:mgmtdoc,
       $updated-conversions := $file update {insert node $conv into //control:conversions}
       
   return file:write("basex/webapp/control/"||$control:mgmtfile, $updated-conversions)
@@ -377,7 +377,7 @@ declare function control-util:update-conversion($id as xs:string) as element(con
           replace value of node $old//control:status with if ($status_res/json/status/text()) then $status_res/json/status/text() else 'failed'
         )
         return $old,
-      $file := doc($control:mgmtfile),
+      $file := $control:mgmtdoc,
       $updated-access := $file update {delete node //control:conversion[control:id = $id]}
                                update {insert node $updated-conversion into .//control:rels},
       $updated-file := file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access)
