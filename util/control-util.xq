@@ -221,6 +221,18 @@ declare function control-util:get-permission-for-group($group as xs:string, $rep
                               else if ($combined-permission = 'write') then 'rw'
   return $selected-permission
 };
+
+declare function control-util:add-user-to-mgmt($username as xs:string, $defaultsvnurl as xs:string?){
+  let $file := doc($control:mgmtfile)
+  return if (not($file//control:users/control:user[control:name = $username]))
+         then file:write("basex/webapp/control/"||$control:mgmtfile,
+           if ($defaultsvnurl)
+           then $file update {insert node element user {element name {$username}} into .//*:users}
+                      update {insert node element rel  {element user {$username},
+                                                        element defaultsvnurl {$defaultsvnurl}} into .//*:rels}
+           else $file update insert node element user {element name {$username}} into .//*:users)
+};
+
 declare function control-util:get-permission-for-user($user as xs:string, $repo as xs:string, $access) as xs:string?{
   for $group in $access/control:groups/control:group/control:name
   let $rels := $access//control:rels/control:rel[control:user = $user]
