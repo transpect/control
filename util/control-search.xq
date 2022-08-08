@@ -10,11 +10,12 @@ import module namespace control-i18n    = 'http://transpect.io/control/util/cont
 import module namespace control-util    = 'http://transpect.io/control/util/control-util' at 'control-util.xq';
 import module namespace control-widgets = 'http://transpect.io/control/util/control-widgets' at 'control-widgets.xq';
 
+declare 
 %rest:path('/control/ftsearch')
 %rest:query-param("term", "{$term}")
 %rest:query-param("lang", "{$lang}")
 %output:method('xml')
-declare function control-search:ftsearch($term, $lang) {
+function control-search:ftsearch($term, $lang) {
   let $base-virtual-path := $control:svnurlhierarchy,
       $ftdb := $control:config/control:ftindexes/control/ftindex[@lang = $lang] => string(),
       $normalized := ft:normalize($term),
