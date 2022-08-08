@@ -35,7 +35,7 @@ function control-search:ftsearch-raw($term, $lang) {
       attribute xml:base { $path },
       attribute score { $score },
       element breadcrumbs {
-        $result/../parent::div/ancestor-or-self::div/title
+        $result/ancestor::doc/title, $result/../parent::div/ancestor-or-self::div/title
       },
       element context {
         ft:mark($result[. contains text {$normalized} using wildcards])
