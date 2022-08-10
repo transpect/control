@@ -9,5 +9,5 @@ set -e
 # $5: GROUP
 
 newgrp $5 << EOF
-       htpasswd -$1 $2 $3 $4
+       htpasswd -$2 $1 $3 $4
 EOF
