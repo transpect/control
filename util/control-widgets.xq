@@ -868,7 +868,7 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
               <input id="search_restrict_path" name="restrict_path" type="checkbox" value="true">
                 {if ($params?restrict_path) then attribute checked { 'true' } else ()}
               </input>,
-              <label for="search_restrict_path">restrict to {$svnurl}</label>
+              <label for="search_restrict_path">restrict to { $svnurl }</label>
             )
             else ()
           }
