@@ -183,10 +183,10 @@ if (userselect !== null) {
   }
   document.body.addEventListener("click", function(event) {
     var closestA = event.target.closest('div.infobox');
-    if (closestA || document.getElementById('infobox').style.visibility == 'hidden') {
-      return;
-    } else {
-      hide('infobox')
+    var infobox = document.getElementById('infobox')
+    if (infobox && !closestA){
+      if (infobox.style.visibility != 'hidden')
+        hide('infobox')
     }
   });
 }
