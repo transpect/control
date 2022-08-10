@@ -13,12 +13,15 @@ declare namespace c = 'http://www.w3.org/ns/xproc-step';
  : e.g. /home/parentdir/mydir/ => /home/parentdir/ 
  :)  
 declare function control-util:path-parent-dir( $path as xs:string ) as xs:string? {
-  string-join(
-              remove(
-                     tokenize($path, '/'),
-                     count(tokenize($path, '/'))
-                     ),
-              '/')
+let $local-path := control-util:get-local-path($path),
+    $parent-path := ($control:index//*[@svnpath eq $local-path
+          or @path eq $local-path]
+          /parent::*/(if (local-name(.) eq 'external') 
+                      then @path 
+                      else @svnpath))[1]
+return if ($parent-path)
+       then control-util:get-canonical-path($parent-path)
+       else ''
 };
 (:
  : decode escaped characters within an URI 
