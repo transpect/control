@@ -1117,3 +1117,17 @@ function control:writetoauthz($access) {
     )
     )
 };
+
+declare
+%rest:path("/control/testipopesti")
+%rest:query-param("svnurl", "{$svnurl}")
+%output:method('xml')
+function control:testipopesti($svnurl as xs:string) {
+<doc>
+<e>{control-util:get-local-path($svnurl)}</e>
+<e>{(db:attribute('INDEX', control-util:get-local-path($svnurl), 'svnpath'))[1]/../@virtual-path}</e>
+<e>{(db:attribute('INDEX', control-util:get-local-path($svnurl), 'path'))[1]/../@mount-point}</e>
+<e>{$svnurl ! control-util:get-virtual-path(.)}</e>
+<e>{$svnurl ! control-util:get-local-path(.) ! (db:attribute('INDEX', ., 'svnpath'))[1]/../@virtual-path}</e>
+</doc>
+};
