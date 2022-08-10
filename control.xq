@@ -45,6 +45,7 @@ declare variable $control:dest-svnurl     := request:parameter('dest-svnurl');
 declare variable $control:svnauthfile     := "/etc/svn/default.authz";
 declare variable $control:htpasswd-script := "basex/webapp/control/htpasswd-wrapper.sh"; 
 declare variable $control:htpasswd-group  := $control:config/control:htpasswd-group;
+declare variable $control:htpasswd-file   := $control:config/control:htpasswd-file;
 declare variable $control:converters      := 
 <converters>
   <converter name="hobots">
@@ -351,7 +352,8 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     $iscorrectuser :=
       if ($password = $oldpw)
       then
-        proc:execute( 'htpasswd', ('-vb', $control:htpasswd, $username, $password))
+        proc:execute( $control:htpasswd-script, ($control:htpasswd-file, 'vb', $username, $password, $control:htpasswd-group))
+(:        proc:execute( 'htpasswd', ('-vb', $control:htpasswd, $username, $password)):)
       else
         element result { element error {"The provided old passwort is not correct."}, element code {1}},
     (: tries to set the new password and returns an error message if it fails :)
@@ -360,7 +362,8 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       then (
         if ($newpw = $newpwre)
         then
-          (proc:execute('htpasswd', ('-b', $control:htpasswd, $username, $newpw)))
+          proc:execute( $control:htpasswd-script, ($control:htpasswd-file, 'b', $username, $password, $control:htpasswd-group))
+(:          (proc:execute('htpasswd', ('-b', $control:htpasswd, $username, $newpw))):)
         else
           (element result { element error {"The provided new passwords are not the same."}, element code {1}})
       )
