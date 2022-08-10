@@ -20,7 +20,7 @@ declare
 function control-forms:projects( $svnurl as xs:string ) {
    <html>
     <head>
-      {control-widgets:get-html-head()}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header()}
@@ -62,7 +62,7 @@ declare
 function control-forms:new-file( $svnurl as xs:string ) {
   <html>
     <head>
-      {control-widgets:get-html-head()}
+      {control-widgets:get-html-head($svnurl)}
         <script src="{ $control:siteurl || '/static/lib/dropzone/dropzone.min.js'}" type="text/javascript"></script>
         <link rel="stylesheet" href="{$control:path || '/static/lib/dropzone/dropzone.min.css'}"></link>
     </head>
