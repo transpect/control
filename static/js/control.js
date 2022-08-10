@@ -139,8 +139,8 @@ function addEventToDetail(detail) {
  * Register event listener
  */
 window.onload = function() {
-  var details = document.getElementsByTagName("details");
-  var summaries = document.getElementsByTagName("summary");
+  var details = document.querySelectorAll("details.autocollapse");
+  var summaries = document.querySelectorAll("details.autocollapse > summary");
   var userselect = document.querySelector("#userselect");
   var groupselect = document.querySelector("#groupselect");
   
