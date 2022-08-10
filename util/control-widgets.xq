@@ -576,7 +576,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
  : with the link to the parent directory
 :)
 declare function control-widgets:get-dir-parent( $svnurl as xs:string, $control-dir as xs:string, $repopath as xs:string? ) as element(div )* {
-  let $new-svnurl := if ($repopath!= '') then $svnurl else replace($svnurl,'/?[^/]+/?$',''),
+  let $new-svnurl := control-util:path-parent-dir($svnurl),
       $new-repopath := if ($repopath!= '') then replace($repopath,'/?[^/]+/?$','') else '',
       $path := (request:parameter('from'),
                 svn:list(
@@ -586,14 +586,16 @@ declare function control-widgets:get-dir-parent( $svnurl as xs:string, $control-
   return 
     <div class="table-row directory-entry">
       <div class="icon table-cell"/>
-      <div class="name parentdir table-cell">
-        <a href="{$control-dir || '?svnurl=' || $new-svnurl
-        || (if ($new-repopath != '') 
-            then '&amp;repopath=' || $new-repopath 
-            else '')}">{if (request:parameter('from') eq $path) 
-                        then '←' 
-                        else '..'}</a>
-      </div>
+      { if ($new-svnurl)
+        then 
+          <div class="name parentdir table-cell">
+            <a href="{$control-dir || '?svnurl=' || $new-svnurl}">{if (request:parameter('from') eq $path) 
+                            then '←' 
+                            else '..'}</a>
+          </div>
+          else
+          <div class="name parentdir table-cell"></div>
+      }
       <div class="author table-cell"/>
       <div class="date table-cell"/>
       <div class="revision table-cell"/>
