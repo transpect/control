@@ -57,7 +57,7 @@ function fillInfoBox(content)
 }
 
 function setUserGroupSelection(username, selectId){
-  fetch("control/user/getgroups?username=" + username)
+  fetch("user/getgroups?username=" + username)
   .then(response => {return response.body})
   .then(stream => {return new Response(stream, { headers: { "Content-Type": "text/html" } }).text()})
   .then(result => {
@@ -74,7 +74,7 @@ function setUserGroupSelection(username, selectId){
   })
 }
 function setGroupSelection(groupname, inputId){
-  fetch("control/group/getglob?groupname=" + groupname)
+  fetch("group/getglob?groupname=" + groupname)
   .then(response => {return response.body})
   .then(stream => {return new Response(stream, { headers: { "Content-Type": "text/html" } }).text()})
   .then(result => {
