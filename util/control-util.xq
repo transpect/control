@@ -146,8 +146,13 @@ declare function control-util:split-string-at-length($str as xs:string?, $length
   return substring($str, ($i - 1) * $length + 1, $length)
 };
 
-declare function control-util:svnurl-to-link($svnurl as xs:string) as element(a){
+declare function control-util:svnurl-to-link($svnurl as xs:string?) as element(a){
   <a href="{$control:siteurl || '?svnurl=' || $svnurl}">{$svnurl}</a>
+};
+
+declare function control-util:virtual-path-to-svnurl($virtual-path as xs:string) as xs:string{
+  let $svnpath := $control:index//*[@virtual-path eq control-util:get-local-path($virtual-path)]/@svnpath
+  return if ($svnpath) then $svnpath else $virtual-path
 };
 
 declare function control-util:get-short-string($str as xs:string, $length as xs:integer) as xs:string {

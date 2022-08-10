@@ -121,13 +121,13 @@ declare
 %output:version('5.0')
 function control:get-svnlog($svnurl as xs:string?, $file as xs:string?) as element() {
   let $auth := control-util:parse-authorization(request:header("Authorization")),
-      $svnlog := svn:log( $svnurl || '/' || $file,$auth,0,0,0),
+      $svnlog := svn:log( control-util:virtual-path-to-svnurl($svnurl || '/' || $file),$auth,0,0,0),
       $monospace-width := 70
   return <pre class="monospace">
   {for $le in $svnlog/*:logEntry
                    return
                      (' Revision | Author    | Date                                         ',
-                     <br></br>,
+                     <br/>,
                      ' ' || control-util:pad-text($le/@revision,8) || 
                      ' | ' || control-util:pad-text($le/@author,9) || 
                      ' | ' || $le/@date, <br/>,
@@ -189,7 +189,7 @@ declare
 %output:version('5.0')
 function control:get-svninfo($svnurl as xs:string?, $file as xs:string?) as element() {
   let $auth := control-util:parse-authorization(request:header("Authorization")),
-      $svninfo := svn:info( $svnurl ||  '/' || $file,$auth),
+      $svninfo := svn:info( control-util:get-canonical-path(control-util:virtual-path-to-svnurl($svnurl || '/' || $file)),$control:svnauth),
       $monospace-width := 70
   return 
   <pre class="monospace">
@@ -202,11 +202,11 @@ function control:get-svninfo($svnurl as xs:string?, $file as xs:string?) as elem
           $url  := xs:string($svninfo/*:param[matches(@name, '^url')]/@value)
       return 
         ('Path: ', $path,<br/>,
-        'URL: ', control-util:svnurl-to-link($url),<br/>,
-        'Root URL: ', control-util:svnurl-to-link($root-url),<br/>,
-        'Revision: ', $rev,<br/>,
-        'Author: ', $author,<br/>,
-        'Date: ', $date)
+'URL: ', control-util:svnurl-to-link($url),<br/>,
+'Root URL: ', control-util:svnurl-to-link($root-url),<br/>,
+'Revision: ', $rev,<br/>,
+'Author: ', $author,<br/>,
+'Date: ', $date)
     }
   </pre>
 };

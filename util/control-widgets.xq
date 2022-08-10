@@ -161,6 +161,12 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
            <a class="btn" href="{$control:path || '/external/change-url?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('change-url', $control:locale)}</a>
           </li>,
           <li>
+           <a class="btn" href="#" onclick="{'showLogForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showLog', $control:locale)}</a>
+          </li>,
+          <li>
+           <a class="btn" href="#" onclick="{'showInfoForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showInfo', $control:locale)}</a>
+          </li>,
+          <li>
            <a class="btn" href="{$control:path || '/external/change-mountpoint?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('change-mountpoint', $control:locale)}</a>
           </li>
         ) else (
