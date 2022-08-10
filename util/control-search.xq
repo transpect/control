@@ -14,36 +14,81 @@ declare
 %rest:path('/control/ftsearch-raw')
 %rest:query-param("term", "{$term}")
 %rest:query-param("lang", "{$lang}")
+%rest:query-param("details", "{$details}", 'true')
+%rest:query-param("svn-path-constraint", "{$svn-path-constraint}")
 %output:method('xml')
-function control-search:ftsearch-raw($term, $lang) {
+function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*, 
+                                      $svn-path-constraint as xs:string?, $details as xs:boolean) {
   let $base-virtual-path := control-util:get-local-path($control:svnurlhierarchy),
-      $ftdb := $control:config/control:ftindexes/control:ftindex[@lang = $lang] => string(),
+      $ftdbs := $control:config/control:ftindexes/control:ftindex[@lang = $lang],
       $normalized := ft:normalize($term),
-      $total := count(ft:search($ftdb,
-                                $normalized, 
-                                map{'wildcards':'true', 'mode':'all words'})),
-  $results := 
-    for $result score $score in ft:search('hobotscontrol_FT_de', $term,
-    map{'wildcards':'true', 'mode':'all words'})
-    let $path := '/' || $result/db:path(.),
-    $virtual-path := (db:attribute('INDEX', $path, 'svnpath'))[1]/../@virtual-path
-    order by $score descending
-    return <result> {
-      $result/../@id,
-      $result/../@path,
-      attribute virtual-path { substring-after($virtual-path, $base-virtual-path) },
-      attribute xml:base { $path },
-      attribute score { $score },
-      element breadcrumbs {
-        $result/ancestor::doc/title, $result/../parent::div/ancestor-or-self::div/title
-      },
-      element context {
-        ft:mark($result[. contains text {$normalized} using wildcards])
-      }
-    } </result>
+      $results 
+         := for $ftdb in $ftdbs
+            return
+              for $result score $score in ft:search(string($ftdb), $term, map{'wildcards':'true', 'mode':'all words'})
+              let $path := '/' || $result/db:path(.),
+                  $breadcrumbs := ( ($result/ancestor::doc/*[1]/self::title, <title>[title missing]</title>)[1], 
+                                    $result/ancestor::div/*[1]/self::title ),
+              $virtual-path := (db:attribute('INDEX', $path, 'svnpath'))[1]/../@virtual-path
+              where if ($svn-path-constraint) then starts-with($virtual-path, $svn-path-constraint) else true()
+              return <result> {
+                $result/../@id,
+                $result/../@path,
+                substring-after($virtual-path, $base-virtual-path) ! (
+                  attribute virtual-path { . },
+                  attribute virtual-steps { count(tokenize(., '/')[normalize-space()]) }
+                ),
+                attribute dbpath { $path },
+                attribute lang { $ftdb/@lang },
+                attribute ftdb { string($ftdb) },
+                attribute score { $score },
+                attribute breadcrumbs-signature { string-join($breadcrumbs ! generate-id(.), '_') },
+                element breadcrumbs {
+                  $breadcrumbs
+                },
+                if ($details) then
+                element context {
+                  ft:extract($result[. contains text {$normalized} using wildcards])
+                }
+                else ()
+              } </result>
     return
-    <search-results term="{$normalized}" count="{$total}" actual="{count($results)}">{
+    <search-results term="{$normalized}" count="{count($results)}">{
       $results
     }</search-results>
 };
 
+declare 
+%rest:path('/control/ftsearch')
+%rest:query-param("term", "{$term}")
+%rest:query-param("lang", "{$lang}")
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("global", "{$global}", 'true')
+%rest:query-param("details", "{$details}", 'true')
+%output:method('html')
+%output:version('5.0')
+function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lang as xs:string*, 
+                                 $global as xs:boolean, $details as xs:boolean) {
+  let $auth := control-util:parse-authorization(request:header("Authorization")),
+      $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl($auth?username, $svnurl)),
+      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?) as item()* 
+        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#4)[1]
+  return  
+  <html>
+    <head>
+      {control-widgets:get-html-head( )}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <main>{
+         $search-widget-function( $used-svnurl, $control:path, $auth, 
+                                  map:merge(request:parameter-names() ! map:entry(., request:parameter(.))) ),  
+         control-search:ftsearch-raw($term, $lang, control-util:get-local-path($svnurl)[$global = false()],
+                                     $details) 
+           => xslt:transform('../../control-backend/fulltext/render-results.xsl')
+      }</main>
+      {control-widgets:get-page-footer(),
+       control-widgets:create-infobox()}
+    </body>
+  </html>
+};

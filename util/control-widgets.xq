@@ -146,7 +146,7 @@ declare function control-widgets:rebuild-index($svnurl as xs:string,
  : get file action dropdown button
  :)
 declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $file as attribute(*)? ) as element(details){
-  <details class="file action dropdown">
+  <details class="file action dropdown autocollapse">
     <summary class="btn">
       {control-i18n:localize('actions', $control:locale)}<span class="spacer"/>▼
     </summary>
