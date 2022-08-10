@@ -256,6 +256,34 @@ details[open] > .dropdown-wrapper {
   display: block;
   z-index: 2;
 }
+
+div#search-results details > * {
+  margin-left: 1em;
+}
+div#search-results {
+  margin-left: .5em;
+}
+
+div#search-results p {
+  margin: 0.2em 1em;
+}
+
+div#search-results li > p {
+  margin: 0.2em 0;
+}
+
+details.work-matches ul {
+  margin: 0;
+}
+
+p.search-xpath {
+  font-family: monospace;
+}
+
+span.search-mark {
+  font-weight: bold;
+}
+
 .dropdown ul {
   list-style: none;
   padding: 0
