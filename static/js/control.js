@@ -135,6 +135,14 @@ function addEventToDetail(detail) {
     	detail.setAttribute("open", "open");
     });
 }
+
+function addEventToXpath(p) {
+  p.setAttribute('title', 'click to copy');
+  p.addEventListener("click", event => {
+    	navigator.clipboard.writeText(event.target.innerText);
+    });
+}
+
 /* 
  * Register event listener
  */
@@ -143,6 +151,7 @@ window.onload = function() {
   var summaries = document.querySelectorAll("details.autocollapse > summary");
   var userselect = document.querySelector("#userselect");
   var groupselect = document.querySelector("#groupselect");
+  var xpaths = document.querySelectorAll(".search-xpath");
   
   for (let summary of summaries){
     addEventToSummary(summary)
@@ -152,7 +161,11 @@ window.onload = function() {
     addEventToDetail(detail)
   }
   
-  if (userselect !== null) {
+  for (let xpath of xpaths){
+    addEventToXpath(xpath)
+  }
+
+if (userselect !== null) {
     userselect.addEventListener("change", event => {
       setUserGroupSelection(userselect
         .selectedOptions[0].value, "groups")

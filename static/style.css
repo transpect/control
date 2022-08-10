@@ -278,6 +278,7 @@ details.work-matches ul {
 
 p.search-xpath {
   font-family: monospace;
+  cursor: copy;
 }
 
 span.search-mark {

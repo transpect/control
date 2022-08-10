@@ -70,13 +70,14 @@ declare
 %rest:query-param("svnurl", "{$svnurl}")
 %output:method('html')
 %output:version('5.0')
-function control:control($svnurl as xs:string?) as element() {
+function control:control($svnurl as xs:string?) {
   let $auth := control-util:parse-authorization(request:header("Authorization"))
   return 
   if ($svnurl and control-util:get-canonical-path($svnurl) eq $svnurl) 
   then control:main( $svnurl ,$auth)
   else web:redirect($control:siteurl || '?svnurl=' || control-util:get-canonical-path(control-util:get-current-svnurl(map:get($auth,'username'), $svnurl)))
 };
+
 
 (:
  : this is where the "fun" starts...
@@ -89,7 +90,7 @@ declare function control:main( $svnurl as xs:string?, $auth as map(*)) as elemen
   return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($used-svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( ),
@@ -265,7 +266,7 @@ declare
 function control:usermgmt($svnurl as xs:string?) as element(html) {
   <html>
     <head>
-      {control-widgets:get-html-head()}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( ),
@@ -289,7 +290,7 @@ declare
 function control:convert($svnurl as xs:string, $file as xs:string, $type as xs:string) as element(html) {
   <html>
     <head>
-      {control-widgets:get-html-head()}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header(),
@@ -311,7 +312,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization"))
 return
   <html>
     <head>
-      {control-widgets:get-html-head()
+      {control-widgets:get-html-head($svnurl)
        }
     </head>
     <body>
@@ -383,7 +384,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -436,7 +437,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head('Default svn URL')}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -499,7 +500,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -554,7 +555,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -620,7 +621,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -684,7 +685,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -734,7 +735,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -789,7 +790,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -841,7 +842,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -900,7 +901,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -962,7 +963,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
@@ -1023,7 +1024,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
 return
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}

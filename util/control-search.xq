@@ -39,6 +39,7 @@ function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*,
                   attribute virtual-steps { count(tokenize(., '/')[normalize-space()]) }
                 ),
                 attribute dbpath { $path },
+                attribute svnurl { control-util:get-canonical-path($path) },
                 attribute lang { $ftdb/@lang },
                 attribute ftdb { string($ftdb) },
                 attribute score { $score },
@@ -63,12 +64,12 @@ declare
 %rest:query-param("term", "{$term}")
 %rest:query-param("lang", "{$lang}")
 %rest:query-param("svnurl", "{$svnurl}")
-%rest:query-param("global", "{$global}", 'true')
+%rest:query-param("restrict_path", "{$restrict_path}", 'false')
 %rest:query-param("details", "{$details}", 'true')
 %output:method('html')
 %output:version('5.0')
 function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lang as xs:string*, 
-                                 $global as xs:boolean, $details as xs:boolean) {
+                                 $restrict_path as xs:boolean, $details as xs:boolean) {
   let $auth := control-util:parse-authorization(request:header("Authorization")),
       $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl($auth?username, $svnurl)),
       $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?) as item()* 
@@ -76,16 +77,18 @@ function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lan
   return  
   <html>
     <head>
-      {control-widgets:get-html-head( )}
+      {control-widgets:get-html-head($used-svnurl)}
     </head>
     <body>
       {control-widgets:get-page-header( )}
       <main>{
          $search-widget-function( $used-svnurl, $control:path, $auth, 
                                   map:merge(request:parameter-names() ! map:entry(., request:parameter(.))) ),  
-         control-search:ftsearch-raw($term, $lang, control-util:get-local-path($svnurl)[$global = false()],
+         control-search:ftsearch-raw($term, $lang, control-util:get-local-path($svnurl)[$restrict_path = true()],
                                      $details) 
-           => xslt:transform('../../control-backend/fulltext/render-results.xsl')
+           => xslt:transform('../../control-backend/fulltext/render-results.xsl', 
+                             map{'svnbaseurl': $control:svnurlhierarchy,
+                                 'siteurl': $control:siteurl})
       }</main>
       {control-widgets:get-page-footer(),
        control-widgets:create-infobox()}
