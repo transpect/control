@@ -845,8 +845,17 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
           <path d="M16.32 14.9l5.39 5.4a1 1 0 0 1-1.42 1.4l-5.38-5.38a8 8 0 1 1 1.41-1.41zM10 16a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/>
         </svg>
         <div class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list" aria-haspopup="true" aria-expanded="false">
-          <input id="search" type="text" name="term" autocomplete="off" size="26" autocapitalize="none" aria-controls="autoComplete_list" aria-autocomplete="both" />
+          <input id="search" type="text" name="term" autocomplete="off" size="26" autocapitalize="none" 
+            aria-controls="autoComplete_list" aria-autocomplete="both" value="{$params?term}" />
           <ul id="autoComplete_list" role="listbox" class="autoComplete_list" hidden=""></ul>
+          { for $lang in $control:config/control:ftindexes/control:ftindex/@lang return (
+              <input id="lang_{$lang}" type="checkbox" name="lang" value="{$lang}">
+              {if ($params?lang = $lang or empty($params?lang)) then attribute checked { 'true' } else ()}
+              </input>,
+              <label for="lang_{$lang}">{string($lang)}</label>
+            )
+          }
+          
         </div>
       </div>
     </form>
