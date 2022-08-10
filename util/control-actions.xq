@@ -88,7 +88,7 @@ function control-actions:copy( $svnurl as xs:string, $repopath as xs:string?, $f
   return
 <html>
   <head>
-    {control-widgets:get-html-head( )}
+    {control-widgets:get-html-head($svnurl)}
   </head>
   <body>
     {control-widgets:get-page-header(),
@@ -114,7 +114,7 @@ declare
 function control-actions:access( $svnurl as xs:string, $file as xs:string) {
 <html>
   <head>
-    {control-widgets:get-html-head( )}
+    {control-widgets:get-html-head($svnurl)}
   </head>
   <body>
     {control-widgets:get-page-header()}
@@ -158,7 +158,7 @@ let
                   'password': xs:string(doc('../config.xml')/control:config/control:svnpassword)},
     $resu := svn:delete(concat('http://127.0.0.1/', control-util:create-download-link($svnurl, '')), $auth, $file, true(), 'deleted by me')
 return <html>
-<head>{control-widgets:get-html-head( )}</head>
+<head>{control-widgets:get-html-head($svnurl)}</head>
 <body>
 </body></html>
 };

@@ -8,9 +8,9 @@ declare namespace c = 'http://www.w3.org/ns/xproc-step';
 (: 
  : gets the html head 202202181307
  :)
-declare function control-widgets:get-html-head( ) as element()+ {
+declare function control-widgets:get-html-head($title-text as xs:string?) as element()+ {
   <meta charset="utf-8"></meta>,
-  <title>control</title>,
+  <title>{$title-text} – transpect control</title>,
   <script src="{ $control:siteurl || '/static/js/control.js'}" type="text/javascript"></script>,
   <link rel="stylesheet" type="text/css" href="{ $control:siteurl || '/static/style.css'}"></link>
 };
@@ -855,7 +855,18 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
               <label for="lang_{$lang}">{string($lang)}</label>
             )
           }
-          
+          {
+            if ($svnurl and not($svnurl = $control:svnurlhierarchy)) then ( 
+              <input id="search_restrict_path" name="restrict_path" type="checkbox" value="true">
+                {if ($params?restrict_path) then attribute checked { 'true' } else ()}
+              </input>,
+              <label for="search_restrict_path">restrict to {$svnurl}</label>
+            )
+            else ()
+          }
+          {
+            if ($svnurl) then <input type="hidden" name="svnurl" value="{$svnurl}"/> else ()
+          }
         </div>
       </div>
     </form>
