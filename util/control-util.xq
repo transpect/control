@@ -85,19 +85,23 @@ declare function control-util:create-path-index($svnurl as xs:string,
       return $sub,
       for $e in control-util:parse-externals-property(svn:propget($svnurl, $control:svnauth, 'svn:externals', 'HEAD'))
       return 
-        <external name="{$e/@mount}" path="{control-util:get-local-path($e/@url)}" 
-                  mount-point="{control-util:get-local-path($svnurl || '/' || $e/@mount)}" 
-                  svnpath="{control-util:get-local-path($svnurl)}"
-                  virtual-path="{control-util:get-local-path($virtual-path) || '/' || $e/@mount}">
-          {for $f in svn:list(xs:string($e/@url),$control:svnauth, false())/*
-           let $subf := control-util:create-path-index(string-join((xs:string($e/@url),$f/@name),'/'),
-                                                       $f/@name,
-                                                       $f/local-name(),
-                                                       $virtual-path || '/' || $e/@mount ||  '/' || $f/@name,
-                                                       $svnurl || '/' || $e/@mount)
-           return $subf}
-        </external>
+        control-util:create-external-path($svnurl, $e, $virtual-path)
     }
+};
+
+declare function control-util:create-external-path($svnurl as xs:string, $external, $virtual-path as xs:string) {
+  <external name="{$external/@mount}" path="{control-util:get-local-path($external/@url)}" 
+            mount-point="{control-util:get-local-path($svnurl || '/' || $external/@mount)}" 
+            svnpath="{control-util:get-local-path($svnurl)}"
+            virtual-path="{control-util:get-local-path($virtual-path) || '/' || $external/@mount}">
+    {for $f in svn:list(xs:string($external/@url),$control:svnauth, false())/*
+     let $subf := control-util:create-path-index(string-join((xs:string($external/@url),$f/@name),'/'),
+                                                 $f/@name,
+                                                 $f/local-name(),
+                                                 $virtual-path || '/' || $external/@mount ||  '/' || $f/@name,
+                                                 $svnurl || '/' || $external/@mount)
+     return $subf}
+  </external>
 };
 
 declare function control-util:get-svnurl-parent-from-index($svnurl as xs:string) {
@@ -153,6 +157,11 @@ declare function control-util:svnurl-to-link($svnurl as xs:string?) as element(a
 declare function control-util:virtual-path-to-svnurl($virtual-path as xs:string) as xs:string{
   let $svnpath := $control:index//*[@virtual-path eq control-util:get-local-path($virtual-path)]/@svnpath
   return if ($svnpath) then $svnpath else $virtual-path
+};
+
+declare function control-util:strip-whitespace($s as xs:string) as xs:string{
+  let $start := replace($s,'^\p{Zs}','')
+  return replace($start,'\p{Zs}$','')
 };
 
 declare function control-util:get-short-string($str as xs:string, $length as xs:integer) as xs:string {
