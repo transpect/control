@@ -196,9 +196,9 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
           </li>,
           if (control-util:is-file($file))
           then (
-          <li>
-            <a class="btn" download="" href="{control-util:create-download-link($svnurl, $file)}">{control-i18n:localize('download', $control:locale)}</a>
-          </li>,
+            <li>
+              <a class="btn" download="" href="{$control:path || '/download-file?svnurl=' || $svnurl || '&amp;file=' || $file}">{control-i18n:localize('download', $control:locale)}</a>
+            </li>,
           for $c in control-util:get-converters-for-file($file)
           let $type := $control:converters/converter/types/type[@type = $c]
           return 
@@ -423,6 +423,12 @@ declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control
       <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/folder.svg'}" alt="new-file"/><span class="spacer"/>
         {control-i18n:localize('create-dir', $control:locale )}
     </button>
+    <a href="control/download?svnurl={$svnurl}">
+      <button class="download action btn">
+        <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/cloud-download.svg'}" alt="new-file"/><span class="spacer"/>
+          {control-i18n:localize('download', $control:locale )}
+      </button>
+    </a>
   </div>
 };
 (:

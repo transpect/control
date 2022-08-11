@@ -48,12 +48,12 @@ declare
   %rest:query-param("svnurl", "{$svnurl}")
 function control-actions:download-as-zip( $svnurl as xs:string ) {
   for $name    in tokenize($svnurl, '/')[last()]
-  let $temp    := file:temp-dir() || file:dir-separator()  || random:uuid() || file:dir-separator() 
-  let $checkoutdir := $temp || $name
-  let $zip-name := $name || '.zip' 
-  let $zip-path := $temp || $zip-name 
+  let $temp    := file:temp-dir() || file:dir-separator()  || random:uuid() || file:dir-separator(),
+      $checkoutdir := $temp || $name,
+      $zip-name := $name || '.zip',
+      $zip-path := $temp || $zip-name
   return (
-          if( svn:checkout($svnurl, $control:svnusername, $control:svnpassword, $checkoutdir, 'HEAD', 'infinity')/local-name() ne 'errors' )
+          if( svn:checkout($svnurl, $control:svnauth, $checkoutdir, 'HEAD', 'infinity')/local-name() ne 'errors' )
           then (zip:zip-file(
                          <file xmlns="http://expath.org/ns/zip" href="{$zip-path}">
                           {for $file in file:list($checkoutdir)[not(starts-with(., '.svn'))]
@@ -62,10 +62,31 @@ function control-actions:download-as-zip( $svnurl as xs:string ) {
                          </file>
                          ),
                          web:response-header(map { 'media-type': web:content-type( $zip-path )},
-                                             map { 'content-disposition': concat('attachement;filename=', $zip-name)}
+                                             map { 'Content-Disposition': concat('attachement;filename=', $zip-name)}
                                              )
                 )
-          else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
+          else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
+         )
+};
+
+(:
+ : download single file
+ :)
+declare
+  %rest:path("/control/download-file")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("file", "{$file}")
+function control-actions:download-single-file( $svnurl as xs:string, $file as xs:string ) {
+  let $temp    := file:temp-dir() || file:dir-separator()  || random:uuid() || file:dir-separator(),
+      $checkoutdir := $temp || 'file'
+  return (
+          if( svn:checkout($svnurl, $control:svnauth, $checkoutdir, 'HEAD', 'infinity')/local-name() ne 'errors' )
+          then (file:read-binary($checkoutdir  || file:dir-separator() || $file),
+                web:response-header(map { 'media-type': web:content-type( $checkoutdir  || file:dir-separator() || $file )},
+                                    map { 'Content-Disposition': concat('attachement; filename=', $file)}
+                                   )
+                )
+          else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msgtype=error' )
          )
 };
 (:
