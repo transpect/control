@@ -188,7 +188,7 @@ declare function control-util:create-download-link($svnurl as xs:string, $file a
   return $result
 };
 
-declare function control-util:get-local-path($svnurl as xs:string) as xs:string{
+declare function control-util:get-local-path($svnurl as xs:string?) as xs:string? {
 let $repo := control-util:get-repo-for-svnurl($svnurl),
     $repourl := if ($repo/@parent-path) then $repo/@parent-path else $repo/@path,
     $local-path := replace($repourl,'/$',''),
@@ -204,12 +204,19 @@ let $repo := control-util:get-repo-for-svnurl($svnurl),
 return if ($repo) then replace($svnurl, '^'||$local-path, $canon-path) else $svnurl
 };
 
-declare function control-util:get-repo-for-svnurl($svnurl as xs:string) as element(control:repo)?{
+declare function control-util:get-repo-for-svnurl($svnurl as xs:string?) as element(control:repo)?{
   let $path-repos := $control:repos/control:repo[@path][contains($svnurl, replace(@path,'/$',''))],
       $parent-path-repos := $control:repos/control:repo[@parent-path][contains($svnurl, replace(@parent-path,'/$',''))],
       $canon-path-repos := $control:repos/control:repo[@canon-path][contains($svnurl, replace(@canon-path,'/$',''))],
       $all-repos := ($path-repos,$parent-path-repos, $canon-path-repos)
   return if (count($all-repos) gt 0) then $all-repos[1] else ()
+};
+
+declare function control-util:get-virtual-path($url-or-path as xs:string?) as xs:string? {
+  control-util:get-local-path($url-or-path) !
+    (db:attribute('INDEX', ., 'svnpath')/../@virtual-path,
+     db:attribute('INDEX', ., 'path')/../@mount-point
+    )[1] => string()
 };
 
 declare function control-util:get-permission-for-group($group as xs:string, $repo as xs:string, $access) as xs:string?{

@@ -20,6 +20,7 @@ declare
 function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*, 
                                       $svn-path-constraint as xs:string?, $details as xs:boolean) {
   let $base-virtual-path := control-util:get-local-path($control:svnurlhierarchy),
+      $virtual-constraint as xs:string? := $svn-path-constraint => control-util:get-virtual-path(),
       $ftdbs := $control:config/control:ftindexes/control:ftindex[@lang = $lang],
       $normalized := ft:normalize($term),
       $results 
@@ -29,8 +30,8 @@ function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*,
               let $path := '/' || $result/db:path(.),
                   $breadcrumbs := ( ($result/ancestor::doc/*[1]/self::title, <title>[title missing]</title>)[1], 
                                     $result/ancestor::div/*[1]/self::title ),
-              $virtual-path := (db:attribute('INDEX', $path, 'svnpath'))[1]/../@virtual-path
-              where if ($svn-path-constraint) then starts-with($virtual-path, $svn-path-constraint) else true()
+              $virtual-path := $path => control-util:get-virtual-path()
+              where if ($svn-path-constraint) then starts-with($virtual-path, $virtual-constraint) else true()
               return <result> {
                 $result/../@id,
                 $result/../@path,
@@ -54,7 +55,8 @@ function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*,
                 else ()
               } </result>
     return
-    <search-results term="{$normalized}" count="{count($results)}">{
+    <search-results term="{$normalized}" count="{count($results)}" 
+      path-constraint="{$svn-path-constraint}" virtual-constraint="{$virtual-constraint}">{
       $results
     }</search-results>
 };
