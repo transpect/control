@@ -14,11 +14,8 @@ declare namespace c = 'http://www.w3.org/ns/xproc-step';
  :)  
 declare function control-util:path-parent-dir( $path as xs:string ) as xs:string? {
 let $local-path := control-util:get-local-path($path),
-    $parent-path := ($control:index//*[@svnpath eq $local-path
-          or @path eq $local-path]
-          /parent::*/(if (local-name(.) eq 'external') 
-                      then @path 
-                      else @svnpath))[1]
+    $parent-path := ($control:index//*[@svnpath eq $local-path]
+          /parent::*/@svnpath)[1]
 return if ($parent-path)
        then control-util:get-canonical-path($parent-path)
        else ''
@@ -90,9 +87,9 @@ declare function control-util:create-path-index($svnurl as xs:string,
 };
 
 declare function control-util:create-external-path($svnurl as xs:string, $external, $virtual-path as xs:string) {
-  <external name="{$external/@mount}" path="{control-util:get-local-path($external/@url)}" 
+  <external name="{$external/@mount}" 
+            svnpath="{control-util:get-local-path($external/@url)}" 
             mount-point="{control-util:get-local-path($svnurl || '/' || $external/@mount)}" 
-            svnpath="{control-util:get-local-path($svnurl)}"
             virtual-path="{control-util:get-local-path($virtual-path) || '/' || $external/@mount}">
     {for $f in svn:list(xs:string($external/@url),$control:svnauth, false())/*
      let $subf := control-util:create-path-index(string-join((xs:string($external/@url),$f/@name),'/'),
@@ -333,6 +330,10 @@ declare function control-util:parse-externals-property($prop as element(*)) as e
             if(exists($rev)) then attribute rev { $rev } else (),
             attribute mount { $mount })
   }</external>
+};
+
+declare function control-util:get-external-url($url as xs:string) as xs:string {
+    replace(replace($url, '^(.+)(@.*)?$', '$1'),'localhost:'|| $control:port,'127.0.0.1')
 };
 
 declare function control-util:post-file-to-converter($svnurl as xs:string, $file as xs:string, $converter as xs:string, $type as xs:string) as element(conversion) {
