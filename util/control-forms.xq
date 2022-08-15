@@ -47,7 +47,7 @@ function control-forms:create-dir( $dirname as xs:string?, $svnurl as xs:string 
                                  $svnurl, '?msgtype=warning?msg=', 
                                  encode-for-uri(control-i18n:localize('dir-exists', $control:locale )))
                                  )
-       else for $i in svn:mkdir( $svnurl, $control:svnusername, $control:svnpassword, $dirname, true(), 'control: create dir')
+       else for $i in svn:mkdir( $svnurl, $control:svnauth, $dirname, false(), 'control: create dir')
             return if( $i/local-name() ne 'errors' )
                    then web:redirect($control:siteurl||'?svnurl=' || $svnurl )
                    else web:redirect(concat($control:siteurl||'?svnurl=', $svnurl, '?msgtype=error?msg=',

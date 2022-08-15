@@ -123,7 +123,7 @@ declare function control-widgets:get-svnhome-button( $svnurl as xs:string, $cont
 };
 declare function control-widgets:get-back-to-svndir-button( $svnurl as xs:string, $control-dir as xs:string ) as element(div){
   <div class="back">
-    <a href="{$control-dir || '?svnurl=' || $svnurl}">
+    <a href="{$control:siteurl || '?svnurl=' || $svnurl}">
       <button class="back action btn">
         <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/chevron-left.svg'}" alt="back"/>
       </button>
@@ -400,7 +400,9 @@ declare function control-widgets:get-dir-menu( $svnurl as xs:string, $control-di
   <div class="dir-menu">
     <div class="dir-menu-left">
       {control-widgets:get-svnhome-button( $svnurl, $control-dir, $auth )}
-      <div class="path">{tokenize($svnurl,'/')[last()]}&#xa0;/ </div>
+      <div class="breadcrumb">
+        {control-util:get-breadcrumb-links($svnurl)}
+      </div>
       {control-widgets:create-dir-form( $svnurl, $control-dir )}
     </div>
     <div class="dir-menu-right">
@@ -419,10 +421,12 @@ declare function control-widgets:get-dir-actions( $svnurl as xs:string, $control
         {control-i18n:localize('upload', $control:locale )}
       </button>
     </a>
-    <button class="create-dir action btn" onclick="reveal('create-dir-form-wrapper')">
-      <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/folder.svg'}" alt="new-file"/><span class="spacer"/>
-        {control-i18n:localize('create-dir', $control:locale )}
-    </button>
+    <a href="#" onclick="reveal('create-dir-form-wrapper'); false;">
+      <button class="create-dir action btn" >
+        <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/folder.svg'}" alt="new-file"/><span class="spacer"/>
+          {control-i18n:localize('create-dir', $control:locale )}
+      </button>
+    </a>
     <a href="control/download?svnurl={$svnurl}">
       <button class="download action btn">
         <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/cloud-download.svg'}" alt="new-file"/><span class="spacer"/>

@@ -142,6 +142,16 @@ declare function control-util:or($bools as xs:boolean*) as xs:boolean{
 declare function control-util:is-file($file as xs:string?) as xs:boolean{
   matches($file,'\.')
 };
+
+declare function control-util:get-breadcrumb-links($svnurl as xs:string){
+  let $virtual-position := $control:index//*[@svnpath = control-util:get-local-path($svnurl)],
+      $parents := $virtual-position/ancestor-or-self::*,
+      $links := for $p in $parents/@svnpath
+         return <a href="{$control:siteurl|| '?svnurl=' || $p}">{tokenize($p,'/')[last()]}</a>
+  return for $l in $links
+         return ($l,'/')
+};
+
 declare function control-util:split-string-at-length($str as xs:string?, $length as xs:integer) as xs:string* {
   for $i in (1 to (xs:integer(ceiling(string-length($str) div $length))))
   return substring($str, ($i - 1) * $length + 1, $length)
