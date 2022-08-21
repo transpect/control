@@ -323,6 +323,12 @@ div.form {
   padding-top: 2rem;
   border-top: 1px solid grey;
 }
+.form-wrapper details {
+  margin: 0.3rem 1.5rem;
+}
+.form-wrapper details p {
+  margin: 0.2em 1em;
+}
 
 .leftlabel {
   float: left;
