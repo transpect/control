@@ -780,7 +780,7 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
   <div class="form-wrapper">
     <form method="get" action="{$control-dir}/ftsearch" id="ftsearch-form">
       <div style="display:flex">
-        <svg xmlns="http://www.w3.org/2000/svg" id="search-icon" style="position:relative; top:0.3em; display:inline-block" viewBox="0 0 24 24" width="20" height="20">
+        <svg xmlns="http://www.w3.org/2000/svg" id="search-icon" style="position:relative; top:0.1em; display:inline-block; padding-right:0.2em" viewBox="0 0 24 24" width="20" height="20">
           <path d="M16.32 14.9l5.39 5.4a1 1 0 0 1-1.42 1.4l-5.38-5.38a8 8 0 1 1 1.41-1.41zM10 16a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/>
         </svg>
         <div class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list" aria-haspopup="true" aria-expanded="false">
@@ -809,5 +809,12 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
         </div>
       </div>
     </form>
+    <details>
+      <summary>Search hints</summary>
+      <p>You may use regex-like wildcards, such as <code>.*</code> for zero or more characters, 
+      as documented for the <a href="https://docs.basex.org/wiki/Full-Text#Match_Options">BaseX
+      <code>wildcards</code> option</a>.</p>
+      <p>You can copy the matches’ XPaths to the clipboard (for use in oXygen etc.) by clicking on them.</p>
+    </details>
   </div>
 };
