@@ -324,11 +324,20 @@ div.form {
   border-top: 1px solid grey;
 }
 .form-wrapper details {
-  margin: 0.3rem 1.5rem;
+  margin: 0.3rem 0.5em;
 }
 .form-wrapper details p {
   margin: 0.2em 1em;
 }
+
+.xpath-fillable {
+  background-color: #dde;
+}
+
+.fulltext-fillable {
+  background-color: #dee;
+}
+
 
 .leftlabel {
   float: left;
