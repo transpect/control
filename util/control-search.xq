@@ -117,25 +117,31 @@ function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*, $x
             return
               for $result score $score in ft:search(string($ftdb), $term, map{'wildcards':'true', 'mode':'all words'})
               let $path := '/' || $result/db:path(.),
+                  $result-xpath as xs:string? := string($result/../@path)[normalize-space()],
                   $breadcrumbs := ( ($result/ancestor::doc/*[1]/self::title, <title>[title missing]</title>)[1], 
                                     $result/ancestor::div/*[1]/self::title ),
-              $virtual-path := $path => control-util:get-virtual-path()
+                  $virtual-path := $path => control-util:get-virtual-path()
               where (if ($svn-path-constraint) then starts-with($virtual-path, $virtual-constraint) else true())
                     and
                       (: this is the inefficient part that should be avoided :)
                       (if (starts-with(normalize-space($xpath), '/')) 
-                       then some $xpx in $xpath-results-xpaths satisfies contains($result/../@path, $xpx)
-                       else if (matches($normalized-xpath, '^\i')) (: this is highly efficient :)
+                       then some $xpx in $xpath-results-xpaths satisfies contains($result-xpath, $xpx)
+                       else if (matches($normalized-xpath, '^(\i|\.|\*)')) (: this is highly efficient :)
                             then let $modified-xpath := if (matches(tokenize($normalized-xpath, '/')[1], '^[a-z-]+::'))
                                                         then $normalized-xpath
-                                                        else 'ancestor-or-self::' || $normalized-xpath,
-                                     $corresponding-doc as document-node(element(*)) := db:open($control:config/control:db, $result/db:path(.)), 
-                                     $corresponding-elt as element(*) := xquery:eval($result/../@path, map { '': $corresponding-doc})
-                                 return exists(xquery:eval($modified-xpath, map { '': $corresponding-elt } ))
+                                                        else if (starts-with($normalized-xpath, '.'))
+                                                             then $normalized-xpath
+                                                             else 'ancestor-or-self::' || $normalized-xpath,
+                                     $corresponding-doc as document-node(element(*)) := db:open($control:config/control:db, $result/db:path(.))[last()], 
+                                     $corresponding-elt as element(*)? := if (empty($result-xpath)) then ()
+                                                                          else xquery:eval($result-xpath, map { '': $corresponding-doc})
+                                 return if (empty($result-xpath)) then true()
+                                        else exists(xquery:eval($modified-xpath, map { '': $corresponding-elt } ))
                             else true() )
               return <result> {
                 $result/../@id,
                 $result/../@path,
+                if (empty($result-xpath)) then attribute path {},
                 substring-after($virtual-path, $base-virtual-path) ! (
                   attribute virtual-path { . },
                   attribute virtual-steps { count(tokenize(., '/')[normalize-space()]) }
@@ -194,7 +200,8 @@ function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lan
                              map{'svnbaseurl': $control:svnurlhierarchy,
                                  'siteurl': $control:siteurl,
                                  'langs': string-join($lang ! normalize-space(.), ','),
-                                 'term': $term})
+                                 'term': $term,
+                                 'xpath': $xpath})
       }</main>
       {control-widgets:get-page-footer(),
        control-widgets:create-infobox()}

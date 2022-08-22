@@ -780,10 +780,8 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
   <div class="form-wrapper">
     <form method="get" action="{$control-dir}/ftsearch" id="ftsearch-form">
       <div style="display:flex">
-        <svg xmlns="http://www.w3.org/2000/svg" id="search-icon" style="position:relative; top:0.1em; display:inline-block; padding-right:0.2em" viewBox="0 0 24 24" width="20" height="20">
-          <path d="M16.32 14.9l5.39 5.4a1 1 0 0 1-1.42 1.4l-5.38-5.38a8 8 0 1 1 1.41-1.41zM10 16a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/>
-        </svg>
         <div class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list" aria-haspopup="true" aria-expanded="false">
+          <label for="lang">Full text</label> 
           <input id="search" type="text" name="term" autocomplete="off" size="26" autocapitalize="none" 
             aria-controls="autoComplete_list" aria-autocomplete="both" value="{$params?term}" />
           <ul id="autoComplete_list" role="listbox" class="autoComplete_list" hidden=""></ul>
@@ -794,27 +792,65 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
               <label for="lang_{$lang}">{string($lang)}</label>
             )
           }
+          <span>  </span><label for="xpath">XPath</label>
+          <input id="xpathsearch" type="text" name="xpath" autocomplete="off" size="38" autocapitalize="none" 
+            value="{$params?xpath}"/><span>   </span>
           {
             if ($svnurl and not($svnurl = $control:svnurlhierarchy)) then ( 
               <input id="search_restrict_path" name="restrict_path" type="checkbox" value="true">
                 {if ($params?restrict_path) then attribute checked { 'true' } else ()}
               </input>,
-              <label for="search_restrict_path">restrict to { $svnurl }</label>
+              <label for="search_restrict_path">restrict to { $svnurl => control-util:get-canonical-path() }</label>
             )
             else ()
           }
           {
             if ($svnurl) then <input type="hidden" name="svnurl" value="{$svnurl}"/> else ()
           }
+           <input type="submit" value="Search"/>
         </div>
       </div>
     </form>
     <details>
       <summary>Search hints</summary>
-      <p>You may use regex-like wildcards, such as <code>.*</code> for zero or more characters, 
+      <p>For full text, you may use regex-like wildcards, such as <code>.*</code> for zero or more characters, 
       as documented for the <a href="https://docs.basex.org/wiki/Full-Text#Match_Options">BaseX
       <code>wildcards</code> option</a>.</p>
       <p>You can copy the matches’ XPaths to the clipboard (for use in oXygen etc.) by clicking on them.</p>
+      <p>The content of the XPath input field will be used as follows:</p>
+      <ul>
+        <li>If the expression starts with a slash, it will be used verbatim. Example: 
+        <code class="xpath-fillable">//boxed-text[contains-token(@content-type, 'box6')]</code>.
+        Don’t use these absolute paths in combination with full text queries as this is highly inefficient
+        and may lead to timeouts. Use absolute paths only when the full text input field is empty.</li>
+        <li>If the expression starts with an axis (<code>preceding::</code>, <code>ancestor::</code> etc.)
+        or with a dot (<code>.</code> or <code>..</code>), it will be used verbatim. Examples:
+        <code class="xpath-fillable">preceding-sibling::title[matches(., '(Vorwort|Preface)')]</code>,
+        <code class="xpath-fillable">../title[fn]</code>.
+        The context item is the parent element of the full text match. If it is a <code>p</code> in 
+        a <code>sec</code>, then the match will only appear in the results if <code>sec/title</code>
+        matches the regular expression <code>(Vorwort|Preface)</code> or if contains a footnote, respectively. 
+        Such a context-aware expression only makes sense if a full text query has been entered and if there are 
+        full text search results.</li>
+        <li>Otherwise, if the expression starts with a letter or with an asterisk, <code>ancestor-or-self::</code>
+        will be prepended to the expression. Examples: 
+        <code class="xpath-fillable">back</code> ⇒ <code class="xpath-fillable">ancestor-or-self::back</code>,
+        <code class="xpath-fillable">sec[empty(sec)]</code> ⇒ <code class="xpath-fillable">ancestor-or-self::sec[empty(sec)]</code>,
+        <code class="xpath-fillable">boxed-text//title</code> ⇒ <code class="xpath-fillable">ancestor-or-self::boxed-text//title</code>.
+        Note that the latter won’t restrict the full text results to the <code>title</code> elements within a <code>boxed-text</code>
+        element. It will return full text results that are in a <code>boxed-text</code> that also contains a <code>title</code>
+        at arbitrary depth, not necessarily as an ancestor to the current full text search result. 
+        In order to restrict the results to <code>title</code> elements within a <code>boxed-text</code>, you can 
+        use <code class="xpath-fillable">title[ancestor::boxed-text]</code> (<code 
+        class="xpath-fillable">ancestor-or-self::title[ancestor::boxed-text]</code>). Just like the “relative location 
+        expressions” in the previous bullet point, these expressions only make sense for further filtering full text search
+        results.</li>
+      </ul>
+      <p>You can use (non-updating) XQuery 3.1 expressions supported by BaseX. This comprises XPath 3.1 <a 
+      href="https://www.w3.org/TR/xpath-31/">expressions</a> and <a 
+      href="https://www.w3.org/TR/xpath-functions-31/">functions</a>. Although newly introduced functions such as the aforementioned
+      <code>contains-token()</code> are not part of XPath 2.0, you may find this <a 
+      href="https://mulberrytech.com/quickref/xpath2.pdf">XPath 2.0 cheat sheet</a> handy.</p>
     </details>
   </div>
 };
