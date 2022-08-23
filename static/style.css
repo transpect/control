@@ -323,6 +323,9 @@ div.form {
   padding-top: 2rem;
   border-top: 1px solid grey;
 }
+.form-wrapper ul, #search-results ul {
+  margin: 0.3rem;
+}
 .form-wrapper details {
   margin: 0.3rem 0.5em;
 }
@@ -330,11 +333,16 @@ div.form {
   margin: 0.2em 1em;
 }
 
+.form-wrapper details h4 {
+  margin: 1em 1em 0.7em 1em;
+  font-weight: bold;
+}
+
 .xpath-fillable {
   background-color: #dde;
 }
 
-.fulltext-fillable {
+.ft-fillable {
   background-color: #dee;
 }
 
