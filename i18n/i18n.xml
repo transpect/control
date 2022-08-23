@@ -88,6 +88,10 @@
     <locale lang="de">Status</locale>
     <locale lang="en">Status</locale>
   </entry>
+  <entry name="status-url">
+    <locale lang="de">Status abfragen</locale>
+    <locale lang="en">Get Status</locale>
+  </entry>
   <entry name="converter">
     <locale lang="de">Konverter</locale>
     <locale lang="en">Converter</locale>

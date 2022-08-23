@@ -667,7 +667,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     $result :=
       if (control-util:is-admin($username))
       then
-       element result { element error {"Uploaded"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
+       element result { element error {"Started"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
       else
         element result { element error {"You are not an admin."}, element code {1}},
     $btntarget :=

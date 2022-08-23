@@ -352,10 +352,10 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
       $remove-folder := proc:execute('rm -r', ($filepath)),
       $prepare-file  := proc:execute('mkdir', ($filepath, '-p')),
       $checkout      := proc:execute('svn',('co', $svnurl, $filepath, '--username',$control:svnusername,'--password',$control:svnpassword)),
-      $upload-call   := ('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'upload')),
-      $upload        := proc:execute('curl',('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'upload'))),
+      $upload-call   := ('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter/@name,'upload')),
+      $upload        := proc:execute('curl',('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter/@name,'upload'))),
       $upload_res    := json:parse($upload/output),
-      $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'status')||'?input_file='||$file||'&amp;type='||$type)),
+      $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter/@name,'status')||'?input_file='||$file||'&amp;type='||$type)),
       $status_res    := json:parse($status/output),
       $result_xml    := 
         <conversion>
@@ -399,12 +399,12 @@ declare function control-util:add-conversion($conv as element(conversion)) {
   return file:write("basex/webapp/control/"||$control:mgmtfile, $updated-conversions)
 };
 
-declare function control-util:update-conversion($id as xs:string) as element(conversion){
-  let $conversion := $control:conversions//control:conversion[id/text() eq $id],
+declare function control-util:update-conversion($id as xs:string){
+  let $conversion := $control:conversions//control:conversion[control:id eq $id],
       $converter  := control-util:get-converter-for-type($conversion/control:type),
       $type  := $conversion/control:type,
       $file       := $conversion/control:file/text(),
-      $status     := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'status')||'?input_file='||$file||'&amp;type='||$type)),
+      $status     := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter/@name,'status')||'?input_file='||$file||'&amp;type='||$type)),
       $status_res := json:parse($status/output),
       $updated-conversion := 
         copy $old := $conversion
@@ -414,9 +414,9 @@ declare function control-util:update-conversion($id as xs:string) as element(con
         return $old,
       $file := $control:mgmtdoc,
       $updated-access := $file update {delete node //control:conversion[control:id = $id]}
-                               update {insert node $updated-conversion into .//control:rels},
+                               update {insert node $updated-conversion into .//control:conversions},
       $updated-file := file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access)
-  return $updated-conversion
+  return $updated-file
 };
 
 declare function control-util:get-converter-for-type($type as xs:string) {

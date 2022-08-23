@@ -35,14 +35,16 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
     <div class="conversion-widget">
     <h1> {control-i18n:localize('convert-title', $control:locale ) || ' ' || $filepath }</h1>
     <div id="streamed-data" class="hidden">
-    {control-util:get-running-conversions($svnurl, $file, $type)}</div>
+    {control-util:get-running-conversions($svnurl, $file, $type),
+     for $c in control-util:get-running-conversions($svnurl, $file, $type)
+     return control-util:update-conversion($c/control:id)}</div>
     <div class="table">
     {control-i18n:localize('running_conversions', $control:locale )}
       <div class="table-body">
         <div class="table-row">
           <div class="table-cell">{control-i18n:localize('status', $control:locale )}</div>
           <div class="table-cell">{control-i18n:localize('converter', $control:locale )}</div>
-          <div class="table-cell">{control-i18n:localize('cancel', $control:locale )}</div>
+          <div class="table-cell">{control-i18n:localize('status-url', $control:locale )}</div>
           <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
         </div>
       </div>
