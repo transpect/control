@@ -98,9 +98,10 @@ function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*, $x
       $ftdbs := $control:config/control:ftindexes/control:ftindex[@lang = $lang ! normalize-space(.)],
       $db := db:open($control:config/control:db),
       $normalized-term := ft:normalize($term),
-      $normalized-xpath := $xpath => normalize-space(),
+      $normalized-xpath := if ($normalized-term) then $xpath => normalize-space() => replace('^/+', '')
+                           else $xpath => normalize-space(),
       (: absolute paths – this should not be combined with full-text search as it is highly inefficient :)
-      $xpath-results := if (starts-with($normalized-xpath, '/') or not($term)) then 
+      $xpath-results := if (starts-with($normalized-xpath, '/')) then 
                         for $xpath-result in xquery:eval($normalized-xpath, map { '': $db } )
                         let $path := '/' || $xpath-result/db:path(.),
                             $virtual-path := $path => control-util:get-virtual-path()
@@ -123,8 +124,9 @@ function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*, $x
                   $virtual-path := $path => control-util:get-virtual-path()
               where (if ($svn-path-constraint) then starts-with($virtual-path, $virtual-constraint) else true())
                     and
-                      (: this is the inefficient part that should be avoided :)
-                      (if (starts-with(normalize-space($xpath), '/')) 
+                      (: this is the inefficient part that will be avoided because leading slashes
+                         will be stripped away if there is a full text query :)
+                      (if (starts-with($normalized-xpath, '/')) 
                        then some $xpx in $xpath-results-xpaths satisfies contains($result-xpath, $xpx)
                        else if (matches($normalized-xpath, '^(\i|\.|\*)')) (: this is highly efficient :)
                             then let $modified-xpath := if (matches(tokenize($normalized-xpath, '/')[1], '^[a-z-]+::'))
@@ -162,9 +164,22 @@ function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*, $x
                 else ()
               } </result>
     return
-    <search-results term="{$normalized-term}" count="{count($results)}" 
+    <search-results term="{$normalized-term}" xpath="{$normalized-xpath}"
+      count="{if (exists($results)) then count($results) else count($xpath-results)}" 
       path-constraint="{$svn-path-constraint}" virtual-constraint="{$virtual-constraint}">{
-      $results
+      if (exists($results)) then $results else 
+      for $xr in $xpath-results
+      let $path := '/' || $xr/db:path(.),
+          $virtual-path := $path => control-util:get-virtual-path()
+      return <result> {
+        attribute path { $xr => path() => replace('/Q\{\}', '/')},
+        substring-after($virtual-path, $base-virtual-path) ! (
+          attribute virtual-path { . },
+          attribute virtual-steps { count(tokenize(., '/')[normalize-space()]) }
+        ),
+        attribute dbpath { $path },
+        attribute svnurl { control-util:get-canonical-path($path) }
+      } </result>
     }</search-results>
 };
 
