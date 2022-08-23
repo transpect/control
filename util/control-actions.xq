@@ -156,7 +156,7 @@ declare
   %rest:query-param("repopath", "{$repopath}")
   %rest:query-param("file", "{$file}")
   %output:method('html')
-function control-actions:delete( $svnurl as xs:string, $repopath as xs:string, $file as xs:string ) {
+function control-actions:delete( $svnurl as xs:string, $file as xs:string ) {
 let 
     $auth := map {"username": $control:svnusername, 
                   'password': $control:svnpassword},
