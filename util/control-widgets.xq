@@ -191,9 +191,6 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
             <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
           </li>,
           <li>
-            <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
-          </li>,
-          <li>
             <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;file=' || $file || '&amp;action=delete'}">{control-i18n:localize('delete', $control:locale)}</a>
           </li>,
           if (control-util:is-file($file))

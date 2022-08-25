@@ -153,16 +153,14 @@ function control-actions:access( $svnurl as xs:string, $file as xs:string) {
 declare
   %rest:path("/control/delete")
   %rest:query-param("svnurl", "{$svnurl}")
-  %rest:query-param("repopath", "{$repopath}")
   %rest:query-param("file", "{$file}")
   %output:method('html')
 function control-actions:delete( $svnurl as xs:string, $file as xs:string ) {
 let 
-    $auth := map {"username": $control:svnusername, 
-                  'password': $control:svnpassword},
-    $resu := svn:delete(concat('http://127.0.0.1/', control-util:create-download-link($svnurl, '')), $auth, $file, true(), 'deleted by me')
+    $auth := control-util:parse-authorization(request:header("Authorization")),
+    $resu := svn:delete(control-util:get-canonical-path($svnurl), $control:svnauth, $file, true(), 'deleted via control')
 return <html>
-<head>Deleted; Go Back In Browser and Reload</head>
+<head>{$resu}</head>
 <body>
 </body></html>
 };
@@ -191,16 +189,11 @@ declare
   %rest:POST
   %rest:path("/control/rename") 
   %rest:form-param("svnurl", "{$svnurl}")
-  %rest:form-param("repopath", "{$repopath}")
   %rest:form-param("file", "{$file}")
   %rest:form-param("target", "{$target}")
   %output:method('html')
-function control-actions:rename( $svnurl as xs:string, $repopath as xs:string?, $file as xs:string, $target as xs:string ) {
-let $auth := map {"username": xs:string(doc('../config.xml')/control:config/control:svnusername), 
-                  'password': xs:string(doc('../config.xml')/control:config/control:svnpassword)},
-    $resu := svn:move(concat('http://127.0.0.1/', control-util:create-download-link($svnurl, '')), $auth, $file, $target, 'renamed by' || $control:svnusername )
-return <html>
-<head>Renamed; Go Back In Browser</head>
-<body>
-</body></html>
+function control-actions:rename( $svnurl as xs:string, $file as xs:string, $target as xs:string ) {
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $resu := svn:move(control-util:get-canonical-path($svnurl), $auth, $file, $target, 'renamed via control' )
+return web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri($resu) || '?msgtype=info' )
 };
