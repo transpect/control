@@ -812,16 +812,27 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
     </form>
     <details>
       <summary>Search hints</summary>
-      <p>For full text, you may use regex-like wildcards, such as <code>.*</code> for zero or more characters, 
+      <h4>Full text</h4>
+      <p>You may use regex-like wildcards, such as <code>.*</code> for zero or more characters, 
       as documented for the <a href="https://docs.basex.org/wiki/Full-Text#Match_Options">BaseX
-      <code>wildcards</code> option</a>.</p>
-      <p>You can copy the matches’ XPaths to the clipboard (for use in oXygen etc.) by clicking on them.</p>
+      <code>wildcards</code> option</a>. Examples: <code class="ft-fillable">combin.*</code>
+      (for “combine”, “combined”, “combining”, “combinatorial”, etc.), 
+      <code class="ft-fillable">.{{2,2}}treated</code> (for “untreated” and “retreated”), 
+      <code class="ft-fillable">depression.{{0,2}}</code> (for “Depression” and “Depressionen”).</p>
+      <p>You can click on any of the highlighted example expressions in order to use them in
+      the form field. The same applies to the hihlighted XPath expressions below.</p>
+      <p>In the result list, you can copy the matches’ XPaths to the clipboard (for use in oXygen etc.) by clicking on them.</p>
+      <h4>XPath</h4>
       <p>The content of the XPath input field will be used as follows:</p>
       <ul>
-        <li>If the expression starts with a slash, it will be used verbatim. Example: 
+        <li>If the expression starts with a slash and if the full text query is empty, it will be used verbatim. Example: 
         <code class="xpath-fillable">//boxed-text[contains-token(@content-type, 'box6')]</code>.
-        Don’t use these absolute paths in combination with full text queries as this is highly inefficient
-        and may lead to timeouts. Use absolute paths only when the full text input field is empty.</li>
+        This would be highly inefficient in combination with full text queries. Therefore,
+        if the full text query field contains any text, leading slashes will be stripped from the
+        XPath expression and it will be treated as in the last bullet point below, that is,
+        <code class="xpath-fillable">//app[label]</code> will first be rewritten as
+        <code class="xpath-fillable">app[label]</code> and then as 
+        <code class="xpath-fillable">ancestor-or-self::app[label]</code>.</li>
         <li>If the expression starts with an axis (<code>preceding::</code>, <code>ancestor::</code> etc.)
         or with a dot (<code>.</code> or <code>..</code>), it will be used verbatim. Examples:
         <code class="xpath-fillable">preceding-sibling::title[matches(., '(Vorwort|Preface)')]</code>,

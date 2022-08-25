@@ -143,6 +143,13 @@ function addEventToXpath(p) {
     });
 }
 
+function addEventToExample(span, inputId) {
+  span.setAttribute('title', 'click to use');
+  span.addEventListener("click", event => {
+    	document.querySelector('#' + inputId).value = (event.target.innerText);
+    });
+}
+
 /* 
  * Register event listener
  */
@@ -152,7 +159,9 @@ window.onload = function() {
   var userselect = document.querySelector("#userselect");
   var groupselect = document.querySelector("#groupselect");
   var xpaths = document.querySelectorAll(".search-xpath");
-  
+  var xpathExamples = document.querySelectorAll(".xpath-fillable");
+  var fullTextExamples = document.querySelectorAll(".ft-fillable");
+    
   for (let summary of summaries){
     addEventToSummary(summary)
   }
@@ -163,6 +172,14 @@ window.onload = function() {
   
   for (let xpath of xpaths){
     addEventToXpath(xpath)
+  }
+
+  for (let xmpl of xpathExamples){
+    addEventToExample(xmpl, 'xpathsearch')
+  }
+
+  for (let xmpl of fullTextExamples){
+    addEventToExample(xmpl, 'search')
   }
 
 if (userselect !== null) {
