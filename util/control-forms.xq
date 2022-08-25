@@ -59,6 +59,7 @@ declare
   %rest:path("/control/new-file")
   %rest:query-param("svnurl", "{$svnurl}")
   %output:method('html')
+  %output:version('5.0')
 function control-forms:new-file( $svnurl as xs:string ) {
   <html>
     <head>
@@ -72,13 +73,14 @@ function control-forms:new-file( $svnurl as xs:string ) {
         <div class="upload-form">
           <dir class="dir-menu">
             <div class="dir-menu-left">
-                {(:control-widgets:get-svnhome-button( $svnurl, $control:path || '/..' ),:)
-                 control-widgets:get-back-to-svndir-button($svnurl, $control:path || '/..' )}
-              <div class="path">{tokenize( $svnurl, '/')[last()]}</div>
-                {control-widgets:create-dir-form( $svnurl, $control:path || '/../' )}
+                {control-widgets:get-back-to-svndir-button($svnurl, $control:path || '/..' )}
+              <div class="breadcrumb">
+                {control-util:get-breadcrumb-links($svnurl)}
               </div>
+                {control-widgets:create-dir-form( $svnurl, $control:path || '/../' )}
+            </div>
           </dir>
-        <form action="/upload"
+        <form action="{$control:siteurl}/upload"
               class="dropzone"
               id="dropzone" method="post" enctype="multipart/form-data">
           <div class="fallback">

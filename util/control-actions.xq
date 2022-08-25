@@ -14,7 +14,7 @@ import module namespace control-widgets = 'http://transpect.io/control/util/cont
  :)
 declare
   %rest:POST
-  %rest:path("/upload")
+  %rest:path("/control/upload")
   %rest:form-param("file", "{$file}")
   %rest:form-param("svnurl", "{$svnurl}")
 function control-actions:upload($file, $svnurl) {
@@ -27,10 +27,10 @@ function control-actions:upload($file, $svnurl) {
   let $depth := 'empty'
     return (
             file:write-binary($path, $content),
-            if( svn:checkout($svnurl, $control:svnusername, $control:svnpassword, $checkoutdir, $revision, $depth)/local-name() ne 'errors' )
+            if( svn:checkout($svnurl, $control:svnauth, $checkoutdir, $revision, $depth)/local-name() ne 'errors' )
             then (file:move($path, $checkoutdir), 
-                  if(svn:add($checkoutdir, $control:svnusername, $control:svnpassword, $name, false()))
-                  then if( svn:commit($control:svnusername, $control:svnpassword, $checkoutdir, $name || ' added by ' || $control:svnusername )/local-name() ne 'errors' )
+                  if(svn:add($checkoutdir, $control:svnauth, $name, false()))
+                  then if( svn:commit($control:svnauth, $checkoutdir, $name || ' added by ' || $control:svnusername )/local-name() ne 'errors' )
                        then (file:delete($checkoutdir, true()),
                              web:redirect('/control?svnurl=' || $svnurl )
                              )
