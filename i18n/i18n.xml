@@ -60,6 +60,10 @@
     <locale lang="de">Fehler beim Senden der SVN Änderungen</locale>
     <locale lang="en">Error during SVN commit occurred</locale>
   </entry>
+  <entry name="svn-commit-error">
+    <locale lang="de">Datei konnte nicht gelöscht werden</locale>
+    <locale lang="en">Could not delete file</locale>
+  </entry>
   <entry name="drop-files">
     <locale lang="de">Zum Hochladen Dateien in diesen Bereich ziehen.</locale>
     <locale lang="en">Drop and drop files here to upload</locale>
