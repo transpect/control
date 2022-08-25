@@ -272,6 +272,13 @@ declare function control-util:get-permission-for-user($user as xs:string, $repo 
   where exists($access/control:rels/control:rel[control:user = $user][control:group = $group])
   return $permission
 };
+
+declare function control-util:get-message-url($msg as xs:string, $msgtype as xs:string, $first as xs:boolean)
+{
+  let $message := if ($first) then '?msg=' else  '&amp;msg=',
+      $messagetype := '&amp;msgtype=' || $msgtype
+  return $message || encode-for-uri(control-i18n:localize($msg, $control:locale )) || $messagetype
+};
 (:
  : get mimetype for file extension
  :)

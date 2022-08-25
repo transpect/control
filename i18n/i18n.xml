@@ -56,6 +56,14 @@
     <locale lang="de">Fehler beim Umbenennen der Datei. Stellen Sie sicher, dass die Datei nicht von einem anderen User mit einem Lock versehen wurde.</locale>
     <locale lang="en">Cannot rename file. Make sure the file is not locked by another user.</locale>
   </entry>
+  <entry name="updated">
+    <locale lang="de">Änderung übernommen</locale>
+    <locale lang="en">Updated</locale>
+  </entry>
+  <entry name="not-admin">
+    <locale lang="de">Sie sind nicht Admin</locale>
+    <locale lang="en">You are not admin</locale>
+  </entry>
   <entry name="svn-commit-error">
     <locale lang="de">Fehler beim Senden der SVN Änderungen</locale>
     <locale lang="en">Error during SVN commit occurred</locale>
@@ -100,6 +108,10 @@
     <locale lang="de">Konverter</locale>
     <locale lang="en">Converter</locale>
   </entry>
+  <entry name="started">
+    <locale lang="de">Konvertierung gestartet</locale>
+    <locale lang="en">Conversion started</locale>
+  </entry>
   <entry name="cancel">
     <locale lang="de">Abbrechen</locale>
     <locale lang="en">Cancel</locale>
@@ -143,6 +155,10 @@
   <entry name="rebuildindex">
     <locale lang="de">Index neu erstellen</locale>
     <locale lang="en">Rebuild Index</locale>
+  </entry>
+  <entry name="index-build">
+    <locale lang="de">Index wurede neu erstellt</locale>
+    <locale lang="en">Index Rebuilt</locale>
   </entry>
   <entry name="rebuildindexbtn">
     <locale lang="de">Neu erstellen</locale>
@@ -196,6 +212,10 @@
     <locale lang="de">Löschen</locale>
     <locale lang="en">Delete</locale>
   </entry>
+  <entry name="deleted">
+    <locale lang="de">Gelöscht</locale>
+    <locale lang="en">Deleted</locale>
+  </entry>
   <entry name="existingrights">
     <locale lang="de">Vorhandene Rechte</locale>
     <locale lang="en">Existing Permissions</locale>
@@ -232,6 +252,14 @@
     <locale lang="de">Neue Nutzer erstellen</locale>
     <locale lang="en">Create new users</locale>
   </entry>
+  <entry name="user-created">
+    <locale lang="de">Nutzer angelegt</locale>
+    <locale lang="en">User Created</locale>
+  </entry>
+  <entry name="user-deleted">
+    <locale lang="de">Nutzer gelöscht</locale>
+    <locale lang="en">User Deleted</locale>
+  </entry>
   <entry name="customizeuser">
     <locale lang="de">Nutzer verwalten</locale>
     <locale lang="en">Configure users</locale>
@@ -243,6 +271,14 @@
   <entry name="creategroup">
     <locale lang="de">Neue Gruppen erstellen</locale>
     <locale lang="en">Create new groups</locale>
+  </entry>
+  <entry name="group-created">
+    <locale lang="de">Gruppe angelegt</locale>
+    <locale lang="en">Group Created</locale>
+  </entry>
+  <entry name="group-deleted">
+    <locale lang="de">Gruppe gelöscht</locale>
+    <locale lang="en">Group Deleted</locale>
   </entry>
   <entry name="customizegroup">
     <locale lang="de">Gruppen verwalten</locale>

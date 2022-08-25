@@ -269,7 +269,8 @@ function control:usermgmt($svnurl as xs:string?) as element(html) {
       {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
-      {control-widgets:get-page-header( ),
+      {control:get-message($control:msg, $control:msgtype),
+       control-widgets:get-page-header( ),
        control-widgets:get-pw-change(),
        control-widgets:get-default-svnurl()}
     </body>
@@ -316,7 +317,8 @@ return
        }
     </head>
     <body>
-      {control-widgets:get-page-header( ),
+      {control:get-message($control:msg, $control:msgtype),
+       control-widgets:get-page-header( ),
        if (control-util:is-admin(map:get($auth,'username')))
        then (<div class="adminmgmt-wrapper"> {
               control-widgets:create-new-user($svnurl),
@@ -414,42 +416,10 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     $updated-access := $file update {delete node //control:rels/control:rel[control:user = $username][control:defaultsvnurl]}
                              update {insert node element rel {element defaultsvnurl {$defaultsvnurl},
                                                               element user {$username}} into .//control:rels},
-    
-    $result := if ($defaultsvnurl)
-      then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access)}}
-      else
-        element result { element error {"deafultsvnurl is empty."}, element code {1}},
-        
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '/user')
-      else
-        ($control:siteurl || '/user'),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück"),
+    $result := file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
     $writetofile := control:writeauthtofile($updated-access)
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head('Default svn URL')}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-        <br/>
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/user?msg=' || encode-for-uri(control-i18n:localize('updated', $control:locale )) || '&amp;msgtype=info' )
 };
 (:
  : set group result
@@ -480,39 +450,14 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
                                        update {insert nodes $added-rel into //control:rels},
     $result :=
       if (control-util:is-admin($username))
-      then
-       element result { element error {"Updated"}, element code{0}, element text {file:write("basex/webapp/control/"|| $control:mgmtfile, $updated-access)}}
-      else
-        element result { element error {"You are not an admin."}, element code {1}},
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '?svnurl=' || $svnurl)
-      else
-        ($control:siteurl || '/user?svnurl=' || $svnurl),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access)
+      then (element result {attribute msg {'updated'},
+                            attribute msgtype {'info'}},
+            file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
+            control:writeauthtofile($updated-access))
+      else element result {attribute msg {'not-admin'},
+                           attribute msgtype {'error'}}
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-        <br/>
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 
 (:
@@ -534,40 +479,14 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
                              update {delete node //control:groups/control:group[control:name = $selected-group]},
     $result :=
       if (control-util:is-admin($username))
-      then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access)}}
-      else
-        element result { element error {"You are not an admin."}, element code {1}},
-        
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '?svnurl=' || $svnurl)
-      else
-        ($control:siteurl || '/user?svnurl=' || $svnurl),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access)
+      then (element result {attribute msg {'group-deleted'},
+                            attribute msgtype {'info'}},
+            file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
+            control:writeauthtofile($updated-access))
+      else element result {attribute msg {'not-admin'},
+                           attribute msgtype {'error'}}
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-        <br/>
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 (:
  : set access result
@@ -601,39 +520,14 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
                                       element permission {$selected-permission}} into .//control:rels},
     $result :=
       if (control-util:is-admin($username))
-      then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
-      else
-        element result { element error {"You are not an admin."}, element code {1}},
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '/access?svnurl=' || $svnurl || '&amp;action=access' || '&amp;file=' || tokenize($file,'/')[last()] )
-      else
-        ($control:siteurl || '/user?svnurl=' || $svnurl),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access)
+      then (element result {attribute msg {'updated'},
+                            attribute msgtype {'info'}},
+            file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
+            control:writeauthtofile($updated-access))
+      else element result {attribute msg {'not-admin'},
+                           attribute msgtype {'error'}}
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-        <br/>
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 
 (:
@@ -666,38 +560,14 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
                                      update {insert node $started-conversion into .//control:conversions},
     $result :=
       if (control-util:is-admin($username))
-      then
-       element result { element error {"Started"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
-      else
-        element result { element error {"You are not an admin."}, element code {1}},
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '/convert?svnurl=' || $svnurl ||  '&amp;file=' || $file|| '&amp;type=' || $type )
-      else
-        ($control:siteurl || '/convert?svnurl=' || $svnurl),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück")
+      then (element result {attribute msg {'started'},
+                            attribute msgtype {'info'}},
+            file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
+            control:writeauthtofile($updated-access))
+      else element result {attribute msg {'not-admin'},
+                           attribute msgtype {'error'}}
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-        <br/>
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 
 (:
@@ -712,42 +582,16 @@ declare
 function control:rebuildindex($svnurl as xs:string, $name as xs:string) {
 
 let $auth := control-util:parse-authorization(request:header("Authorization")),
-    
-    $index := control-util:create-path-index($control:svnurlhierarchy, $name, $name, $control:svnurlhierarchy,''),
+    $username := map:get($auth, 'username'),
     $result :=
-      if ($index)
-      then
-       element result { element error {"Index Rebuilt"}, element code{0}, element text{control-util:writeindextofile($index)}}
-      else
-        element result { element error {"Index empty."}, element code {1}},
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '/config?svnurl=' || $svnurl)
-      else
-        ($control:siteurl || '/config?svnurl=' || $svnurl),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück")
+      if (control-util:is-admin($username))
+      then (element result {attribute msg {'index-build'},
+                            attribute msgtype {'info'}},
+            control-util:create-path-index($control:svnurlhierarchy, $name, $name, $control:svnurlhierarchy,''))
+      else element result {attribute msg {'not-admin'},
+                           attribute msgtype {'error'}}
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-        <br/>
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 
 declare
@@ -770,39 +614,14 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
                                       [control:group = $group]},
     $result :=
       if (control-util:is-admin($username))
-      then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
-      else
-        element result { element error {"You are not an admin."}, element code {1}},
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '/access?svnurl=' || $svnurl || '&amp;action=access' || '&amp;file=' || $file )
-      else
-        ($control:siteurl || '/user?svnurl=' || $svnurl),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access)
+      then (element result {attribute msg {'deleted'},
+                            attribute msgtype {'info'}},
+            file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
+            control:writeauthtofile($updated-access))
+      else element result {attribute msg {'not-admin'},
+                           attribute msgtype {'error'}}
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-        <br/>
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/access?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 (:
  : delete user result
@@ -822,39 +641,14 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
                              update {delete node //control:users/control:user[control:name = $selected-user]},
     $result :=
       if (control-util:is-admin($username))
-      then
-       element result { element error {"Updated"}, element code{0}, element text{file:write("basex/webapp/control/"||$control:mgmtfile,$updated-access)}}
-      else
-        element result { element error {"You are not an admin."}, element code {1}},
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '?svnurl=' || $svnurl)
-      else
-        ($control:siteurl || '/user?svnurl=' || $svnurl),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access)
+      then (element result {attribute msg {'user-deleted'},
+                            attribute msgtype {'info'}},
+            file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
+            control:writeauthtofile($updated-access))
+      else element result {attribute msg {'not-admin'},
+                           attribute msgtype {'error'}}
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-        <br/>
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 (:
  : create new user
@@ -879,41 +673,15 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     $newpassword := request:parameter("newpassword"),
     $defaultsvnurl := request:parameter("defaultsvnurl"),
 
-    (: Checks if the user is an admin ~ :)
     $result :=
       if (control-util:is-admin($username))
-      then
-        control:createuser-bg($newusername, $newpassword, $defaultsvnurl)
-      else
-        element result { element error {"You are not an admin."}, element code {1}},
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '?svnurl=' || $svnurl)
-      else
-        ($control:siteurl || '/user?svnurl=' || $svnurl),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück")
+      then (element result {attribute msg {'user-created'},
+                            attribute msgtype {'info'}},
+            control:createuser-bg($newusername, $newpassword, $defaultsvnurl))
+      else element result {attribute msg {'not-admin'},
+                           attribute msgtype {'error'}}
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-        <br/>
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 (:
  : create new group
@@ -941,40 +709,15 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     $newgroupname := request:parameter("newgroupname"),
     $newgroupreporegex := request:parameter("newgroupname"),
 
-    (: Checks if the user is an admin ~ :)
     $result :=
       if (control-util:is-admin($username))
-      then
-        control:creategroup-bg(xs:string($newgroupname),xs:string($newgroupreporegex))
-      else
-        element result { element error {"You are not an admin."}, element code {1}},
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '?svnurl=' || $svnurl)
-      else
-        ($control:siteurl || '/user?svnurl=' || $svnurl),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück")
+      then (element result {attribute msg {'group-created'},
+                            attribute msgtype {'info'}},
+            control:creategroup-bg(xs:string($newgroupname),xs:string($newgroupreporegex)))
+      else element result {attribute msg {'not-admin'},
+                           attribute msgtype {'error'}}
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 
 (:
@@ -1000,43 +743,16 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
                                           [control:repo]
                                           [control:group = $selected-group]}
                              update {insert nodes $added-rel into //control:rels},
-    
-    $filedel := file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
     $result :=
       if (control-util:is-admin($username))
-      then
-       element result { element error {"Updated"}, element code{0}}
-      else
-        element result { element error {"You are not an admin."}, element code {1}},
-    $btntarget :=
-      if ($result/code = 0)
-      then
-        ($control:siteurl || '?svnurl=' || $svnurl)
-      else
-        ($control:siteurl || '/user?svnurl=' || $svnurl),
-    $btntext :=
-      if ($result/code = 0)
-      then
-        ("OK")
-      else
-        ("Zurück"),
-    $writetofile := control:writeauthtofile($updated-access)
+      then (element result {attribute msg {'user-deleted'},
+                            attribute msgtype {'info'}},
+            file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
+            control:writeauthtofile($updated-access))
+      else element result {attribute msg {'not-admin'},
+                           attribute msgtype {'error'}}
 return
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control-widgets:get-page-header( )}
-      <div class="result">
-        {$result/error}
-        <br/>
-         <a href="{$btntarget }">
-          <input type="button" value="{$btntext}"/>
-        </a>
-      </div>
-    </body>
-  </html>
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 (:
  : get groups for user

@@ -129,6 +129,9 @@ header a {
 #message-background.warning {
   background-color: #fafad2
 }
+#message-background.info {
+  background-color: lightgreen
+}
 #message {
   z-index: 2;
   text-align: center;
