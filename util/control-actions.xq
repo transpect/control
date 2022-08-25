@@ -63,7 +63,8 @@ function control-actions:download-as-zip( $svnurl as xs:string ) {
                          ),
                          web:response-header(map { 'media-type': web:content-type( $zip-path )},
                                              map { 'Content-Disposition': concat('attachement;filename=', $zip-name)}
-                                             )
+                                             ),
+                         file:read-binary($zip-path)
                 )
           else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
          )
@@ -81,10 +82,10 @@ function control-actions:download-single-file( $svnurl as xs:string, $file as xs
       $checkoutdir := $temp || 'file'
   return (
           if( svn:checkout($svnurl, $control:svnauth, $checkoutdir, 'HEAD', 'infinity')/local-name() ne 'errors' )
-          then (file:read-binary($checkoutdir  || file:dir-separator() || $file),
-                web:response-header(map { 'media-type': web:content-type( $checkoutdir  || file:dir-separator() || $file )},
+          then (web:response-header(map { 'media-type': web:content-type( $checkoutdir  || file:dir-separator() || $file )},
                                     map { 'Content-Disposition': concat('attachement; filename=', $file)}
-                                   )
+                                   ),
+                 file:read-binary($checkoutdir  || file:dir-separator() || $file)
                 )
           else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msgtype=error' )
          )
@@ -162,23 +163,6 @@ let
 return if ($resu[//*:param[@name = 'delete']])
        then web:redirect($control:siteurl || '?svnurl=' || $svnurl)
        else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('deletion-error', $control:locale )) || '?msgtype=error' )
-};
-
-declare
-  %rest:path("/control/delete-not-working")
-  %rest:query-param("svnurl", "{$svnurl}")
-  %rest:query-param("repopath", "{$repopath}")
-  %rest:query-param("file", "{$file}")
-  %output:method('html')
-function control-actions:delete-not-working( $svnurl as xs:string, $repopath as xs:string, $file as xs:string ) {
-let 
-    $auth := map {"username": xs:string(doc('../config.xml')/control:config/control:svnusername), 
-                  'password': xs:string(doc('../config.xml')/control:config/control:svnpassword)},
-    $resu := svn:delete(concat('http://127.0.0.1/', control-util:create-download-link($svnurl, '')), $auth, $file, true(), 'deleted by me')
-return <html>
-<head>{control-widgets:get-html-head($svnurl)}</head>
-<body>
-</body></html>
 };
 
 (:
