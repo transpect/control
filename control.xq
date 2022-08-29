@@ -122,11 +122,11 @@ declare
 function control:get-svnlog($svnurl as xs:string?, $file as xs:string?) as element() {
   let $auth := control-util:parse-authorization(request:header("Authorization")),
       $svnlog := svn:log( control-util:virtual-path-to-svnurl($svnurl || '/' || $file),$auth,0,0,0),
-      $monospace-width := 70
+      $monospace-width := 75
   return <pre class="monospace">
   {for $le in $svnlog/*:logEntry
                    return
-                     (' Revision | Author    | Date                                         ',
+                     (' Revision | Author    | Date                                         ', 
                      <br/>,
                      ' ' || control-util:pad-text($le/@revision,8) || 
                      ' | ' || control-util:pad-text($le/@author,9) || 
@@ -136,47 +136,11 @@ function control:get-svnlog($svnurl as xs:string?, $file as xs:string?) as eleme
                           (for $file in $le//*:changedPath
                              return (<a href="{$control:siteurl || '?svnurl=' || $svnurl 
                                             || string-join(tokenize(xs:string($file/@name),'/')[not(matches(.,'\....+$'))],'/')}">
-                                             {control-util:get-short-string(xs:string($file/@name), $monospace-width)}
-                                     </a>,<br/>)))
+                                             {control-util:get-short-string(xs:string($file/@type || ' ' || $file/@name), $monospace-width)}
+                                     </a>)),<br/>,
+                     '--------------------------------',<br/>)
    }
   </pre>
-    (:<table> 
-      <thead>
-        <th>Author</th>
-        <th>Message</th>
-        <th>Date</th>
-        <th>Revision</th>
-      </thead>
-      <tbody>{
-      for $le in $svnlog/*:logEntry
-      return
-         (<tr>
-            <td>{xs:string($le/@author)}</td>
-            <td>{xs:string($le/@message)}</td>
-            <td>{xs:string($le/@date)}</td>
-            <td>{xs:string($le/@revision)}</td>
-          </tr>,
-          <tr>
-            <td colspan="4">
-              <div class="table">
-                <div class="table-row">
-                  <div class="table-cell">Path</div>
-                  <div class="table-cell">Type</div>
-                </div>{
-                for $changedPath in $le//*:changedPath
-                let $path := xs:string($changedPath/@name),
-                    $type := xs:string($changedPath/@type)
-                return 
-                  <div class="table-row">
-                    <div class="table-cell">{$path}</div>
-                    <div class="table-cell">{$type}</div>
-                  </div>}
-              </div>
-            </td>
-          </tr>)
-      }
-      </tbody>
-    </table>:)
 };
 (:
  : Get SVN info for svnurl
@@ -190,7 +154,7 @@ declare
 function control:get-svninfo($svnurl as xs:string?, $file as xs:string?) as element() {
   let $auth := control-util:parse-authorization(request:header("Authorization")),
       $svninfo := svn:info( control-util:get-canonical-path(control-util:virtual-path-to-svnurl($svnurl || '/' || $file)),$control:svnauth),
-      $monospace-width := 70
+      $monospace-width := 75
   return 
   <pre class="monospace">
    {
