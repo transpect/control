@@ -143,6 +143,17 @@ declare function control-util:is-file($file as xs:string?) as xs:boolean{
   matches($file,'\.')
 };
 
+declare function control-util:short-size($size as xs:integer) as xs:string {
+  let $B := $size,
+      $KB := $size div 1024,
+      $MB := $KB div 1024,
+      $GB := $MB div 1024
+  return      if ( $KB lt 9999) then format-number($KB,'#,###.00') ||'&#x202f;KB'
+         else if ( $MB lt 9999) then format-number($MB,'#,###.00') ||'&#x202f;MB'
+                           else format-number($GB,'#,###.00') ||'&#x202f;GB'
+        
+};
+
 declare function control-util:get-breadcrumb-links($svnurl as xs:string){
   let $virtual-position := $control:index//*[@svnpath = control-util:get-local-path($svnurl)],
       $parents := $virtual-position/ancestor-or-self::*,

@@ -147,62 +147,63 @@ declare function control-widgets:rebuild-index($svnurl as xs:string,
 (:
  : get file action dropdown button
  :)
-declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $file as attribute(*)? ) as element(details){
+declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string, $file) as element(details){
   <details class="file action dropdown autocollapse">
     <summary class="btn">
       {control-i18n:localize('actions', $control:locale)}<span class="spacer"/>▼
     </summary>
+    <div class="invisible">{$file}</div>
     <div class="dropdown-wrapper">
       <ul>{
-        if (name($file) = 'mount')
+        if ($file[@mount])
         then (
           <li>
-           <a class="btn" href="{$control:path || '/external/remove?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('remove-external', $control:locale)}</a>
+           <a class="btn" href="{$control:path || '/external/remove?svnurl=' || $svnurl || '&amp;mount=' || $file/@mount }">{control-i18n:localize('remove-external', $control:locale)}</a>
           </li>,
           <li>
-           <a class="btn" href="{$control:path || '/external/change-url?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('change-url', $control:locale)}</a>
+           <a class="btn" href="{$control:path || '/external/change-url?svnurl=' || $svnurl || '&amp;mount=' || $file/@mount }">{control-i18n:localize('change-url', $control:locale)}</a>
           </li>,
           <li>
-           <a class="btn" href="#" onclick="{'showLogForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showLog', $control:locale)}</a>
+           <a class="btn" href="#" onclick="{'showLogForm(''' || $file/@url || ''', '''', ''' || $control:path || ''')' }">{control-i18n:localize('showLog', $control:locale)}</a>
           </li>,
           <li>
            <a class="btn" href="#" onclick="{'showInfoForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showInfo', $control:locale)}</a>
           </li>,
           <li>
-           <a class="btn" href="{$control:path || '/external/change-mountpoint?svnurl=' || $svnurl || '&amp;mount=' || $file }">{control-i18n:localize('change-mountpoint', $control:locale)}</a>
+           <a class="btn" href="{$control:path || '/external/change-mountpoint?svnurl=' || $svnurl || '&amp;mount=' || $file/@mount }">{control-i18n:localize('change-mountpoint', $control:locale)}</a>
           </li>
         ) else (
           <li>
-           <a class="btn" href="#" onclick="{'createRenameForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('rename', $control:locale)}</a>
+           <a class="btn" href="#" onclick="{'createRenameForm(''' || $svnurl || ''', ''' || $file/@name || ''', ''' || $control:path || ''')' }">{control-i18n:localize('rename', $control:locale)}</a>
           </li>,
           <li>
-           <a class="btn" href="#" onclick="{'showLogForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showLog', $control:locale)}</a>
+           <a class="btn" href="#" onclick="{'showLogForm(''' || $svnurl || ''', ''' || $file/@name || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showLog', $control:locale)}</a>
           </li>,
           <li>
-           <a class="btn" href="#" onclick="{'showInfoForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showInfo', $control:locale)}</a>
+           <a class="btn" href="#" onclick="{'showInfoForm(''' || $svnurl || ''', ''' || $file/@name || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showInfo', $control:locale)}</a>
           </li>,
           <li>
-            <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file }">{control-i18n:localize('copy', $control:locale)}</a>
+            <a class="btn" href="{$control:path || '/copy?svnurl=' || $svnurl || '&amp;action=copy&amp;file=' || $file/@name }">{control-i18n:localize('copy', $control:locale)}</a>
           </li>,
           <li>
-            <a class="btn" href="{$control:path || '/access?svnurl=' || $svnurl || '&amp;action=access&amp;file=' || $file }">{control-i18n:localize('access', $control:locale)}</a>
+            <a class="btn" href="{$control:path || '/access?svnurl=' || $svnurl || '&amp;action=access&amp;file=' || $file/@name }">{control-i18n:localize('access', $control:locale)}</a>
           </li>,
           <li>
-            <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file }">{control-i18n:localize('move', $control:locale)}</a>
+            <a class="btn" href="{$control:path || '/move?svnurl=' || $svnurl || '&amp;action=move&amp;file=' || $file/@name }">{control-i18n:localize('move', $control:locale)}</a>
           </li>,
           <li>
-            <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;file=' || $file || '&amp;action=delete'}">{control-i18n:localize('delete', $control:locale)}</a>
+            <a class="btn" href="{$control:path || '/delete?svnurl=' || $svnurl || '&amp;file=' || $file/@name || '&amp;action=delete'}">{control-i18n:localize('delete', $control:locale)}</a>
           </li>,
-          if (control-util:is-file($file))
+          if (control-util:is-file($file/@name))
           then (
             <li>
-              <a class="btn" href="{$control:path || '/download-file?svnurl=' || $svnurl || '&amp;file=' || $file}">{control-i18n:localize('download', $control:locale)}</a>
+              <a class="btn" href="{$control:path || '/download-file?svnurl=' || $svnurl || '&amp;file=' || $file/@name}">{control-i18n:localize('download', $control:locale)}</a>
             </li>,
-          for $c in control-util:get-converters-for-file($file)
+          for $c in control-util:get-converters-for-file($file/@name)
           let $type := $control:converters/converter/types/type[@type = $c]
           return 
             <li>
-              <a class="btn" href="{$control:path || '/convert?svnurl=' || $svnurl || '&amp;file=' || $file || '&amp;type=' || $c}">{control-i18n:localize($type/@text, $control:locale)}</a>
+              <a class="btn" href="{$control:path || '/convert?svnurl=' || $svnurl || '&amp;file=' || $file/@name || '&amp;type=' || $c}">{control-i18n:localize($type/@text, $control:locale)}</a>
             </li>
           )
         )
@@ -495,12 +496,12 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
       <div class="author table-cell">{xs:string( $files/@author )}</div>
       <div class="date table-cell">{xs:string( $files/@date )}</div>
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>
-      <div class="size table-cell">{$files/@size[$files/local-name() eq 'file']/concat(., '&#x202f;KB')}</div>
+      <div class="size table-cell">{$files/@size[$files/local-name() eq 'file']/control-util:short-size(.)}</div>
       <div>{svn:info($svnurl,
                      $auth)/*:param[@name eq 'root-url']/@value
                     }</div>
       <div class="action table-cell">{if (control-util:get-rights($username, xs:string($files/@name)) = "write") 
-                                      then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files/(@name | @mount) ) 
+                                      then control-widgets:get-file-action-dropdown( ($svnurl, string($files/@url))[1], $files ) 
                                       else ""}</div>
     </div> 
     else ()
