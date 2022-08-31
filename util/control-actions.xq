@@ -178,5 +178,36 @@ declare
 function control-actions:rename( $svnurl as xs:string, $file as xs:string, $target as xs:string ) {
 let $auth := control-util:parse-authorization(request:header("Authorization")),
     $resu := svn:move(control-util:get-canonical-path($svnurl), $auth, $file, $target, 'renamed via control' )
-return web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri($resu) || '?msgtype=info' )
+return web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri($resu) || '?msgtype=info' )
+};
+
+
+(:
+ : renames a external mount
+ :)
+declare
+  %rest:POST
+  %rest:path("/control/change-mountpoint") 
+  %rest:form-param("svnurl", "{$svnurl}")
+  %rest:form-param("url", "{$url}")
+  %rest:form-param("name", "{$name}")
+  %output:method('html')
+function control-actions:change-mountpoint( $svnurl as xs:string, $url as xs:string, $name as xs:string ) {
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $propget := svn:propget($svnurl, $control:svnauth, 'svn:externals', 'HEAD'),
+    $temp    := file:temp-dir() || file:dir-separator()  || random:uuid() || file:dir-separator(),
+    $checkoutdir := $temp || 'Propset',
+    $checkout := svn:checkout($svnurl, $control:svnauth, $checkoutdir, 'HEAD', '1'),
+    $parsed := element externals {control-util:parse-externals-property($propget)},
+    $updated-externals :=  
+       copy $e := $parsed
+       modify (
+         replace node $e/external[@url eq $url] with
+           element external {attribute url {$url}, attribute mount {$name}}
+       )
+       return $e,
+    $propvalue := control-util:parsed-external-to-string($updated-externals),
+    $res := svn:propset($checkoutdir, $control:svnauth, 'svn:externals', xs:string($propvalue)),
+    $resco := svn:commit($auth, $checkoutdir, 'updated externals prop') 
+return web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri($resco) || '?msgtype=info' )
 };

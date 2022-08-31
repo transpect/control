@@ -170,7 +170,7 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
            <a class="btn" href="#" onclick="{'showInfoForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showInfo', $control:locale)}</a>
           </li>,
           <li>
-           <a class="btn" href="{$control:path || '/external/change-mountpoint?svnurl=' || $svnurl || '&amp;mount=' || $file/@mount }">{control-i18n:localize('change-mountpoint', $control:locale)}</a>
+           <a class="btn" href="#" onclick="{'createChangeMountForm(''' || $svnurl || ''', ''' || $file/@mount || ''', ''' || $file/@url || ''', ''' || $control:path || ''')' }">{control-i18n:localize('change-mountpoint', $control:locale)}</a>
           </li>
         ) else (
           <li>
@@ -200,10 +200,10 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
               <a class="btn" href="{$control:path || '/download-file?svnurl=' || $svnurl || '&amp;file=' || $file/@name}">{control-i18n:localize('download', $control:locale)}</a>
             </li>,
           for $c in control-util:get-converters-for-file($file/@name)
-          let $type := $control:converters/converter/types/type[@type = $c]
+          let $type := $control:converters//control:type[@type = $c]
           return 
             <li>
-              <a class="btn" href="{$control:path || '/convert?svnurl=' || $svnurl || '&amp;file=' || $file/@name || '&amp;type=' || $c}">{control-i18n:localize($type/@text, $control:locale)}</a>
+              <a class="btn" href="{$control:path || '/convert?svnurl=' || $svnurl || '&amp;file=' || $file/@name || '&amp;type=' || $c}">{control-i18n:localize(xs:string($type/@text), $control:locale)}</a>
             </li>
           )
         )
@@ -492,7 +492,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string,
         </a>
       </div>
       <div class="name table-cell">
-        <a href="{ if ($files/local-name() eq 'file') then $control:path || '/download-file?svnurl=' || $svnurl || '&amp;file=' || $files/@name else $href}" id="direntry-{xs:string( $files/@name )}">{xs:string( $files/(@name | @mount) )}</a></div>
+        <a href="{ if ($files/local-name() eq 'file') then $control:path || '/download-file?svnurl=' || $svnurl || '&amp;file=' || $files/@name else $href}" id="direntry-{xs:string( $files/(@name | @mount) )}">{xs:string( $files/(@name | @mount) )}</a></div>
       <div class="author table-cell">{xs:string( $files/@author )}</div>
       <div class="date table-cell">{xs:string( $files/@date )}</div>
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>

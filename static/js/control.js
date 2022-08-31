@@ -31,6 +31,30 @@ function createRenameForm(svnurl, file, controlPath) {
     formWrapper.innerHTML = form;
 }
 
+function createChangeMountForm(svnurl, mount, url, controlPath) {
+  const id = 'direntry-' + mount
+  const form = '<div id="rename-form-wrapper">'
+    + '  <form id="rename-form" action="control/change-mountpoint" method="POST">'
+    + '    <input type="text"   name="name" value="'+ mount + '" id="target" />'
+    + '    <input type="hidden" name="svnurl" value="' + svnurl + '"/>'
+    + '    <input type="hidden" name="url" value="' + url + '"/>'
+    + '    <button class="btn ok" value="ok">'
+    + '      OK'
+    + '      <span class="spacer"/><img class="small-icon" src="' + controlPath + '/static/icons/open-iconic/svg/check.svg" alt="ok"/>'
+    + '    </button>'
+    + '  </form>'
+    + '  <button class="btn cancel" value="cancel" onclick="cancelRenameForm(\'' + svnurl + '\', \'' + mount + '\', \'' + controlPath + '\')">'
+    + '    Cancel'
+    + '    <span class="spacer"/><img class="small-icon" src="' + controlPath + '/static/icons/open-iconic/svg/ban.svg" alt="cancel"/>'
+    + '  </button>'
+    + '</div>'
+    const formWrapper = document.createElement("div");
+    formWrapper.setAttribute("id", "renameform-" + mount);
+    anchor = document.getElementById(id);
+    anchor.replaceWith( formWrapper );
+    formWrapper.innerHTML = form;
+}
+
 function closebox(){
   var ids = ['infobox']
   for (let i = 0; i <  ids.length; i++)
