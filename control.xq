@@ -46,20 +46,7 @@ declare variable $control:svnauthfile     := "/etc/svn/default.authz";
 declare variable $control:htpasswd-script := "basex/webapp/control/htpasswd-wrapper.sh"; 
 declare variable $control:htpasswd-group  := $control:config/control:htpasswd-group;
 declare variable $control:htpasswd-file   := $control:config/control:htpasswd-file;
-declare variable $control:converters      := 
-<converters>
-  <converter name="hobots">
-    <base>https://hobots.hogrefe.com/transpect/en/api/</base>
-    <endpoints>
-      <upload>upload_file</upload>
-      <status>get_status</status>
-      <delete>delete</delete>
-    </endpoints>
-    <types>
-      <type name="idml2epub" type="HoBoTS_a6d6d3c094a8" text="convert_to_epub"/>
-    </types>
-  </converter>
-</converters>;
+declare variable $control:converters      := $control:config/control:converters;
 declare variable $control:default-permission
                                           := "r";
 declare variable $control:nl              := "
@@ -121,7 +108,8 @@ declare
 %output:version('5.0')
 function control:get-svnlog($svnurl as xs:string?, $file as xs:string?) as element() {
   let $auth := control-util:parse-authorization(request:header("Authorization")),
-      $svnlog := svn:log( control-util:virtual-path-to-svnurl($svnurl || '/' || $file),$auth,0,0,0),
+      $svnlog := if ($file) then svn:log( control-util:virtual-path-to-svnurl($svnurl || '/' || $file),$auth,0,0,0)
+                            else svn:log( control-util:virtual-path-to-svnurl($svnurl),$auth,0,0,0),
       $monospace-width := 75
   return <pre class="monospace">
   {for $le in $svnlog/*:logEntry
@@ -242,8 +230,7 @@ function control:usermgmt($svnurl as xs:string?) as element(html) {
 };
 
 (:
- : User Management main page
- : For now contains only Reset Password
+ : Conversion mgmt page
  :)
 declare
 %rest:path("/control/convert")
@@ -258,7 +245,8 @@ function control:convert($svnurl as xs:string, $file as xs:string, $type as xs:s
       {control-widgets:get-html-head($svnurl)}
     </head>
     <body>
-      {control-widgets:get-page-header(),
+      {control:get-message($control:msg, $control:msgtype),
+       control-widgets:get-page-header(),
        control-widgets:manage-conversions($svnurl, $file, $type)}
     </body>
   </html>
@@ -531,7 +519,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/convert?svnurl='|| $svnurl || '&amp;file=' || $file || '&amp;type=' || $type || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
 };
 
 (:

@@ -128,6 +128,14 @@
     <locale lang="de">nach epub konvertieren</locale>
     <locale lang="en">Convert To Epub</locale>
   </entry>
+  <entry name="convert_to_html">
+    <locale lang="de">nach html konvertieren</locale>
+    <locale lang="en">Convert To HTML</locale>
+  </entry>
+  <entry name="convert_to_docbook">
+    <locale lang="de">nach docbook konvertieren</locale>
+    <locale lang="en">Convert To Docbook</locale>
+  </entry>
   <entry name="running_conversions">
     <locale lang="de">Laufende Konvertierungen</locale>
     <locale lang="en">Running Conversions</locale>

@@ -360,6 +360,10 @@ declare function control-util:parse-externals-property($prop as element(*)) as e
   }</external>
 };
 
+declare function control-util:parsed-external-to-string($parsed as element(externals)) as xs:string {
+   string-join(for $p in $parsed//*:external return $p/@url || ' ' || $p/@mount, '&#xA;')
+};
+
 declare function control-util:get-external-url($url as xs:string) as xs:string {
     replace(replace($url, '^(.+)(@.*)?$', '$1'),'localhost:'|| $control:port,'127.0.0.1')
 };
@@ -371,9 +375,9 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
       $prepare-file  := proc:execute('mkdir', ($filepath, '-p')),
       $checkout      := proc:execute('svn',('co', $svnurl, $filepath, '--username',$control:svnusername,'--password',$control:svnpassword)),
       $upload-call   := ('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter/@name,'upload')),
-      $upload        := proc:execute('curl',('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter/@name,'upload'))),
+      $upload        := proc:execute('curl',('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'upload'))),
       $upload_res    := json:parse($upload/output),
-      $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter/@name,'status')||'?input_file='||$file||'&amp;type='||$type)),
+      $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'status')||'?input_file='||$file||'&amp;type='||$type)),
       $status_res    := json:parse($status/output),
       $result_xml    := 
         <conversion>
@@ -407,7 +411,7 @@ declare function control-util:start-new-conversion($svnurl as xs:string, $file a
 
 declare function control-util:get-converters-for-file($file as xs:string) as xs:string* {
      let $ext := replace($file,'.*\.([^\.]+)','$1')
-  return $control:converters//type[matches(@name,concat('^',$ext))]/@type
+  return $control:converters//control:type[matches(@name,concat('^',$ext))]/@type
 };
 
 declare function control-util:add-conversion($conv as element(conversion)) {
@@ -437,13 +441,13 @@ declare function control-util:update-conversion($id as xs:string){
   return $updated-file
 };
 
-declare function control-util:get-converter-for-type($type as xs:string) {
-  $control:converters/converter[descendant::type[@type = $type]]
+declare function control-util:get-converter-for-type($type as xs:string) as element(control:converter){
+  $control:converters/control:converter[descendant::control:type[@type = $type]]
 };
 
 declare function control-util:get-converter-function-url($name as xs:string, $type as xs:string){
-  let $converter := $control:converters/converter[@name = $name]
-  return $converter/base/text()||$converter/endpoints/*[local-name(.) = $type]/text()
+  let $converter := $control:converters/control:converter[@name = $name]
+  return $converter/control:base/text()||$converter/control:endpoints/*[local-name(.) = $type]/text()
 };
 
 declare function control-util:writegroups($access) as xs:string {
