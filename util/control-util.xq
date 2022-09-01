@@ -284,11 +284,11 @@ declare function control-util:get-permission-for-user($user as xs:string, $repo 
   return $permission
 };
 
-declare function control-util:get-message-url($msg as xs:string, $msgtype as xs:string, $first as xs:boolean)
+declare function control-util:get-message-url($msg as xs:string, $msgtype as xs:string, $first as xs:boolean, $localize as xs:boolean)
 {
   let $message := if ($first) then '?msg=' else  '&amp;msg=',
       $messagetype := '&amp;msgtype=' || $msgtype
-  return $message || encode-for-uri(control-i18n:localize($msg, $control:locale )) || $messagetype
+  return $message || encode-for-uri(if ($localize) then control-i18n:localize($msg, $control:locale) else $msg) || $messagetype
 };
 (:
  : get mimetype for file extension
@@ -368,16 +368,16 @@ declare function control-util:get-external-url($url as xs:string) as xs:string {
     replace(replace($url, '^(.+)(@.*)?$', '$1'),'localhost:'|| $control:port,'127.0.0.1')
 };
 
-declare function control-util:post-file-to-converter($svnurl as xs:string, $file as xs:string, $converter as xs:string, $type as xs:string) as element(conversion) {
+declare function control-util:post-file-to-converter($svnurl as xs:string, $file as xs:string, $convertername as xs:string, $type as xs:string) as element(conversion) {
 (: $converter := hobots, $type := idml2tex:)
   let $filepath      := '/home/transpect-control/upload',
       $remove-folder := proc:execute('rm -r', ($filepath)),
       $prepare-file  := proc:execute('mkdir', ($filepath, '-p')),
       $checkout      := proc:execute('svn',('co', $svnurl, $filepath, '--username',$control:svnusername,'--password',$control:svnpassword)),
-      $upload-call   := ('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter/@name,'upload')),
-      $upload        := proc:execute('curl',('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'upload'))),
+      $upload-call   := ('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'upload')),
+      $upload        := proc:execute('curl',('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'upload'))),
       $upload_res    := json:parse($upload/output),
-      $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter,'status')||'?input_file='||$file||'&amp;type='||$type)),
+      $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'status')||'?input_file='||$file||'&amp;type='||$type)),
       $status_res    := json:parse($status/output),
       $result_xml    := 
         <conversion>
@@ -423,10 +423,10 @@ declare function control-util:add-conversion($conv as element(conversion)) {
 
 declare function control-util:update-conversion($id as xs:string){
   let $conversion := $control:conversions//control:conversion[control:id eq $id],
-      $converter  := control-util:get-converter-for-type($conversion/control:type),
       $type  := $conversion/control:type,
+      $convertername := control-util:get-converter-for-type($type)/@name,
       $file       := $conversion/control:file/text(),
-      $status     := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($converter/@name,'status')||'?input_file='||$file||'&amp;type='||$type)),
+      $status     := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'status')||'?input_file='||$file||'&amp;type='||$type)),
       $status_res := json:parse($status/output),
       $updated-conversion := 
         copy $old := $conversion

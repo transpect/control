@@ -33,39 +33,42 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
                          ,'')
   return
     <div class="conversion-widget">
-    <h1> {control-i18n:localize('convert-title', $control:locale ) || ' ' || $filepath }</h1>
-    <div id="streamed-data" class="hidden">
-    {for $c in control-util:get-running-conversions($svnurl, $file, $type)
-     return control-util:update-conversion($c/control:id),
-     control-util:get-running-conversions($svnurl, $file, $type)}</div>
-    <div class="table">
-    {control-i18n:localize('running_conversions', $control:locale )}
-      <div class="table-body">
-        <div class="table-row">
-          <div class="table-cell">{control-i18n:localize('status', $control:locale )}</div>
-          <div class="table-cell">{control-i18n:localize('converter', $control:locale )}</div>
-          <div class="table-cell">{control-i18n:localize('status-url', $control:locale )}</div>
-          <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
+      <div class="adminmgmt">
+        <h2> {control-i18n:localize('convert-title', $control:locale ) || ' ' || $filepath }</h2>
+        <div id="streamed-data" class="hidden">
+          {for $c in control-util:get-running-conversions($svnurl, $file, $type)
+           return control-util:update-conversion($c/control:id),
+           control-util:get-running-conversions($svnurl, $file, $type)}
         </div>
-      </div>
-      {for $conversion in control-util:get-running-conversions($svnurl, $file, $type)
-       return <div class="table-row">
-                <div class="table-cell">{$conversion/control:status}</div>
-                <div class="table-cell">{$conversion/control:type}</div>
-                <div class="table-cell">{$conversion/control:callback}</div>
-                <div class="table-cell">{$conversion/control:delete}</div>
-              </div>}
+        <div class="table">
+          {control-i18n:localize('running_conversions', $control:locale )}
+          <div class="table-body">
+            <div class="table-row">
+              <div class="table-cell">{control-i18n:localize('status', $control:locale )}</div>
+              <div class="table-cell">{control-i18n:localize('converter', $control:locale )}</div>
+              <div class="table-cell">{control-i18n:localize('status-url', $control:locale )}</div>
+              <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
+            </div>
+          </div>
+          {for $conversion in control-util:get-running-conversions($svnurl, $file, $type)
+           return <div class="table-row">
+                    <div class="table-cell">{$conversion/control:status}</div>
+                    <div class="table-cell">{$conversion/control:type}</div>
+                    <div class="table-cell">{$conversion/control:callback}</div>
+                    <div class="table-cell"><a class="delete" href="{$control:siteurl}/convert/cancel?svnurl={$svnurl}&amp;file={$file}&amp;type={$type}">&#x1f5d1;</a></div>
+                  </div>}
+        </div>
       </div>
       
-      <h2> {control-i18n:localize('start_conversion', $control:locale ) || ' ' || $filepath }</h2>
-      <form action="{$control:siteurl}/convert/start?svnurl={$svnurl}&amp;file={$file}&amp;type={$type}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
-        <div class="start-new-conversion">
-          <input type="submit" value="{control-i18n:localize('start_conversion', $control:locale)}"/>
-        </div>
-      </form>
-      <button class="btn">
-        <a href="{$control:siteurl}?svnurl={$svnurl}">{control-i18n:localize('back', $control:locale)}</a>
-      </button>
+      <div class="adminmgmt">
+        <h2> {control-i18n:localize('start_conversion', $control:locale ) || ' ' || $filepath }</h2>
+        <form action="{$control:siteurl}/convert/start?svnurl={$svnurl}&amp;file={$file}&amp;type={$type}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+          <div class="start-new-conversion">
+            <input type="submit" value="{control-i18n:localize('start_conversion', $control:locale)}"/>
+          </div>
+        </form>
+      </div>
+      {control-widgets:create-back-btn($svnurl)}
     </div>
 };
 
@@ -137,11 +140,18 @@ declare function control-widgets:rebuild-index($svnurl as xs:string,
                                                $name as xs:string) as element(div){
   <div class="adminmgmt">
     <h2>{control-i18n:localize('rebuildindex', $control:locale)}</h2>
-    <button class="btn ok" >
-      <a href="{$control:siteurl}/config/rebuildindex?svnurl={$svnurl}&amp;name={$name}">
-        {control-i18n:localize('rebuildindexbtn', $control:locale)}
-      </a>
-    </button>
+    <form action="{$control:siteurl}/config/rebuildindex?svnurl={$svnurl}&amp;name={$name}">
+      <input type="submit" value="{control-i18n:localize('rebuildindexbtn', $control:locale)}" />
+    </form>
+  </div>
+};
+
+declare function control-widgets:create-back-btn($svnurl as xs:string) as element(div) {
+  <div class="adminmgmt">
+    <form action="{$control:siteurl}">
+      <input type="submit" value="{control-i18n:localize('back', $control:locale)}" />
+      <input type="hidden" name="svnurl" value="{$svnurl}"/>
+    </form>
   </div>
 };
 (:
@@ -340,57 +350,59 @@ declare function control-widgets:file-access( $svnurl as xs:string, $file as xs:
       
   return
     <div class="access-widget">
-    <h1> {control-i18n:localize('perm-title', $control:locale ) || ' ' || $filepath }</h1>
-    <div id="streamed-data" class="hidden">
-    {control-util:get-permissions-for-file($svnurl, $file, $control:access)}</div>
-    <div class="table">
-    {control-i18n:localize('existingrights', $control:locale )}
-      <div class="table-body">
-        <div class="table-row">
-          <div class="table-cell">{control-i18n:localize('group', $control:locale )}</div>
-          <div class="table-cell">{control-i18n:localize('permission', $control:locale )}</div>
-          <div class="table-cell">{control-i18n:localize('implicit', $control:locale )}</div>
-          <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
+      <div class="adminmgmt">
+        <h2> {control-i18n:localize('perm-title', $control:locale ) || ' ' || $filepath }</h2>
+        <div id="streamed-data" class="hidden">
+          {control-util:get-permissions-for-file($svnurl, $file, $control:access)}
+        </div>
+        <div class="table">
+          {control-i18n:localize('existingrights', $control:locale )}
+            <div class="table-body">
+              <div class="table-row">
+                <div class="table-cell">{control-i18n:localize('group', $control:locale )}</div>
+                <div class="table-cell">{control-i18n:localize('permission', $control:locale )}</div>
+                <div class="table-cell">{control-i18n:localize('implicit', $control:locale )}</div>
+                <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
+              </div>
+            </div>
+          {for $access in control-util:get-permissions-for-file($svnurl, $file,$control:access)
+           return <div class="table-row">
+                    <div class="table-cell">{$access/g}</div>
+                    <div class="table-cell">{$access/p/text()}</div>
+                    {if ($access/i = true())
+                    then
+                      <div class="table-cell">implicit</div>
+                    else
+                     (<div class="table-cell">explicit</div>,
+                      <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removepermission?svnurl={$svnurl}&amp;file={$file}&amp;group={$access/*:g/text()}">&#x1f5d1;</a></div>)
+                    }
+                  </div>}
         </div>
       </div>
-      {for $access in control-util:get-permissions-for-file($svnurl, $file,$control:access)
-       return <div class="table-row">
-                <div class="table-cell">{$access/g}</div>
-                <div class="table-cell">{$access/p/text()}</div>
-                {if ($access/i = true())
-                then
-                  <div class="table-cell">implicit</div>
-                else
-                 (<div class="table-cell">explicit</div>,
-                  <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removepermission?svnurl={$svnurl}&amp;file={$file}&amp;group={$access/*:g/text()}">&#x1f5d1;</a></div>)
-                }
-              </div>}
+      <div class="adminmgmt">
+        <h2> {control-i18n:localize('set-perm', $control:locale ) || ' ' || $filepath }</h2>
+        <form action="{$control:siteurl}/group/setaccess?svnurl={$svnurl}&amp;file={$file}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
+          <div class="add-new-access">
+            <div class="form">
+              <label for="groupname" class="leftlabel">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
+              <select name="groups" id="groupselect">
+                {control-widgets:get-groups( $svnurl )}
+              </select>
+            </div>
+            <div class="form">
+              <label for="access" class="leftlabel">{concat(control-i18n:localize('selectdiraccess', $control:locale),':')}</label>
+              <select name="access" id="readwrite">
+                <option value="none">{control-i18n:localize('none', $control:locale)}</option>
+                <option value="read">{control-i18n:localize('read', $control:locale)}</option>
+                <option value="write">{control-i18n:localize('write', $control:locale)}</option>
+              </select>
+            </div>
+            <br/>
+            <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
+          </div>
+        </form>
       </div>
-      
-      <h2> {control-i18n:localize('set-perm', $control:locale ) || ' ' || $filepath }</h2>
-      <form action="{$control:siteurl}/group/setaccess?svnurl={$svnurl}&amp;file={$file}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
-        <div class="add-new-access">
-          <div class="form">
-            <label for="groupname" class="leftlabel">{concat(control-i18n:localize('selectgroup', $control:locale),':')}</label>
-            <select name="groups" id="groupselect">
-              {control-widgets:get-groups( $svnurl )}
-            </select>
-          </div>
-          <div class="form">
-            <label for="access" class="leftlabel">{concat(control-i18n:localize('selectdiraccess', $control:locale),':')}</label>
-            <select name="access" id="readwrite">
-              <option value="none">{control-i18n:localize('none', $control:locale)}</option>
-              <option value="read">{control-i18n:localize('read', $control:locale)}</option>
-              <option value="write">{control-i18n:localize('write', $control:locale)}</option>
-            </select>
-          </div>
-          <br/>
-          <input type="submit" value="{control-i18n:localize('submit', $control:locale)}"/>
-        </div>
-      </form>
-      <button class="btn">
-        <a href="{$control:siteurl}?svnurl={$svnurl}">{control-i18n:localize('back', $control:locale)}</a>
-      </button>
+      {control-widgets:create-back-btn($svnurl)}
     </div>
 };
 (:

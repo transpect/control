@@ -320,6 +320,9 @@ div.form {
 .adminmgmt:first-child{
   border-top: none;
 }
+.adminmgmt form input[type = submit]:first-child {
+  margin-top: 20px;
+}
 
 .form-wrapper{
   margin: 2rem 0 1.5rem 1rem;

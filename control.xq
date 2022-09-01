@@ -55,14 +55,16 @@ declare variable $control:nl              := "
 declare
 %rest:path('/control')
 %rest:query-param("svnurl", "{$svnurl}")
+%rest:form-param("svnurl", "{$form-svnurl}")
 %output:method('html')
 %output:version('5.0')
-function control:control($svnurl as xs:string?) {
-  let $auth := control-util:parse-authorization(request:header("Authorization"))
+function control:control($svnurl as xs:string?, $form-svnurl as xs:string?) {
+  let $auth := control-util:parse-authorization(request:header("Authorization")),
+      $used-svnurl := ($svnurl, $form-svnurl)[1]
   return 
-  if ($svnurl and control-util:get-canonical-path($svnurl) eq $svnurl) 
-  then control:main( $svnurl ,$auth)
-  else web:redirect($control:siteurl || '?svnurl=' || control-util:get-canonical-path(control-util:get-current-svnurl(map:get($auth,'username'), $svnurl)))
+    if ($used-svnurl and control-util:get-canonical-path($used-svnurl) eq $used-svnurl) 
+    then control:main( $used-svnurl ,$auth)
+    else web:redirect($control:siteurl || '?svnurl=' || control-util:get-canonical-path(control-util:get-current-svnurl(map:get($auth,'username'), $used-svnurl)))
 };
 
 
@@ -171,7 +173,7 @@ declare function control:get-message( $message as xs:string?, $messagetype as xs
     <div id="message-wrapper">
       <div id="message">
         <p>{control-util:decode-uri( $message )}
-          <button class="btn" onclick="hide('message-wrapper')">
+          <button class="btn">
           <a href="{control-util:get-url-without-msg()}">OK</a>
             <img class="small-icon" src="{$control:path || '/static/icons/open-iconic/svg/check.svg'}" alt="ok"/>
           </button>
@@ -279,7 +281,8 @@ return
               control-widgets:create-new-group($svnurl),
               control-widgets:customize-groups($svnurl),
               control-widgets:remove-groups($svnurl),
-              control-widgets:rebuild-index($svnurl, 'root')
+              control-widgets:rebuild-index($svnurl, 'root'),
+              control-widgets:create-back-btn($svnurl)
              }</div>,
              <div>{'session-id: '||session:id()}</div>)
        else ''}
@@ -409,7 +412,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
 };
 
 (:
@@ -438,7 +441,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
 };
 (:
  : set access result
@@ -479,7 +482,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
 };
 
 (:
@@ -519,7 +522,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/convert?svnurl='|| $svnurl || '&amp;file=' || $file || '&amp;type=' || $type || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/convert?svnurl='|| $svnurl || '&amp;file=' || $file || '&amp;type=' || $type || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
 };
 
 (:
@@ -543,7 +546,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
 };
 
 declare
@@ -573,7 +576,32 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/access?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/access?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
+};
+declare
+%rest:path("/control/convert/cancel")
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("file", "{$file}")
+%rest:query-param("type", "{$type}")
+%output:method('html')
+%output:version('5.0')
+function control:cancelconversion($svnurl as xs:string, $file as xs:string, $type as xs:string) {
+let $auth       := control-util:parse-authorization(request:header("Authorization")),
+    $username   := map:get($auth, 'username'),
+    $conversion := control-util:get-running-conversions($svnurl, $file, $type),
+    $delete     := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url(control-util:get-converter-for-type($type)/@name,'delete')||'?input_file='||$file||'&amp;type='||$type)),
+    $delete_res := json:parse($delete/output),
+    $mgmt := $control:mgmtdoc,
+    $updated-access := $mgmt update {delete node //control:conversion[control:id = $conversion/control:id]},
+    $result :=
+      if (xs:string(control-util:or(($delete_res/*:status/text() = 'success',matches(xs:string($delete_res/*:error/text()),'Invalid request: No such file or directory'),matches(xs:string($delete_res/*:error/text()),'Invalid request: File not found')))))
+      then (element result {attribute msg {'deleted'},
+                            attribute msgtype {'info'}},
+            file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access))
+      else element result {attribute msg {string-join($delete_res//text(),',')},
+                           attribute msgtype {'error'}}
+return
+  web:redirect($control:siteurl || '/convert?svnurl='|| $svnurl || '&amp;file='|| $file|| '&amp;type='|| $type || control-util:get-message-url($result/@msg,$result/@msgtype,false(), false()))
 };
 (:
  : delete user result
@@ -600,7 +628,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
 };
 (:
  : create new user
@@ -633,7 +661,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
 };
 (:
  : create new group
@@ -669,7 +697,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
 };
 
 (:
@@ -704,7 +732,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false()))
+  web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
 };
 (:
  : get groups for user
