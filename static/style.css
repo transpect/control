@@ -12,7 +12,7 @@ div.window-fg {
   padding: 0;
   margin: 0
 }
-* {
+body {
   font-family: 'Roboto', 'Fira Sans', sans-serif;
   font-weight: 300;
 }
@@ -281,6 +281,9 @@ details.work-matches ul {
 
 p.search-xpath {
   font-family: monospace;
+}
+
+p.search-xpath input {
   cursor: copy;
 }
 
@@ -350,6 +353,42 @@ div.form {
 
 .ft-fillable {
   background-color: #dee;
+}
+
+div.xmlsrc {
+  width: 100%;
+  height: auto;
+  overflow: scroll;
+  white-space: pre;
+  /* margin-top: 2em;  */
+  border: 3px solid #eee;
+  font-family: Consolas, monospace;
+  font-weight: normal;
+  font-size: 90%;
+  scrollbar-width: auto;
+}
+
+div.xmlsrc .name.elt { color: #55e; }
+div.xmlsrc .name.att { color: #e95; }
+div.xmlsrc .namespace.att { color: #9af; }
+div.xmlsrc .val.att { color: #a66; }
+div.xmlsrc .comment { color: #474; }
+div.xmlsrc .pi { color: #a6a; }
+div.xmlsrc .unselectable { color: #aaa !important; }
+
+.xmlsrc-container {
+  width: 95%;
+  position: sticky;
+  bottom: 3vh;
+  margin-left: 1rem;
+}
+.xmlsrc-container iframe {
+  width:100%;
+  height:100%;
+}
+
+body.xmlsrc {
+  margin:0;
 }
 
 

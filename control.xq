@@ -13,6 +13,7 @@ import module namespace control-backend = 'http://transpect.io/control-backend' 
 
 declare variable $control:config          := doc('config.xml')/control:config;
 declare variable $control:locale          := $control:config/control:locale;
+declare variable $control:customization as xs:string := $control:config/control:customization;
 declare variable $control:host            := $control:config/control:host;
 declare variable $control:port            := $control:config/control:port;
 declare variable $control:path            := $control:config/control:path;

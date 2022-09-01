@@ -160,10 +160,10 @@ function addEventToDetail(detail) {
     });
 }
 
-function addEventToXpath(p) {
-  p.setAttribute('title', 'click to copy');
-  p.addEventListener("click", event => {
-    	navigator.clipboard.writeText(event.target.innerText);
+function addEventToXpath(elt) {
+  elt.setAttribute('title', 'click to copy');
+  elt.addEventListener("click", event => {
+    	navigator.clipboard.writeText(event.target.parentNode.innerText);
     });
 }
 
@@ -182,7 +182,7 @@ window.onload = function() {
   var summaries = document.querySelectorAll("details.autocollapse > summary");
   var userselect = document.querySelector("#userselect");
   var groupselect = document.querySelector("#groupselect");
-  var xpaths = document.querySelectorAll(".search-xpath");
+  var xpaths = document.querySelectorAll(".search-xpath input");
   var xpathExamples = document.querySelectorAll(".xpath-fillable");
   var fullTextExamples = document.querySelectorAll(".ft-fillable");
     
@@ -194,8 +194,8 @@ window.onload = function() {
     addEventToDetail(detail)
   }
   
-  for (let xpath of xpaths){
-    addEventToXpath(xpath)
+  for (let xpathButton of xpaths){
+    addEventToXpath(xpathButton)
   }
 
   for (let xmpl of xpathExamples){

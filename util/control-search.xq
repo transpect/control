@@ -50,40 +50,6 @@ function control-search:css-rule-search-raw($name-regex as xs:string, $occurrenc
 };
 
 declare 
-%rest:path('/control/xpathsearch-raw')
-%rest:query-param("xpath", "{$xpath}")
-%rest:query-param("svn-path-constraint", "{$svn-path-constraint}")
-%output:method('xml')
-function control-search:xpathsearch-raw($xpath as xs:string, $svn-path-constraint as xs:string?) {
-  let $base-virtual-path := control-util:get-local-path($control:svnurlhierarchy),
-      $virtual-constraint as xs:string? := $svn-path-constraint => control-util:get-virtual-path(),
-      $db := db:open($control:config/control:db),
-      $results 
-        := for $result in xquery:eval($xpath, map { '': $db } ) 
-           let $path := '/' || $result/db:path(.),
-               $virtual-path := $path => control-util:get-virtual-path()
-           where if ($svn-path-constraint) 
-                 then if ($virtual-constraint) 
-                      then starts-with($virtual-path, $virtual-constraint) 
-                      else false() (: the constraint could not be resolved to a path in the virtual hierarchy :)
-                 else true()
-           return <result> {
-              attribute path {$result/path(.) => replace('/Q\{\}', '/') },
-              substring-after($virtual-path, $base-virtual-path) ! (
-                attribute virtual-path { . },
-                attribute virtual-steps { count(tokenize(., '/')[normalize-space()]) }
-              ),
-              attribute dbpath { $path },
-              attribute svnurl { control-util:get-canonical-path($path) }
-            } </result>
-    return
-    <search-results xpath="{$xpath}" count="{count($results)}" 
-      path-constraint="{$svn-path-constraint}" virtual-constraint="{$virtual-constraint}">{
-      $results
-    }</search-results>
-};
-
-declare 
 %rest:path('/control/ftsearch-raw')
 %rest:query-param("term", "{$term}")
 %rest:query-param("lang", "{$lang}")
@@ -211,15 +177,43 @@ function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lan
                                   map:merge(request:parameter-names() ! map:entry(., request:parameter(.))) ),  
          control-search:ftsearch-raw($term, $lang, $xpath, control-util:get-local-path($svnurl)[$restrict_path = true()],
                                      $details) 
-           => xslt:transform('../../control-backend/fulltext/render-results.xsl', 
+           => xslt:transform(doc($control:config/control:renderers/control:renderer[@role = 'fulltext-results']/@xslt), 
                              map{'svnbaseurl': $control:svnurlhierarchy,
                                  'siteurl': $control:siteurl,
                                  'langs': string-join($lang ! normalize-space(.), ','),
                                  'term': $term,
-                                 'xpath': $xpath})
+                                 'xpath': $xpath}),
+        <div class="xmlsrc-container"><iframe name="xmlsrc" srcdoc="&lt;body style='font-family:sans-serif; height:100%; background-color: #eee'>&lt;p>Click on an XPath segment in the results in order to display the content here.&lt;/p>&lt;/body>"/></div>
       }</main>
       {control-widgets:get-page-footer(),
        control-widgets:create-infobox()}
     </body>
   </html>
+};
+
+declare 
+%rest:path('/control/{$customization}/render-xml-source')
+%rest:query-param("svn-url", "{$svn-url}")
+%rest:query-param("xpath", "{$xpath}")
+%rest:query-param("highlight-xpath", "{$highlight-xpath}")
+%rest:query-param("indent", "{$indent}", 'true')
+%rest:query-param("scaffold", "{$scaffold}", 'true')
+%output:method('xhtml')
+%output:indent('no')
+function control-search:render-xml-source($svn-url as xs:string, $xpath as xs:string, $highlight-xpath as xs:string?, 
+                                          $indent as xs:boolean, $scaffold as xs:boolean, $customization as xs:string) {
+  let $doc := db:open($control:config/control:db => string(), control-util:get-local-path($svn-url)), 
+      $snippet := xquery:eval($xpath, map { '': $doc })[1],
+      $reparsed as document-node(element(*)) 
+        := if ($indent) then $snippet => serialize(map {'indent': true()}) => parse-xml()
+           else $snippet,
+      $xslt-loc as xs:string := $control:config/control:renderers/control:renderer[@role = 'raw-xml']/@xslt => string(),
+      $xslt as document-node(element(*)) := doc($xslt-loc),
+      $output as document-node(element(*)) 
+         := $snippet => xslt:transform($xslt,
+                                       map{'xpath': $xpath,
+                                           'indent': $indent,
+                                           'scaffold': $scaffold,
+                                           'css-url': $control:siteurl || '/static/style.css'})
+      return $output
 };
