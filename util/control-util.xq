@@ -445,6 +445,21 @@ declare function control-util:get-converter-for-type($type as xs:string) as elem
   $control:converters/control:converter[descendant::control:type[@type = $type]]
 };
 
+declare function control-util:get-current-url() as xs:string {
+replace(request:uri(),'https?://[^/]+/control',$control:siteurl)
+};
+
+declare function control-util:get-query-without-msg() as xs:string{
+let $queries-to-remove := '^msg=,^msgtype=' 
+return string-join(tokenize(request:query(),'&amp;')[not(matches(.,string-join(tokenize($queries-to-remove,","),"|")))],'&amp;')
+};
+
+declare function control-util:get-url-without-msg(){
+  let $query := control-util:get-query-without-msg(),
+      $url := control-util:get-current-url()
+  return $url || '?' || $query
+};
+
 declare function control-util:get-converter-function-url($name as xs:string, $type as xs:string){
   let $converter := $control:converters/control:converter[@name = $name]
   return $converter/control:base/text()||$converter/control:endpoints/*[local-name(.) = $type]/text()

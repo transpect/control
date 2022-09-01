@@ -85,7 +85,7 @@ declare function control:main( $svnurl as xs:string?, $auth as map(*)) as elemen
        then control-widgets:manage-actions( $used-svnurl, ($control:dest-svnurl, $used-svnurl)[1], $control:action, $control:file )
        else ()}
       <main>{
-         control:get-message( $control:msg, $control:msgtype ),
+         control:get-message( $control:msg, $control:msgtype),
          if(normalize-space( $used-svnurl ))
          then control-widgets:get-dir-list( $used-svnurl, $control:path, control-util:is-local-repo($used-svnurl), $auth)
          else 'URL parameter empty!',
@@ -172,7 +172,7 @@ declare function control:get-message( $message as xs:string?, $messagetype as xs
       <div id="message">
         <p>{control-util:decode-uri( $message )}
           <button class="btn" onclick="hide('message-wrapper')">
-            OK
+          <a href="{control-util:get-url-without-msg()}">OK</a>
             <img class="small-icon" src="{$control:path || '/static/icons/open-iconic/svg/check.svg'}" alt="ok"/>
           </button>
         </p>
