@@ -853,9 +853,15 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
         at arbitrary depth, not necessarily as an ancestor to the current full text search result. 
         In order to restrict the results to <code>title</code> elements within a <code>boxed-text</code>, you can 
         use <code class="xpath-fillable">title[ancestor::boxed-text]</code> (<code 
-        class="xpath-fillable">ancestor-or-self::title[ancestor::boxed-text]</code>). Just like the “relative location 
+        class="xpath-fillable">ancestor-or-self::title[ancestor::boxed-text]</code>). 
+        In order to find results in an <code>app</code> without a label whose title contains a digit and 
+        that are not within a <code>ref</code>, you may choose
+        <code class="xpath-fillable">self::*[empty(ancestor::ref)]/ancestor::app[empty(label)][matches(title, '\d')]</code>.
+        Just like the “relative location 
         expressions” in the previous bullet point, these expressions only make sense for further filtering full text search
-        results.</li>
+        results. 
+        In order to find these apps that contain a number without full-text search, you may use
+        <code class="xpath-fillable">//app[empty(label)][matches(title, '\d')]</code></li>
       </ul>
       <p>You can use (non-updating) XQuery 3.1 expressions supported by BaseX. This comprises XPath 3.1 <a 
       href="https://www.w3.org/TR/xpath-31/">expressions</a> and <a 
