@@ -148,8 +148,8 @@ declare function control-util:short-size($size as xs:integer) as xs:string {
       $KB := $size div 1024,
       $MB := $KB div 1024,
       $GB := $MB div 1024
-  return      if ( $KB lt 9999) then format-number($KB,'#,##0.00') ||'&#x202f;KB'
-         else if ( $MB lt 9999) then format-number($MB,'#,###.00') ||'&#x202f;MB'
+  return      if ( $KB lt 1024) then format-number($KB,'#,##0.00') ||'&#x202f;KB'
+         else if ( $MB lt 1024) then format-number($MB,'#,###.00') ||'&#x202f;MB'
                            else format-number($GB,'#,###.00') ||'&#x202f;GB'
         
 };
@@ -381,6 +381,7 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
       $status_res    := json:parse($status/output),
       $result_xml    := 
         <conversion>
+          <input>{string-join(($svnurl, $file, $convertername, $type),'||')}</input>
           <id>{random:uuid()}</id>
           <type>{$upload_res/json/conversion__type/text()}</type>
           <file>{$file}</file>
@@ -388,7 +389,7 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
           <status>{if ($upload_res/json/status/text()) then $upload_res/json/status/text() else 'failed'}</status>
           <callback>{$upload_res/json/callback__uri/text()}</callback>
           <delete>{$status_res/json/delete__uri/text()}</delete>
-          <result_list>{$status_res/json/r1esult__list__uri/text()}</result_list>
+          <result_list>{$status_res/json/result__list__uri/text()}</result_list>
         </conversion>
   return $result_xml
 };

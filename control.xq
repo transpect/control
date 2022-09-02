@@ -283,7 +283,7 @@ return
               control-widgets:customize-groups($svnurl),
               control-widgets:remove-groups($svnurl),
               control-widgets:rebuild-index($svnurl, 'root'),
-              control-widgets:create-back-btn($svnurl)
+              control-widgets:create-btn($svnurl, 'back', true())
              }</div>,
              <div>{'session-id: '||session:id()}</div>)
        else ''}
@@ -515,15 +515,15 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
                                                              [control:type = $type]}
                                      update {insert node $started-conversion into .//control:conversions},
     $result :=
-      if (control-util:is-admin($username))
+      if ($started-conversion/*:status/text() eq 'uploaded')
       then (element result {attribute msg {'started'},
                             attribute msgtype {'info'}},
             file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
             control:writeauthtofile($updated-access))
-      else element result {attribute msg {'not-admin'},
+      else element result {attribute msg {string-join($started-conversion//text(),',')},
                            attribute msgtype {'error'}}
 return
-  web:redirect($control:siteurl || '/convert?svnurl='|| $svnurl || '&amp;file=' || $file || '&amp;type=' || $type || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
+  web:redirect($control:siteurl || '/convert?svnurl='|| $svnurl || '&amp;file=' || $file || '&amp;type=' || $type || control-util:get-message-url($result/@msg,$result/@msgtype,false(), false()))
 };
 
 (:
