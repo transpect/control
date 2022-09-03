@@ -192,6 +192,36 @@ function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lan
 };
 
 declare 
+%rest:path('/control/override-search-raw')
+%rest:query-param("term", "{$term}")
+%rest:query-param("type", "{$type}")
+%rest:query-param("svn-path-constraint", "{$svn-path-constraint}")
+%output:method('xml')
+function control-search:ftsearch-raw($term as xs:string, $type as xs:string*, 
+                                      $svn-path-constraint as xs:string?) {
+  let $base-virtual-path := control-util:get-local-path($control:svnurlhierarchy),
+      $virtual-constraint as xs:string? := $svn-path-constraint => control-util:get-virtual-path(),
+      $db := db:open($control:config/control:db),
+      $normalized-term := normalize-space($term),
+      $results := for $path-regex in $control:config/control:also-indexable/control:file[@type = $type]/@pattern
+                  let $files := db:open('INDEX', 'index.xml')//file[matches(@svnpath, $path-regex)]
+                  return for $file in $files
+                         return
+                         copy $typed-file := $file 
+                           modify (
+                             insert node attribute type { $path-regex/../@type } into $typed-file
+                           )
+                        return $typed-file
+    return
+    <search-results term="{$normalized-term}" 
+      count="{if (exists($results)) then count($results) else 0}" 
+      path-constraint="{$svn-path-constraint}" virtual-constraint="{$virtual-constraint}">{
+      $results
+    }</search-results>
+};
+
+
+declare 
 %rest:path('/control/{$customization}/render-xml-source')
 %rest:query-param("svn-url", "{$svn-url}")
 %rest:query-param("xpath", "{$xpath}")
