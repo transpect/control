@@ -265,7 +265,7 @@ div#search-results details > * {
 }
 div#search-results {
   margin-left: .5em;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 div#search-results p {
@@ -397,15 +397,15 @@ body.xmlsrc {
 }
 
 .filetype.epub {
-  background-color: #6d8;
+  background-color: #7d9;
 }
 
 .filetype.xsl {
-  background-color: #8cf;
+  background-color: #acf;
 }
 
 .filetype.xpl {
-  background-color: #f8f;
+  background-color: #faf;
 }
 
 .filetype {
