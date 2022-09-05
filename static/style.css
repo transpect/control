@@ -265,6 +265,7 @@ div#search-results details > * {
 }
 div#search-results {
   margin-left: .5em;
+  line-height: 1.25;
 }
 
 div#search-results p {
@@ -408,9 +409,9 @@ body.xmlsrc {
 }
 
 .filetype {
-  font-size:smaller;
+  font-size:small;
   padding: 0.2em;
-  border-radius: 3px;
+  border-radius: 6px;
 }
 
 .leftlabel {
