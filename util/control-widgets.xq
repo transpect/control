@@ -68,7 +68,7 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
           </div>
         </form>
       </div>
-      {control-widgets:create-back-btn($svnurl)}
+      {control-widgets:create-btn($svnurl, 'back', true())}
     </div>
 };
 
@@ -146,10 +146,11 @@ declare function control-widgets:rebuild-index($svnurl as xs:string,
   </div>
 };
 
-declare function control-widgets:create-back-btn($svnurl as xs:string) as element(div) {
+declare function control-widgets:create-btn($svnurl as xs:string, $text as xs:string, $localize as xs:boolean) as element(div) {
   <div class="adminmgmt">
     <form action="{$control:siteurl}">
-      <input type="submit" value="{control-i18n:localize('back', $control:locale)}" />
+      <input type="submit" value="{if ($localize) then control-i18n:localize($text, $control:locale)
+                                                  else $text}" />
       <input type="hidden" name="svnurl" value="{$svnurl}"/>
     </form>
   </div>
@@ -402,7 +403,7 @@ declare function control-widgets:file-access( $svnurl as xs:string, $file as xs:
           </div>
         </form>
       </div>
-      {control-widgets:create-back-btn($svnurl)}
+      {control-widgets:create-btn($svnurl, 'back', true())}
     </div>
 };
 (:
