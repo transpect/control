@@ -396,7 +396,7 @@ body.xmlsrc {
 }
 
 .filetype.epub {
-  background-color: #d46;
+  background-color: #6d8;
 }
 
 .filetype.xsl {
@@ -407,6 +407,11 @@ body.xmlsrc {
   background-color: #d6d;
 }
 
+.filetype {
+  font-size:smaller;
+  padding: 0.2em;
+  border-radius: 3px;
+}
 
 .leftlabel {
   float: left;
