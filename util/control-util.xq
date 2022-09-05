@@ -242,7 +242,9 @@ declare function control-util:get-repo-for-svnurl($svnurl as xs:string?) as elem
 declare function control-util:get-virtual-path($url-or-path as xs:string?) as xs:string? {
   control-util:get-local-path($url-or-path) !
     (db:attribute('INDEX', ., 'svnpath')/../@virtual-path,
-     db:attribute('INDEX', ., 'path')/../@mount-point
+     db:attribute('INDEX', ., 'path')/../@mount-point,
+     db:attribute('INDEX', ., 'virtual-path'),
+     db:attribute('INDEX', ., 'mount-point')
     )[1] => string()
 };
 

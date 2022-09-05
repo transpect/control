@@ -192,16 +192,107 @@ function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lan
 };
 
 declare 
+%rest:path('/control/override-search-raw')
+%rest:query-param("term", "{$term}")
+%rest:query-param("type", "{$type}")
+%rest:query-param("svn-path-constraint", "{$svn-path-constraint}")
+%output:method('xml')
+function control-search:override-search-raw($term as xs:string?, $type as xs:string*, 
+                                            $svn-path-constraint as xs:string?) {
+  let $base-virtual-path := control-util:get-local-path($control:svnurlhierarchy),
+      $virtual-constraint as xs:string? := $svn-path-constraint => control-util:get-virtual-path(),
+      $normalized-term := normalize-space($term),
+      $results := for $path-regex in $control:config/control:also-indexable/control:file[@type = $type]/@pattern
+                  let $files := db:open('INDEX', 'index.xml')//file[matches(@svnpath, $path-regex)]
+                  return for $file in $files
+                        where (if ($svn-path-constraint) 
+                               then normalize-space($virtual-constraint)
+                                    and
+                                    starts-with($file/@virtual-path, $virtual-constraint) 
+                               else true())
+                              and
+                              (if ($term) then let $doc := db:open($control:db, $file/@svnpath)
+                                               return exists($doc/descendant::*/(text() | @* | comment() | 
+                                                                                 processing-instruction() | 
+                                                                                 processing-instruction()/name())
+                                                                [contains(normalize-space(.), $term)])
+                                          else true())
+                         return
+                         copy $typed-file := $file 
+                           modify (
+                             insert node attribute type { $path-regex/../@type } into $typed-file
+                           )
+                        return $typed-file
+  return
+  <search-results term="{$normalized-term}" 
+    count="{if (exists($results)) then count($results) else 0}" 
+    path-constraint="{$svn-path-constraint}" virtual-constraint="{$virtual-constraint}">{
+    for $result in $results
+    return <result>{
+      attribute path {},
+      attribute type { $result/@type },
+      substring-after($result/@virtual-path, $base-virtual-path) ! (
+        attribute virtual-path { . },
+        attribute virtual-steps { count(tokenize(., '/')[normalize-space()]) }
+      ),
+      attribute dbpath { $result/@svnpath },
+      attribute svnurl { control-util:get-canonical-path($result/@svnpath) }
+    }</result>
+  }</search-results>
+};
+
+declare 
+%rest:path('/control/override-search')
+%rest:query-param("term", "{$term}", "")
+%rest:query-param("type", "{$type}")
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("restrict_path", "{$restrict_path}", 'false')
+%output:method('html')
+%output:version('5.0')
+function control-search:override-search($svnurl as xs:string?, $term as xs:string?, $type as xs:string*, 
+                                        $restrict_path as xs:boolean) {
+  let $auth := control-util:parse-authorization(request:header("Authorization")),
+      $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl($auth?username, $svnurl)),
+      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?) as item()* 
+        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#4)[1]
+  return  
+  <html>
+    <head>
+      {control-widgets:get-html-head($used-svnurl)}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <main>{
+         $search-widget-function( $used-svnurl, $control:path, $auth, 
+                                  map:merge(request:parameter-names() ! map:entry(., request:parameter(.))) ),  
+         control-search:override-search-raw($term, $type, control-util:get-local-path($svnurl)[$restrict_path = true()]) 
+           => xslt:transform(doc($control:config/control:renderers/control:renderer[@role = 'override-results']/@xslt), 
+                             map{'svnbaseurl': $control:svnurlhierarchy,
+                                 'siteurl': $control:siteurl,
+                                 'types': string-join($type ! normalize-space(.), ','),
+                                 'term': $term}),
+        <div class="xmlsrc-container"><iframe name="xmlsrc" srcdoc="&lt;body style='font-family:sans-serif; height:100%; background-color: #eee'>&lt;p>Click on an XPath segment in the results in order to display the content here.&lt;/p>&lt;/body>"/></div>
+      }</main>
+      {control-widgets:get-page-footer(),
+       control-widgets:create-infobox()}
+    </body>
+  </html>
+};
+
+
+declare 
 %rest:path('/control/{$customization}/render-xml-source')
 %rest:query-param("svn-url", "{$svn-url}")
 %rest:query-param("xpath", "{$xpath}")
 %rest:query-param("highlight-xpath", "{$highlight-xpath}")
 %rest:query-param("indent", "{$indent}", 'true')
+%rest:query-param("text", "{$text}", 'false')
 %rest:query-param("scaffold", "{$scaffold}", 'true')
 %output:method('xhtml')
 %output:indent('no')
 function control-search:render-xml-source($svn-url as xs:string, $xpath as xs:string, $highlight-xpath as xs:string?, 
-                                          $indent as xs:boolean, $scaffold as xs:boolean, $customization as xs:string) {
+                                          $indent as xs:boolean, $scaffold as xs:boolean, $text as xs:boolean, 
+                                          $customization as xs:string) {
   let $doc := db:open($control:config/control:db => string(), control-util:get-local-path($svn-url)), 
       $snippet := xquery:eval($xpath, map { '': $doc })[1],
       $reparsed as document-node(element(*)) 
@@ -213,6 +304,7 @@ function control-search:render-xml-source($svn-url as xs:string, $xpath as xs:st
          := $snippet => xslt:transform($xslt,
                                        map{'xpath': $xpath,
                                            'indent': $indent,
+                                           'text': $text,
                                            'scaffold': $scaffold,
                                            'css-url': $control:siteurl || '/static/style.css'})
       return $output
