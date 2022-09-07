@@ -78,7 +78,7 @@ function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*, $x
                           else true()
                        return $xpath-result
                        else (),
-      $xpath-results-xpaths := $xpath-results ! path(.) ! replace(., '/Q\{\}', '/'),
+      $xpath-results-xpaths := $xpath-results ! path(.) ! control-util:clark-to-prefix(., $control-util:namespace-map),
       $results 
          := for $ftdb in $ftdbs
             return
@@ -138,7 +138,7 @@ function control-search:ftsearch-raw($term as xs:string, $lang as xs:string*, $x
       let $path := '/' || $xr/db:path(.),
           $virtual-path := $path => control-util:get-virtual-path()
       return <result> {
-        attribute path { $xr => path() => replace('/Q\{\}', '/')},
+        attribute path { $xr => path() => control-util:clark-to-prefix($control-util:namespace-map) },
         substring-after($virtual-path, $base-virtual-path) ! (
           attribute virtual-path { . },
           attribute virtual-steps { count(tokenize(., '/')[normalize-space()]) }
@@ -227,7 +227,7 @@ function control-search:overrides-search-raw($overrides-term as xs:string?, $typ
                            )
                         return $typed-file
   return
-  <search-results term="{$normalized-term}" 
+  <search-results overrides-term="{$normalized-term}" 
     count="{if (exists($results)) then count($results) else 0}" 
     path-constraint="{$svn-path-constraint}" virtual-constraint="{$virtual-constraint}">{
     for $result in $results
@@ -283,6 +283,90 @@ function control-search:overrides-search($svnurl as xs:string?, $overrides-term 
   </html>
 };
 
+declare 
+%rest:path('/control/cssa-search-raw')
+%rest:query-param("cssa-term", "{$cssa-term}")
+%rest:query-param("style-type", "{$style-type}")
+%rest:query-param("svn-path-constraint", "{$svn-path-constraint}")
+%output:method('xml')
+function control-search:cssa-search-raw($cssa-term as xs:string?, $style-type as xs:string*, 
+                                        $svn-path-constraint as xs:string?) {
+  let $base-virtual-path := control-util:get-local-path($control:svnurlhierarchy),
+      $virtual-constraint as xs:string? := $svn-path-constraint => control-util:get-virtual-path(),
+      $normalized-term := normalize-space($cssa-term),
+      $results := for $rule in db:open($control:db)//css:rule
+                  let $path := '/' || $rule/db:path(.),
+                      $virtual-path := $path => control-util:get-virtual-path()
+                  where (if ($svn-path-constraint) 
+                         then normalize-space($virtual-constraint)
+                              and
+                              starts-with($virtual-path, $virtual-constraint) 
+                         else true())
+                        and
+                        (if ($normalized-term) 
+                         then exists($rule/(@name, @native-name)[contains(., $normalized-term)])
+                         else true())
+                  return $rule
+  return
+  <search-results term="{$normalized-term}" 
+    count="{count($results)}" cssa-term="{$normalized-term}"
+    path-constraint="{$svn-path-constraint}" virtual-constraint="{$virtual-constraint}">{
+    for $result in $results
+    let $path := '/' || $result/db:path(.),
+        $virtual-path := $path => control-util:get-virtual-path()
+    return <result>{
+      attribute path { $result/path(.) => control-util:clark-to-prefix($control-util:namespace-map) },
+      attribute style-type { $result/@layout-type },
+      substring-after($virtual-path, $base-virtual-path) ! (
+        attribute virtual-path { . },
+        attribute virtual-steps { count(tokenize(., '/')[normalize-space()]) }
+      ),
+      attribute dbpath { $result/db:path(.) },
+      attribute svnurl { control-util:get-canonical-path($result/db:path(.)) }
+    }</result>
+  }</search-results>
+};
+
+declare 
+%rest:path('/control/cssa-search')
+%rest:query-param("cssa-term", "{$cssa-term}", "")
+%rest:query-param("style-type", "{$style-type}")
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("restrict_path", "{$restrict_path}", 'false')
+%output:method('html')
+%output:version('5.0')
+function control-search:cssa-search($svnurl as xs:string?, $cssa-term as xs:string?, $style-type as xs:string*, 
+                                        $restrict_path as xs:boolean) {
+  let $auth := control-util:parse-authorization(request:header("Authorization")),
+      $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl($auth?username, $svnurl)),
+      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?, map(xs:string, item()*)? ) as item()* 
+        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#5)[1],
+      $rendered-results := control-search:cssa-search-raw($cssa-term, $style-type, control-util:get-local-path($svnurl)[$restrict_path = true()]) 
+                            => xslt:transform(doc($control:config/control:renderers/control:renderer[@role = 'cssa-results']/@xslt), 
+                                              map{'svnbaseurl': $control:svnurlhierarchy,
+                                                  'siteurl': $control:siteurl,
+                                                  'style-types': string-join($style-type ! normalize-space(.), ','),
+                                                  'cssa-term': $cssa-term})
+  return  
+  <html>
+    <head>
+      {control-widgets:get-html-head($used-svnurl)}
+    </head>
+    <body>
+      {control-widgets:get-page-header( )}
+      <main>{
+         $search-widget-function( $used-svnurl, $control:path, $auth, 
+                                  map:merge(request:parameter-names() ! map:entry(., request:parameter(.))),
+                                  map{'overrides': $rendered-results } ),  
+        <div class="xmlsrc-container"><iframe name="xmlsrc" srcdoc="&lt;body style='font-family:sans-serif; height:100%; background-color: #eee'>&lt;p>Click on an XPath segment or a bullet item file name in the results in order to display the content here.&lt;/p>&lt;/body>"/></div>
+      }</main>
+      {control-widgets:get-page-footer(),
+       control-widgets:create-infobox()}
+    </body>
+  </html>
+};
+
+
 
 declare 
 %rest:path('/control/{$customization}/render-xml-source')
@@ -298,7 +382,7 @@ function control-search:render-xml-source($svn-url as xs:string, $xpath as xs:st
                                           $indent as xs:boolean, $scaffold as xs:boolean, $text as xs:boolean, 
                                           $customization as xs:string) {
   let $doc := db:open($control:config/control:db => string(), control-util:get-local-path($svn-url)), 
-      $snippet := xquery:eval($xpath, map { '': $doc })[1],
+      $snippet := xquery:eval(control-util:namespace-map-to-declarations($control-util:namespace-map) || $xpath, map { '': $doc })[1],
       $reparsed as document-node(element(*)) 
         := if ($indent) then $snippet => serialize(map {'indent': true()}) => parse-xml()
            else $snippet,

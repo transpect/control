@@ -8,6 +8,33 @@ declare namespace control-custom = 'http://transpect.io/control/control-customiz
 
 declare namespace c = 'http://www.w3.org/ns/xproc-step';
 
+declare variable $control-util:namespace-map as map(xs:string, xs:string) 
+  := map {'': '',
+          'css': 'http://www.w3.org/1996/css',
+          'db': 'http://docbook.org/ns/docbook',
+          'xhtml': 'http://www.w3.org/1999/xhtml',
+          'hub': 'http://transpect.io/hub',
+          'tei': 'http://www.tei-c.org/ns/1.0',
+          'xlink': 'http://www.w3.org/1999/xlink'
+         };
+
+declare function control-util:namespace-map-to-declarations($map as map(xs:string, xs:string)) as xs:string {
+  string-join(
+    map:keys($map)[normalize-space()] ! ('declare namespace ' || . || '="' || $map(.) || '"; ')
+  )
+};
+
+declare function control-util:clark-to-prefix($xpath as xs:string, $nsmap as map(xs:string, xs:string)) as xs:string {
+  fold-left(
+    map:keys($nsmap), 
+    $xpath, 
+    function($xp, $prefix) { 
+      $xp => replace('/Q\{' || $nsmap($prefix) || '\}', '/' || $prefix || ':'[normalize-space($prefix)]) 
+    }
+  )
+};
+
+
 (: 
  : prints the parent directory of a path,
  : e.g. /home/parentdir/mydir/ => /home/parentdir/ 
