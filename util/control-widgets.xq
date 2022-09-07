@@ -30,7 +30,8 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
                          ($svnurl,$file),'/'),'/$','')
                          ,svn:info(
                            $svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value
-                         ,'')
+                         ,''),
+      $conversion := control-util:get-running-conversions($svnurl, $file, $type)[1]
   return
     <div class="conversion-widget">
       <div class="adminmgmt">
@@ -40,26 +41,23 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
            return control-util:update-conversion($c/control:id),
            control-util:get-running-conversions($svnurl, $file, $type)}
         </div>
-        <div class="table">
-          {control-i18n:localize('running_conversions', $control:locale )}
-          <div class="table-body">
-            <div class="table-row">
-              <div class="table-cell">{control-i18n:localize('status', $control:locale )}</div>
-              <div class="table-cell">{control-i18n:localize('converter', $control:locale )}</div>
-              <div class="table-cell">{control-i18n:localize('status-url', $control:locale )}</div>
-              <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
-            </div>
-          </div>
-          {for $conversion in control-util:get-running-conversions($svnurl, $file, $type)
-           return <div class="table-row">
-                    <div class="table-cell">{$conversion/control:status}</div>
-                    <div class="table-cell">{$conversion/control:type}</div>
-                    <div class="table-cell">{$conversion/control:callback}</div>
-                    <div class="table-cell"><a class="delete" href="{$control:siteurl}/convert/cancel?svnurl={$svnurl}&amp;file={$file}&amp;type={$type}">&#x1f5d1;</a></div>
-                  </div>}
+      </div>
+      <div class="adminmgmt">
+        <h2>{control-i18n:localize('status', $control:locale )}</h2>
+        <div>{$conversion/control:status}<a class="delete" href="{$control:siteurl}/convert/cancel?svnurl={$svnurl}&amp;file={$file}&amp;type={$type}">&#x1f5d1;</a></div>
+      </div>
+      <div class="adminmgmt">
+        <h2>{control-i18n:localize('messages', $control:locale )}</h2>
+        <div class="textlist">{for $m in $conversion/control:messages/*
+              return element div {text {$m/text()}}}</div>
+      </div>
+      <div class="adminmgmt">
+        <h2>{control-i18n:localize('result_files', $control:locale )}</h2>
+        <div>{for $f in $conversion/control:result_files/*
+              return element div {element a {attribute href {$control:siteurl||"/download-conversion-result?svnurl="||$svnurl||"&amp;file="||$file || "&amp;type="||$type||"&amp;result_file="||$f/@name},
+                                             text {$f/@name}}}}
         </div>
       </div>
-      
       <div class="adminmgmt">
         <h2> {control-i18n:localize('start_conversion', $control:locale ) || ' ' || $filepath }</h2>
         <form action="{$control:siteurl}/convert/start?svnurl={$svnurl}&amp;file={$file}&amp;type={$type}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">

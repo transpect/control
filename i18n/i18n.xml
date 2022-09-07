@@ -12,6 +12,14 @@
     <locale lang="de">Verzeichnis auswählen</locale>
     <locale lang="en">Choose directory</locale>
   </entry>  
+  <entry name="messages">
+    <locale lang="de">Nachrichten</locale>
+    <locale lang="en">Messages</locale>
+  </entry>  
+  <entry name="result_files">
+    <locale lang="de">Ergebnis-Dateien</locale>
+    <locale lang="en">Result Files</locale>
+  </entry>  
   <entry name="new-file">
     <locale lang="de">Neue Datei</locale>
     <locale lang="en">New file</locale>

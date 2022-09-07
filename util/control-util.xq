@@ -377,7 +377,7 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
       $prepare-file  := proc:execute('mkdir', ($filepath, '-p')),
       $checkout      := proc:execute('svn',('co', $svnurl, $filepath, '--username',$control:svnusername,'--password',$control:svnpassword)),
       $upload-call   := ('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'upload')),
-      $upload        := proc:execute('curl',('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'upload'))),
+      $upload        := proc:execute('curl',('-F', 'type='||$type, '-F','input_file=@'||$filepath||file:dir-separator()||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'upload'))),
       $upload_res    := json:parse($upload/output),
       $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'status')||'?input_file='||$file||'&amp;type='||$type)),
       $status_res    := json:parse($status/output),
@@ -389,6 +389,9 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
           <file>{$file}</file>
           <svnurl>{$svnurl}</svnurl>
           <status>{if ($upload_res/json/status/text()) then $upload_res/json/status/text() else 'failed'}</status>
+          <messages>{for $m in $status_res/json/message/* 
+                     return element message {text {$m/text()}}}</messages>
+          <result_files></result_files>
           <callback>{$upload_res/json/callback__uri/text()}</callback>
           <delete>{$status_res/json/delete__uri/text()}</delete>
           <result_list>{$status_res/json/result__list__uri/text()}</result_list>
@@ -431,10 +434,20 @@ declare function control-util:update-conversion($id as xs:string){
       $file       := $conversion/control:file/text(),
       $status     := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'status')||'?input_file='||$file||'&amp;type='||$type)),
       $status_res := json:parse($status/output),
+      $result_files := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,$conversion/control:result_list)),
+      $result_files_res := json:parse($result_files/output),
+      $formatted-files := for $f in $result_files_res//*:files/* 
+                          let $name := replace($f//*:download__uri/text(),'.*\?file=([^&amp;]*)(&amp;.*|$)','$1')
+                          return element file {attribute name {$name},
+                                               element download {$f//*:download__uri/text()}},
       $updated-conversion := 
         copy $old := $conversion
         modify (
-          replace value of node $old//control:status with if ($status_res/json/status/text()) then $status_res/json/status/text() else 'failed'
+          replace value of node $old//control:status with if ($status_res/json/status/text()) then $status_res/json/status/text() else 'failed',
+          replace node $old//control:messages with element messages {
+                           for $m in $status_res/json/message/* return element message {text {$m/text()}}},
+          replace node $old//control:result_files with element result_files {
+                           $formatted-files}
         )
         return $old,
       $file := $control:mgmtdoc,

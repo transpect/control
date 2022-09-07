@@ -90,6 +90,33 @@ function control-actions:download-single-file( $svnurl as xs:string, $file as xs
           else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msgtype=error' )
          )
 };
+
+(:
+ : download conversion result file
+ :)
+declare
+  %rest:path("/control/download-conversion-result")
+  %rest:query-param("result_file", "{$result_file}")
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("file", "{$file}")
+  %rest:query-param("type", "{$type}")
+function control-actions:download-result-file( $result_file as xs:string,$svnurl as xs:string, $type as xs:string, $file as xs:string ) {
+  let $temp    := file:temp-dir() || file:dir-separator()  || random:uuid(),
+      $checkoutdir := $temp,
+      $create-dir := file:create-dir($checkoutdir),
+      $converter := control-util:get-converter-for-type($type),
+      $url := control-util:get-converter-function-url($converter/@name,'results')|| "?file=" || $result_file || "&amp;input_file=" || $file ||"&amp;type=" || $type,
+      $get-file :=proc:execute('curl',('-u',$control:svnusername||':'||$control:svnpassword,$url,'--output',$checkoutdir||file:dir-separator()||$result_file)) 
+  return (
+          if( $get-file/*:code eq "0" )
+          then (web:response-header(map { 'media-type': web:content-type( $checkoutdir  || file:dir-separator() || $result_file )},
+                                    map { 'Content-Disposition': concat('attachement; filename=', $result_file)}
+                                   ),
+                 file:read-binary($checkoutdir  || file:dir-separator() || $result_file)
+                )
+          else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msgtype=error' )
+         )
+};
 (:
  : choose target path and copy file
  :)

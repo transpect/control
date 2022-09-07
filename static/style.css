@@ -367,6 +367,10 @@ div.xmlsrc {
   font-size: 90%;
   scrollbar-width: auto;
 }
+div.textlist {
+  max-height:300px;
+  overflow:scroll;
+}
 
 div.xmlsrc .name.elt { color: #55e; }
 div.xmlsrc .name.att { color: #e95; }

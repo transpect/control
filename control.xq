@@ -233,29 +233,6 @@ function control:usermgmt($svnurl as xs:string?) as element(html) {
 };
 
 (:
- : Conversion mgmt page
- :)
-declare
-%rest:path("/control/convert")
-%rest:query-param("svnurl", "{$svnurl}")
-%rest:query-param("file", "{$file}")
-%rest:query-param("type", "{$type}")
-%output:method('html')
-%output:version('5.0')
-function control:convert($svnurl as xs:string, $file as xs:string, $type as xs:string) as element(html) {
-  <html>
-    <head>
-      {control-widgets:get-html-head($svnurl)}
-    </head>
-    <body>
-      {control:get-message($control:msg, $control:msgtype),
-       control-widgets:get-page-header(),
-       control-widgets:manage-conversions($svnurl, $file, $type)}
-    </body>
-  </html>
-};
-
-(:
  : Configuration main page
  :)
 declare
@@ -484,6 +461,29 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
                            attribute msgtype {'error'}}
 return
   web:redirect($control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result/@msg,$result/@msgtype,false(), true()))
+};
+
+(:
+ : Conversion mgmt page
+ :)
+declare
+%rest:path("/control/convert")
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("file", "{$file}")
+%rest:query-param("type", "{$type}")
+%output:method('html')
+%output:version('5.0')
+function control:convert($svnurl as xs:string, $file as xs:string, $type as xs:string) as element(html) {
+  <html>
+    <head>
+      {control-widgets:get-html-head($svnurl)}
+    </head>
+    <body>
+      {control:get-message($control:msg, $control:msgtype),
+       control-widgets:get-page-header(),
+       control-widgets:manage-conversions($svnurl, $file, $type)}
+    </body>
+  </html>
 };
 
 (:
