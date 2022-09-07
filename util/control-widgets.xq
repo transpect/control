@@ -789,98 +789,142 @@ declare function control-widgets:get-groups-and-admin( $svnurl as xs:string ) as
   <function role="search-form-widget" name="my-customization:search-form" arity="4"/>
 :)
 declare function control-widgets:search-input ( $svnurl as xs:string?, $control-dir as xs:string, 
-                                                $auth as map(xs:string, xs:string), $params as map(*)? ) {
+                                                $auth as map(xs:string, xs:string), $params as map(*)?,
+                                                $results as map(xs:string, item()*)? ) {
   <div class="form-wrapper">
-    <form method="get" action="{$control-dir}/ftsearch" id="ftsearch-form">
-      <div style="display:flex">
-        <div class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list" aria-haspopup="true" aria-expanded="false">
-          <label for="lang">Full text</label> 
-          <input id="search" type="text" name="term" autocomplete="off" size="26" autocapitalize="none" 
-            aria-controls="autoComplete_list" aria-autocomplete="both" value="{$params?term}" />
-          <ul id="autoComplete_list" role="listbox" class="autoComplete_list" hidden=""></ul>
-          { for $lang in $control:config/control:ftindexes/control:ftindex/@lang return (
-              <input id="lang_{$lang}" type="checkbox" name="lang" value="{$lang}">
-              {if ($params?lang = $lang or empty($params?lang)) then attribute checked { 'true' } else ()}
-              </input>,
-              <label for="lang_{$lang}">{string($lang)}</label>
-            )
-          }
-          <span>  </span><label for="xpath">XPath</label>
-          <input id="xpathsearch" type="text" name="xpath" autocomplete="off" size="38" autocapitalize="none" 
-            value="{$params?xpath}"/><span>   </span>
-          {
-            if ($svnurl and not($svnurl = $control:svnurlhierarchy)) then ( 
-              <input id="search_restrict_path" name="restrict_path" type="checkbox" value="true">
-                {if ($params?restrict_path) then attribute checked { 'true' } else ()}
-              </input>,
-              <label for="search_restrict_path">restrict to { $svnurl => control-util:get-canonical-path() }</label>
-            )
-            else ()
-          }
-          {
-            if ($svnurl) then <input type="hidden" name="svnurl" value="{$svnurl}"/> else ()
-          }
-           <input type="submit" value="Search"/>
+    <details class="search-form">
+      { if (normalize-space($params?term) or normalize-space($params?xpath))
+        then attribute open { 'true' } else () }
+      <summary>Full text / XPath search</summary>
+      <form method="get" action="{$control-dir}/ftsearch" id="ftsearch-form">
+        <div style="display:flex">
+          <div class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list" aria-haspopup="true" aria-expanded="false">
+            <label for="term">Full text</label> 
+            <input id="search" type="text" name="term" autocomplete="off" size="26" autocapitalize="none" 
+              aria-controls="autoComplete_list" aria-autocomplete="both" value="{$params?term}" />
+            <ul id="autoComplete_list" role="listbox" class="autoComplete_list" hidden=""></ul>
+            { for $lang in $control:config/control:ftindexes/control:ftindex/@lang return (
+                <input id="lang_{$lang}" type="checkbox" name="lang" value="{$lang}">
+                {if ($params?lang = $lang or empty($params?lang)) then attribute checked { 'true' } else ()}
+                </input>,
+                <label for="lang_{$lang}">{string($lang)}</label>
+              )
+            }
+            <span>  </span><label for="xpath">XPath</label>
+            <input id="xpathsearch" type="text" name="xpath" autocomplete="off" size="38" autocapitalize="none" 
+              value="{$params?xpath}"/><span>   </span>
+            {
+              if ($svnurl and not($svnurl = $control:svnurlhierarchy)) then ( 
+                <input id="search_restrict_path" name="restrict_path" type="checkbox" value="true">
+                  {if ($params?restrict_path) then attribute checked { 'true' } else ()}
+                </input>,
+                <label for="search_restrict_path">restrict to { $svnurl => control-util:get-canonical-path() }</label>
+              )
+              else ()
+            }
+            {
+              if ($svnurl) then <input type="hidden" name="svnurl" value="{$svnurl}"/> else ()
+            }
+             <input type="submit" value="Search"/>
+          </div>
         </div>
-      </div>
-    </form>
-    <details>
-      <summary>Search hints</summary>
-      <h4>Full text</h4>
-      <p>You may use regex-like wildcards, such as <code>.*</code> for zero or more characters, 
-      as documented for the <a href="https://docs.basex.org/wiki/Full-Text#Match_Options">BaseX
-      <code>wildcards</code> option</a>. Examples: <code class="ft-fillable">combin.*</code>
-      (for “combine”, “combined”, “combining”, “combinatorial”, etc.), 
-      <code class="ft-fillable">.{{2,2}}treated</code> (for “untreated” and “retreated”), 
-      <code class="ft-fillable">depression.{{0,2}}</code> (for “Depression” and “Depressionen”).</p>
-      <p>You can click on any of the highlighted example expressions in order to use them in
-      the form field. The same applies to the hihlighted XPath expressions below.</p>
-      <p>In the result list, you can copy the matches’ XPaths to the clipboard (for use in oXygen etc.) by clicking on them.</p>
-      <h4>XPath</h4>
-      <p>The content of the XPath input field will be used as follows:</p>
-      <ul>
-        <li>If the expression starts with a slash and if the full text query is empty, it will be used verbatim. Example: 
-        <code class="xpath-fillable">//boxed-text[contains-token(@content-type, 'box6')]</code>.
-        This would be highly inefficient in combination with full text queries. Therefore,
-        if the full text query field contains any text, leading slashes will be stripped from the
-        XPath expression and it will be treated as in the last bullet point below, that is,
-        <code class="xpath-fillable">//app[label]</code> will first be rewritten as
-        <code class="xpath-fillable">app[label]</code> and then as 
-        <code class="xpath-fillable">ancestor-or-self::app[label]</code>.</li>
-        <li>If the expression starts with an axis (<code>preceding::</code>, <code>ancestor::</code> etc.)
-        or with a dot (<code>.</code> or <code>..</code>), it will be used verbatim. Examples:
-        <code class="xpath-fillable">preceding-sibling::title[matches(., '(Vorwort|Preface)')]</code>,
-        <code class="xpath-fillable">../title[fn]</code>.
-        The context item is the parent element of the full text match. If it is a <code>p</code> in 
-        a <code>sec</code>, then the match will only appear in the results if <code>sec/title</code>
-        matches the regular expression <code>(Vorwort|Preface)</code> or if contains a footnote, respectively. 
-        Such a context-aware expression only makes sense if a full text query has been entered and if there are 
-        full text search results.</li>
-        <li>Otherwise, if the expression starts with a letter or with an asterisk, <code>ancestor-or-self::</code>
-        will be prepended to the expression. Examples: 
-        <code class="xpath-fillable">back</code> ⇒ <code class="xpath-fillable">ancestor-or-self::back</code>,
-        <code class="xpath-fillable">sec[empty(sec)]</code> ⇒ <code class="xpath-fillable">ancestor-or-self::sec[empty(sec)]</code>,
-        <code class="xpath-fillable">boxed-text//title</code> ⇒ <code class="xpath-fillable">ancestor-or-self::boxed-text//title</code>.
-        Note that the latter won’t restrict the full text results to the <code>title</code> elements within a <code>boxed-text</code>
-        element. It will return full text results that are in a <code>boxed-text</code> that also contains a <code>title</code>
-        at arbitrary depth, not necessarily as an ancestor to the current full text search result. 
-        In order to restrict the results to <code>title</code> elements within a <code>boxed-text</code>, you can 
-        use <code class="xpath-fillable">title[ancestor::boxed-text]</code> (<code 
-        class="xpath-fillable">ancestor-or-self::title[ancestor::boxed-text]</code>). 
-        In order to find results in an <code>app</code> without a label whose title contains a digit and 
-        that are not within a <code>ref</code>, you may choose
-        <code class="xpath-fillable">self::*[empty(ancestor::ref)]/ancestor::app[empty(label)][matches(title, '\d')]</code>.
-        Just like the “relative location 
-        expressions” in the previous bullet point, these expressions only make sense for further filtering full text search
-        results. 
-        In order to find these apps that contain a number without full-text search, you may use
-        <code class="xpath-fillable">//app[empty(label)][matches(title, '\d')]</code></li>
-      </ul>
-      <p>You can use (non-updating) XQuery 3.1 expressions supported by BaseX. This comprises XPath 3.1 <a 
-      href="https://www.w3.org/TR/xpath-31/">expressions</a> and <a 
-      href="https://www.w3.org/TR/xpath-functions-31/">functions</a>. Although newly introduced functions such as the aforementioned
-      <code>contains-token()</code> are not part of XPath 2.0, you may find this <a 
-      href="https://mulberrytech.com/quickref/xpath2.pdf">XPath 2.0 cheat sheet</a> handy.</p>
+      </form>
+      <details>
+        <summary>Search hints</summary>
+        <h4>Full text</h4>
+        <p>You may use regex-like wildcards, such as <code>.*</code> for zero or more characters, 
+        as documented for the <a href="https://docs.basex.org/wiki/Full-Text#Match_Options">BaseX
+        <code>wildcards</code> option</a>. Examples: <code class="ft-fillable">combin.*</code>
+        (for “combine”, “combined”, “combining”, “combinatorial”, etc.), 
+        <code class="ft-fillable">.{{2,2}}treated</code> (for “untreated” and “retreated”), 
+        <code class="ft-fillable">depression.{{0,2}}</code> (for “Depression” and “Depressionen”).</p>
+        <p>You can click on any of the highlighted example expressions in order to use them in
+        the form field. The same applies to the hihlighted XPath expressions below.</p>
+        <p>In the result list, you can copy the matches’ XPaths to the clipboard (for use in oXygen etc.) by clicking on them.</p>
+        <h4>XPath</h4>
+        <p>The content of the XPath input field will be used as follows:</p>
+        <ul>
+          <li>If the expression starts with a slash and if the full text query is empty, it will be used verbatim. Example: 
+          <code class="xpath-fillable">//boxed-text[contains-token(@content-type, 'box6')]</code>.
+          This would be highly inefficient in combination with full text queries. Therefore,
+          if the full text query field contains any text, leading slashes will be stripped from the
+          XPath expression and it will be treated as in the last bullet point below, that is,
+          <code class="xpath-fillable">//app[label]</code> will first be rewritten as
+          <code class="xpath-fillable">app[label]</code> and then as 
+          <code class="xpath-fillable">ancestor-or-self::app[label]</code>.</li>
+          <li>If the expression starts with an axis (<code>preceding::</code>, <code>ancestor::</code> etc.)
+          or with a dot (<code>.</code> or <code>..</code>), it will be used verbatim. Examples:
+          <code class="xpath-fillable">preceding-sibling::title[matches(., '(Vorwort|Preface)')]</code>,
+          <code class="xpath-fillable">../title[fn]</code>.
+          The context item is the parent element of the full text match. If it is a <code>p</code> in 
+          a <code>sec</code>, then the match will only appear in the results if <code>sec/title</code>
+          matches the regular expression <code>(Vorwort|Preface)</code> or if contains a footnote, respectively. 
+          Such a context-aware expression only makes sense if a full text query has been entered and if there are 
+          full text search results.</li>
+          <li>Otherwise, if the expression starts with a letter or with an asterisk, <code>ancestor-or-self::</code>
+          will be prepended to the expression. Examples: 
+          <code class="xpath-fillable">back</code> ⇒ <code class="xpath-fillable">ancestor-or-self::back</code>,
+          <code class="xpath-fillable">sec[empty(sec)]</code> ⇒ <code class="xpath-fillable">ancestor-or-self::sec[empty(sec)]</code>,
+          <code class="xpath-fillable">boxed-text//title</code> ⇒ <code class="xpath-fillable">ancestor-or-self::boxed-text//title</code>.
+          Note that the latter won’t restrict the full text results to the <code>title</code> elements within a <code>boxed-text</code>
+          element. It will return full text results that are in a <code>boxed-text</code> that also contains a <code>title</code>
+          at arbitrary depth, not necessarily as an ancestor to the current full text search result. 
+          In order to restrict the results to <code>title</code> elements within a <code>boxed-text</code>, you can 
+          use <code class="xpath-fillable">title[ancestor::boxed-text]</code> (<code 
+          class="xpath-fillable">ancestor-or-self::title[ancestor::boxed-text]</code>). 
+          In order to find results in an <code>app</code> without a label whose title contains a digit and 
+          that are not within a <code>ref</code>, you may choose
+          <code class="xpath-fillable">self::*[empty(ancestor::ref)]/ancestor::app[empty(label)][matches(title, '\d')]</code>.
+          Just like the “relative location 
+          expressions” in the previous bullet point, these expressions only make sense for further filtering full text search
+          results. 
+          In order to find these apps that contain a number without full-text search, you may use
+          <code class="xpath-fillable">//app[empty(label)][matches(title, '\d')]</code></li>
+        </ul>
+        <p>You can use (non-updating) XQuery 3.1 expressions supported by BaseX. This comprises XPath 3.1 <a 
+        href="https://www.w3.org/TR/xpath-31/">expressions</a> and <a 
+        href="https://www.w3.org/TR/xpath-functions-31/">functions</a>. Although newly introduced functions such as the aforementioned
+        <code>contains-token()</code> are not part of XPath 2.0, you may find this <a 
+        href="https://mulberrytech.com/quickref/xpath2.pdf">XPath 2.0 cheat sheet</a> handy.</p>
+      </details>
     </details>
+    { $results?ftxp }
+    <details class="search-form">
+      { if (normalize-space($params?overrides-term) or exists($params?type)) then attribute open { 'true' } else () }
+      <summary>Search override files</summary>
+      <form method="get" action="{$control-dir}/overrides-search" id="overrides-search-form">
+        <div style="display:flex">
+          <div class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list" aria-haspopup="true" aria-expanded="false">
+            { for $type in $control:config/control:also-indexable/control:file/@type return (
+                <input id="type_{$type}" type="checkbox" name="type" value="{$type}">
+                {if ($params?type = $type) then attribute checked { 'true' } else ()}
+                </input>,
+                <label for="type_{$type}">{string($type/../@description)}</label>
+              )
+            }
+            <span>   </span>
+            <label for="overrides-search">Text (optional)</label> 
+            <input id="overrides-search" type="text" name="overrides-term" autocomplete="off" size="26" autocapitalize="none" 
+              aria-controls="autoComplete_list" aria-autocomplete="both" value="{$params?overrides-term}" />
+            <ul id="autoComplete_list" role="listbox" class="autoComplete_list" hidden=""></ul>
+            <span>   </span>
+            {
+              if ($svnurl and not($svnurl = $control:svnurlhierarchy)) then ( 
+                <input id="overrides-search_restrict_path" name="restrict_path" type="checkbox" value="true">
+                  {if ($params?restrict_path) then attribute checked { 'true' } else ()}
+                </input>,
+                <label for="search_restrict_path">restrict to { $svnurl => control-util:get-canonical-path() }</label>
+              )
+              else ()
+            }
+            {
+              if ($svnurl) then <input type="hidden" name="svnurl" value="{$svnurl}"/> else ()
+            }
+             <input type="submit" value="Search overrides"/>
+          </div>
+        </div>
+      </form>
+    </details>
+    { $results?overrides }
   </div>
 };
