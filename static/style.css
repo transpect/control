@@ -260,18 +260,19 @@ details[open] > .dropdown-wrapper {
   z-index: 2;
 }
 
-div#search-results details > * {
+div.search-results details > * {
   margin-left: 1em;
 }
-div#search-results {
+div.search-results {
   margin-left: .5em;
+  line-height: 1.1;
 }
 
-div#search-results p {
+div.search-results p {
   margin: 0.2em 1em;
 }
 
-div#search-results li > p {
+div.search-results li > p {
   margin: 0.2em 0;
 }
 
@@ -327,12 +328,12 @@ div.form {
   margin-top: 20px;
 }
 
-.form-wrapper{
+.form-wrapper > .search-form {
   margin: 2rem 0 1.5rem 1rem;
   padding-top: 2rem;
   border-top: 1px solid grey;
 }
-.form-wrapper ul, #search-results ul {
+.form-wrapper ul, .search-results ul {
   margin: 0.3rem;
 }
 .form-wrapper details {
@@ -395,6 +396,30 @@ body.xmlsrc {
   margin:0;
 }
 
+.filetype.css {
+  background-color: #ee6;
+}
+
+.filetype.epub {
+  background-color: #7d9;
+}
+
+.filetype.param {
+  background-color: #ec9;
+}
+.filetype.xsl {
+  background-color: #bdf;
+}
+
+.filetype.xpl {
+  background-color: #fbf;
+}
+
+.filetype {
+  font-size:small;
+  padding: 0.2em;
+  border-radius: 6px;
+}
 
 .leftlabel {
   float: left;

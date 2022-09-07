@@ -163,8 +163,16 @@ function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lan
                                  $restrict_path as xs:boolean, $details as xs:boolean) {
   let $auth := control-util:parse-authorization(request:header("Authorization")),
       $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl($auth?username, $svnurl)),
-      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?) as item()* 
-        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#4)[1]
+      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?, map(xs:string, item()*)? ) as item()* 
+        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#5)[1],
+      $rendered-result := control-search:ftsearch-raw($term, $lang, $xpath, control-util:get-local-path($svnurl)[$restrict_path = true()],
+                                                      $details) 
+                          => xslt:transform(doc($control:config/control:renderers/control:renderer[@role = 'fulltext-results']/@xslt), 
+                                            map{'svnbaseurl': $control:svnurlhierarchy,
+                                                'siteurl': $control:siteurl,
+                                                'langs': string-join($lang ! normalize-space(.), ','),
+                                                'term': $term,
+                                                'xpath': $xpath})
   return  
   <html>
     <head>
@@ -174,15 +182,8 @@ function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lan
       {control-widgets:get-page-header( )}
       <main>{
          $search-widget-function( $used-svnurl, $control:path, $auth, 
-                                  map:merge(request:parameter-names() ! map:entry(., request:parameter(.))) ),  
-         control-search:ftsearch-raw($term, $lang, $xpath, control-util:get-local-path($svnurl)[$restrict_path = true()],
-                                     $details) 
-           => xslt:transform(doc($control:config/control:renderers/control:renderer[@role = 'fulltext-results']/@xslt), 
-                             map{'svnbaseurl': $control:svnurlhierarchy,
-                                 'siteurl': $control:siteurl,
-                                 'langs': string-join($lang ! normalize-space(.), ','),
-                                 'term': $term,
-                                 'xpath': $xpath}),
+                                  map:merge(request:parameter-names() ! map:entry(., request:parameter(.))),
+                                  map{'ftxp': $rendered-result}),  
         <div class="xmlsrc-container"><iframe name="xmlsrc" srcdoc="&lt;body style='font-family:sans-serif; height:100%; background-color: #eee'>&lt;p>Click on an XPath segment in the results in order to display the content here.&lt;/p>&lt;/body>"/></div>
       }</main>
       {control-widgets:get-page-footer(),
@@ -192,16 +193,16 @@ function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lan
 };
 
 declare 
-%rest:path('/control/override-search-raw')
-%rest:query-param("term", "{$term}")
+%rest:path('/control/overrides-search-raw')
+%rest:query-param("overrides-term", "{$overrides-term}")
 %rest:query-param("type", "{$type}")
 %rest:query-param("svn-path-constraint", "{$svn-path-constraint}")
 %output:method('xml')
-function control-search:override-search-raw($term as xs:string?, $type as xs:string*, 
+function control-search:overrides-search-raw($overrides-term as xs:string?, $type as xs:string*, 
                                             $svn-path-constraint as xs:string?) {
   let $base-virtual-path := control-util:get-local-path($control:svnurlhierarchy),
       $virtual-constraint as xs:string? := $svn-path-constraint => control-util:get-virtual-path(),
-      $normalized-term := normalize-space($term),
+      $normalized-term := normalize-space($overrides-term),
       $results := for $path-regex in $control:config/control:also-indexable/control:file[@type = $type]/@pattern
                   let $files := db:open('INDEX', 'index.xml')//file[matches(@svnpath, $path-regex)]
                   return for $file in $files
@@ -211,11 +212,13 @@ function control-search:override-search-raw($term as xs:string?, $type as xs:str
                                     starts-with($file/@virtual-path, $virtual-constraint) 
                                else true())
                               and
-                              (if ($term) then let $doc := db:open($control:db, $file/@svnpath)
-                                               return exists($doc/descendant::*/(text() | @* | comment() | 
-                                                                                 processing-instruction() | 
-                                                                                 processing-instruction()/name())
-                                                                [contains(normalize-space(.), $term)])
+                              (if ($normalized-term) then let $doc := db:open($control:db, $file/@svnpath)
+                                               return exists($doc/descendant::*/(text() , @* , comment() , 
+                                                                                 processing-instruction() , 
+                                                                                 processing-instruction()/name() ,
+                                                                                 @*/name() ,
+                                                                                 self::*[empty((self::line/parent::text| self::text)[empty(..)])]/name())
+                                                                [contains(normalize-space(.), $normalized-term)])
                                           else true())
                          return
                          copy $typed-file := $file 
@@ -242,19 +245,25 @@ function control-search:override-search-raw($term as xs:string?, $type as xs:str
 };
 
 declare 
-%rest:path('/control/override-search')
-%rest:query-param("term", "{$term}", "")
+%rest:path('/control/overrides-search')
+%rest:query-param("overrides-term", "{$overrides-term}", "")
 %rest:query-param("type", "{$type}")
 %rest:query-param("svnurl", "{$svnurl}")
 %rest:query-param("restrict_path", "{$restrict_path}", 'false')
 %output:method('html')
 %output:version('5.0')
-function control-search:override-search($svnurl as xs:string?, $term as xs:string?, $type as xs:string*, 
+function control-search:overrides-search($svnurl as xs:string?, $overrides-term as xs:string?, $type as xs:string*, 
                                         $restrict_path as xs:boolean) {
   let $auth := control-util:parse-authorization(request:header("Authorization")),
       $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl($auth?username, $svnurl)),
-      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?) as item()* 
-        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#4)[1]
+      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?, map(xs:string, item()*)? ) as item()* 
+        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#5)[1],
+      $rendered-results := control-search:overrides-search-raw($overrides-term, $type, control-util:get-local-path($svnurl)[$restrict_path = true()]) 
+                            => xslt:transform(doc($control:config/control:renderers/control:renderer[@role = 'override-results']/@xslt), 
+                                              map{'svnbaseurl': $control:svnurlhierarchy,
+                                                  'siteurl': $control:siteurl,
+                                                  'types': string-join($type ! normalize-space(.), ','),
+                                                  'overrides-term': $overrides-term})
   return  
   <html>
     <head>
@@ -264,14 +273,9 @@ function control-search:override-search($svnurl as xs:string?, $term as xs:strin
       {control-widgets:get-page-header( )}
       <main>{
          $search-widget-function( $used-svnurl, $control:path, $auth, 
-                                  map:merge(request:parameter-names() ! map:entry(., request:parameter(.))) ),  
-         control-search:override-search-raw($term, $type, control-util:get-local-path($svnurl)[$restrict_path = true()]) 
-           => xslt:transform(doc($control:config/control:renderers/control:renderer[@role = 'override-results']/@xslt), 
-                             map{'svnbaseurl': $control:svnurlhierarchy,
-                                 'siteurl': $control:siteurl,
-                                 'types': string-join($type ! normalize-space(.), ','),
-                                 'term': $term}),
-        <div class="xmlsrc-container"><iframe name="xmlsrc" srcdoc="&lt;body style='font-family:sans-serif; height:100%; background-color: #eee'>&lt;p>Click on an XPath segment in the results in order to display the content here.&lt;/p>&lt;/body>"/></div>
+                                  map:merge(request:parameter-names() ! map:entry(., request:parameter(.))),
+                                  map{'overrides': $rendered-results } ),  
+        <div class="xmlsrc-container"><iframe name="xmlsrc" srcdoc="&lt;body style='font-family:sans-serif; height:100%; background-color: #eee'>&lt;p>Click on an XPath segment or a bullet item file name in the results in order to display the content here.&lt;/p>&lt;/body>"/></div>
       }</main>
       {control-widgets:get-page-footer(),
        control-widgets:create-infobox()}
