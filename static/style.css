@@ -396,30 +396,34 @@ body.xmlsrc {
   margin:0;
 }
 
-.filetype.css {
-  background-color: #ee6;
+.filetype.css { background-color: #ee6; }
+.filetype.epub { background-color: #7d9; }
+.filetype.param { background-color: #ec9; }
+.filetype.xsl { background-color: #bdf; }
+.filetype.xpl { background-color: #fbf; }
+
+.styletype {
+  font-size:small;
+  border-radius: 8px;
+  border-width: 1pt;
+  border-style: solid;
+  padding: 0.08em;
 }
 
-.filetype.epub {
-  background-color: #7d9;
-}
-
-.filetype.param {
-  background-color: #ec9;
-}
-.filetype.xsl {
-  background-color: #bdf;
-}
-
-.filetype.xpl {
-  background-color: #fbf;
-}
+.styletype._para { border-color: #668; }
+.styletype._inline { border-color: #aac; }
+.styletype._cell { border-color: #ec9; }
+.styletype._table { border-color: #ca6; }
+.styletype._object { border-color: #9ca; }
+.styletype._layer { border-color: #68a; }
 
 .filetype {
   font-size:small;
   padding: 0.2em;
   border-radius: 6px;
 }
+
+
 
 .leftlabel {
   float: left;
