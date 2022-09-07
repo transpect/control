@@ -74,8 +74,8 @@ function control:control($svnurl as xs:string?, $form-svnurl as xs:string?) {
  :)
 declare function control:main( $svnurl as xs:string?, $auth as map(*)) as element(html) {
   let $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl($auth?username, $svnurl)),
-      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?) as item()* 
-        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#4)[1],
+      $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?, map(xs:string, item()*)? ) as item()* 
+        := (control-util:function-lookup('search-form-widget'), control-widgets:search-input#5)[1],
       $known-user := control-util:add-user-to-mgmt(xs:string(map:get($auth,'username')),())
   return
   <html>
@@ -93,7 +93,8 @@ declare function control:main( $svnurl as xs:string?, $auth as map(*)) as elemen
          then control-widgets:get-dir-list( $used-svnurl, $control:path, control-util:is-local-repo($used-svnurl), $auth)
          else 'URL parameter empty!',
          $search-widget-function( $used-svnurl, $control:path, $auth, 
-                                  map:merge(request:parameter-names() ! map:entry(., request:parameter(.))) )  
+                                  map:merge(request:parameter-names() ! map:entry(., request:parameter(.))),
+                                  () )  
       }</main>
       {control-widgets:get-page-footer(),
        control-widgets:create-infobox()}
