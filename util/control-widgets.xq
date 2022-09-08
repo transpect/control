@@ -974,7 +974,7 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
         <summary>Search hints</summary>
         <h4>Name contains</h4>
         <p>You can enter space-separated tokens such as <code>text split</code>. Then all styles
-        of the selected style type will be output whose name contains both <ode>text</ode> and
+        of the selected style type will be output whose name contains both <code>text</code> and
         <code>split</code>. The search is case insensitive, so for the given search, <code>p_text~box2~SPLIT</code>
         might be a result</p>
         <h4>Group by</h4>
