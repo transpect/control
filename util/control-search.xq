@@ -180,7 +180,7 @@ function control-search:ftsearch($svnurl as xs:string?, $term as xs:string, $lan
     </head>
     <body>
       {control-widgets:get-page-header( )}
-      <main>{
+      <main class="search">{
          $search-widget-function( $used-svnurl, $control:path, $auth, 
                                   map:merge(request:parameter-names() ! map:entry(., request:parameter(.))),
                                   map{'ftxp': $rendered-result}),  
@@ -271,7 +271,7 @@ function control-search:overrides-search($svnurl as xs:string?, $overrides-term 
     </head>
     <body>
       {control-widgets:get-page-header( )}
-      <main>{
+      <main class="search">{
          $search-widget-function( $used-svnurl, $control:path, $auth, 
                                   map:merge(request:parameter-names() ! map:entry(., request:parameter(.))),
                                   map{'overrides': $rendered-results } ),  
@@ -293,29 +293,33 @@ function control-search:cssa-search-raw($cssa-term as xs:string?, $style-type as
                                         $svn-path-constraint as xs:string?) {
   let $base-virtual-path := control-util:get-local-path($control:svnurlhierarchy),
       $virtual-constraint as xs:string? := $svn-path-constraint => control-util:get-virtual-path(),
-      $normalized-term := normalize-space($cssa-term),
+      $tokenized-term := $cssa-term => replace('˜', '~') => tokenize(),
       $results := for $rule in db:open($control:db)//css:rule
                   let $path := '/' || $rule/db:path(.),
                       $virtual-path := $path => control-util:get-virtual-path()
-                  where (if ($svn-path-constraint) 
+                  where $rule/@layout-type = $style-type
+                        and
+                        (if ($svn-path-constraint) 
                          then normalize-space($virtual-constraint)
                               and
                               starts-with($virtual-path, $virtual-constraint) 
                          else true())
                         and
-                        (if ($normalized-term) 
-                         then exists($rule/(@name, @native-name)[contains(., $normalized-term)])
+                        (if (exists($tokenized-term))
+                         then exists($rule/(@name, @native-name)[every $tt in $tokenized-term
+                                                                 satisfies matches(., $tt, 'i')])
                          else true())
                   return $rule
   return
-  <search-results term="{$normalized-term}" 
-    count="{count($results)}" cssa-term="{$normalized-term}"
+  <search-results term="{$cssa-term}" 
+    count="{count($results)}" cssa-term="{string-join($tokenized-term, ',')}"
     path-constraint="{$svn-path-constraint}" virtual-constraint="{$virtual-constraint}">{
     for $result in $results
     let $path := '/' || $result/db:path(.),
         $virtual-path := $path => control-util:get-virtual-path()
     return <result>{
       attribute path { $result/path(.) => control-util:clark-to-prefix($control-util:namespace-map) },
+      $result/@native-name,
       attribute style-type { $result/@layout-type },
       substring-after($virtual-path, $base-virtual-path) ! (
         attribute virtual-path { . },
@@ -333,10 +337,11 @@ declare
 %rest:query-param("style-type", "{$style-type}")
 %rest:query-param("svnurl", "{$svnurl}")
 %rest:query-param("restrict_path", "{$restrict_path}", 'false')
+%rest:query-param("group", "{$group}", 'content-hierarchy')
 %output:method('html')
 %output:version('5.0')
 function control-search:cssa-search($svnurl as xs:string?, $cssa-term as xs:string?, $style-type as xs:string*, 
-                                        $restrict_path as xs:boolean) {
+                                    $restrict_path as xs:boolean, $group as xs:string) {
   let $auth := control-util:parse-authorization(request:header("Authorization")),
       $used-svnurl := control-util:get-canonical-path(control-util:get-current-svnurl($auth?username, $svnurl)),
       $search-widget-function as function(xs:string?, xs:string, map(xs:string, xs:string), map(*)?, map(xs:string, item()*)? ) as item()* 
@@ -346,6 +351,7 @@ function control-search:cssa-search($svnurl as xs:string?, $cssa-term as xs:stri
                                               map{'svnbaseurl': $control:svnurlhierarchy,
                                                   'siteurl': $control:siteurl,
                                                   'style-types': string-join($style-type ! normalize-space(.), ','),
+                                                  'group': $group,
                                                   'cssa-term': $cssa-term})
   return  
   <html>
@@ -354,10 +360,10 @@ function control-search:cssa-search($svnurl as xs:string?, $cssa-term as xs:stri
     </head>
     <body>
       {control-widgets:get-page-header( )}
-      <main>{
+      <main class="search">{
          $search-widget-function( $used-svnurl, $control:path, $auth, 
                                   map:merge(request:parameter-names() ! map:entry(., request:parameter(.))),
-                                  map{'overrides': $rendered-results } ),  
+                                  map{'cssa': $rendered-results } ),  
         <div class="xmlsrc-container"><iframe name="xmlsrc" srcdoc="&lt;body style='font-family:sans-serif; height:100%; background-color: #eee'>&lt;p>Click on an XPath segment or a bullet item file name in the results in order to display the content here.&lt;/p>&lt;/body>"/></div>
       }</main>
       {control-widgets:get-page-footer(),
