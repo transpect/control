@@ -972,6 +972,10 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
       </form>
       <details class="search-hints">
         <summary>Search hints</summary>
+        <h4>Caution</h4>
+        <p>Unspecified searches (that is, from the top of the content hierarchy or without “name contains” terms)
+        may take very long and lead to a timeout. In this case please try to navigate to a content subtree first,
+        give at least some containing text or limit the search to a single style type.</p>
         <h4>Name contains</h4>
         <p>You can enter space-separated tokens such as <code>text split</code>. Then all styles
         of the selected style type will be output whose name contains both <code>text</code> and
