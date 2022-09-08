@@ -944,16 +944,6 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
               aria-controls="autoComplete_list" aria-autocomplete="both" value="{$params?cssa-term}" />
             <ul id="autoComplete_list" role="listbox" class="autoComplete_list" hidden=""></ul>
             <span>   </span>
-            {
-              if ($svnurl and not($svnurl = $control:svnurlhierarchy)) then ( 
-                <input id="cssa-search_restrict_path" name="restrict_path" type="checkbox" value="true">
-                  {if ($params?restrict_path) then attribute checked { 'true' } else ()}
-                </input>,
-                <label for="search_restrict_path">restrict to { $svnurl => control-util:get-canonical-path() }</label>
-              )
-              else ()
-            }
-            <span> </span>
             <label for="group">Group by:</label> 
             <select name="group" id="group">
               <option value="style-hierarchy">{ 
@@ -963,6 +953,16 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
                 if ($params?group = 'content-hierarchy')
                 then attribute selected { 'true' } else () }content hierarchy</option>
             </select>
+            <span> </span>
+            {
+              if ($svnurl and not($svnurl = $control:svnurlhierarchy)) then ( 
+                <input id="cssa-search_restrict_path" name="restrict_path" type="checkbox" value="true">
+                  {if ($params?restrict_path) then attribute checked { 'true' } else ()}
+                </input>,
+                <label for="search_restrict_path">restrict to { $svnurl => control-util:get-canonical-path() }</label>
+              )
+              else ()
+            }
             {
               if ($svnurl) then <input type="hidden" name="svnurl" value="{$svnurl}"/> else ()
             }
