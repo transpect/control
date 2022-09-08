@@ -980,7 +980,7 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
         <h4>Group by</h4>
         <p>Group by <code>style-hierarchy</code> groups all occurring styles by their InDesign
         style path component. Tilde additions will be ignored for grouping purposes. 
-        When you arrive at the end of this style hierarchy, you can navigat the content
+        When you arrive at the end of this style hierarchy, you can navigate the content
         hierarchy of the works where the given style occurs.</p>
       </details>
     </details>
