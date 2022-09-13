@@ -42,24 +42,29 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
            control-util:get-running-conversions($svnurl, $file, $type)}
         </div>
       </div>
-      <div class="adminmgmt">
+      {if ($conversion)
+       then
+      (<div class="adminmgmt">
         <h2>{control-i18n:localize('status', $control:locale )}</h2>
-        <div>{$conversion/control:status}<a class="delete" href="{$control:siteurl}/convert/cancel?svnurl={$svnurl}&amp;file={$file}&amp;type={$type}">&#x1f5d1;</a></div>
-      </div>
+        <div>{$conversion/control:status,
+              if ($conversion) then element a {attribute class {"delete"},
+                                               attribute href {$control:siteurl||"/convert/cancel?svnurl="||$svnurl||"&amp;file="||$file||"&amp;type="||$type},
+                                               text {"&#x1f5d1;"}}}</div>
+      </div>,
       <div class="adminmgmt">
         <h2>{control-i18n:localize('messages', $control:locale )}</h2>
         <div class="textlist">{for $m in $conversion/control:messages/*
               return element div {text {$m/text()}}}</div>
-      </div>
+      </div>,
       <div class="adminmgmt">
         <h2>{control-i18n:localize('result_files', $control:locale )}</h2>
         <div>{for $f in $conversion/control:result_files/*
               return element div {element a {attribute href {$control:siteurl||"/download-conversion-result?svnurl="||$svnurl||"&amp;file="||$file || "&amp;type="||$type||"&amp;result_file="||$f/@name},
                                              text {$f/@name}}}}
         </div>
-      </div>
+      </div>)}
       <div class="adminmgmt">
-        <h2> {control-i18n:localize('start_conversion', $control:locale ) || ' ' || $filepath }</h2>
+        <h2> {control-i18n:localize(if ($conversion) then 'restart_conversion' else 'start_conversion', $control:locale ) || ' ' || $filepath }</h2>
         <form action="{$control:siteurl}/convert/start?svnurl={$svnurl}&amp;file={$file}&amp;type={$type}" method="POST" enctype="application/x-www-form-urlencoded" autocomplete="off">
           <div class="start-new-conversion">
             <input type="submit" value="{control-i18n:localize('start_conversion', $control:locale)}"/>

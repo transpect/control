@@ -152,6 +152,10 @@
     <locale lang="de">Konvertierung starten</locale>
     <locale lang="en">Start Conversion</locale>
   </entry>
+  <entry name="restart_conversion">
+    <locale lang="de">Konvertierung neustarten</locale>
+    <locale lang="en">Restart Conversion</locale>
+  </entry>
   <entry name="copy">
     <locale lang="de">Kopieren</locale>
     <locale lang="en">Copy</locale>

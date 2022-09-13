@@ -373,7 +373,7 @@ declare function control-util:get-external-url($url as xs:string) as xs:string {
 declare function control-util:post-file-to-converter($svnurl as xs:string, $file as xs:string, $convertername as xs:string, $type as xs:string) as element(conversion) {
 (: $converter := hobots, $type := idml2tex:)
   let $filepath      := '/home/transpect-control/upload',
-      $remove-folder := proc:execute('rm -r', ($filepath)),
+      $remove-folder := proc:execute('rm', ('-r',$filepath)),
       $prepare-file  := proc:execute('mkdir', ($filepath, '-p')),
       $checkout      := proc:execute('svn',('co', $svnurl, $filepath, '--username',$control:svnusername,'--password',$control:svnpassword)),
       $upload-call   := ('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'upload')),
