@@ -789,7 +789,8 @@ declare function control-widgets:get-groups-and-admin( $svnurl as xs:string ) as
 
 (:
   returns the default search form. This function can be overridden in the configuration, in config/functions:
-  <function role="search-form-widget" name="my-customization:search-form" arity="4"/>
+  <function role="search-form-widget" name="my-customization:search-form" arity="5"/>
+  To do: modularize the individual search forms so that they can be assembled differently.
 :)
 declare function control-widgets:search-input ( $svnurl as xs:string?, $control-dir as xs:string, 
                                                 $auth as map(xs:string, xs:string), $params as map(*)?,
@@ -832,7 +833,7 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
           </div>
         </div>
       </form>
-      <details>
+      <details class="search-hints">
         <summary>Search hints</summary>
         <h4>Full text</h4>
         <p>You may use regex-like wildcards, such as <code>.*</code> for zero or more characters, 
@@ -906,7 +907,7 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
               )
             }
             <span>   </span>
-            <label for="overrides-search">Text (optional)</label> 
+            <label for="overrides-search">Text contains:</label> 
             <input id="overrides-search" type="text" name="overrides-term" autocomplete="off" size="26" autocapitalize="none" 
               aria-controls="autoComplete_list" aria-autocomplete="both" value="{$params?overrides-term}" />
             <ul id="autoComplete_list" role="listbox" class="autoComplete_list" hidden=""></ul>
@@ -929,5 +930,69 @@ declare function control-widgets:search-input ( $svnurl as xs:string?, $control-
       </form>
     </details>
     { $results?overrides }
+    <details class="search-form">
+      { if (normalize-space($params?cssa-term) or exists($params?style-type)) then attribute open { 'true' } else () }
+      <summary>Search CSSa styles</summary>
+      <form method="get" action="{$control-dir}/cssa-search" id="cssa-search-form">
+        <div style="display:flex">
+          <div class="autoComplete_wrapper" role="combobox" aria-owns="autoComplete_list" aria-haspopup="true" aria-expanded="false">
+            { for $style-type in ('para', 'inline', 'table', 'cell', 'object', 'layer') return (
+                <input id="type_{$style-type}" type="checkbox" name="style-type" value="{$style-type}">
+                {if ($params?style-type = $style-type) then attribute checked { 'true' } else ()}
+                </input>,
+                <label for="type_{$style-type}">{$style-type}</label>
+              )
+            }
+            <span>   </span>
+            <label for="cssa-term-search">Name contains:</label> 
+            <input id="cssa-term-search" type="text" name="cssa-term" autocomplete="off" size="26" autocapitalize="none" 
+              aria-controls="autoComplete_list" aria-autocomplete="both" value="{$params?cssa-term}" />
+            <ul id="autoComplete_list" role="listbox" class="autoComplete_list" hidden=""></ul>
+            <span>   </span>
+            <label for="group">Group by:</label> 
+            <select name="group" id="group">
+              <option value="style-hierarchy">{ 
+                if ($params?group = 'style-hierarchy' or empty($params?group))
+                then attribute selected { 'true' } else () }style hierarchy</option>
+              <option value="content-hierarchy">{ 
+                if ($params?group = 'content-hierarchy')
+                then attribute selected { 'true' } else () }content hierarchy</option>
+            </select>
+            <span> </span>
+            {
+              if ($svnurl and not($svnurl = $control:svnurlhierarchy)) then ( 
+                <input id="cssa-search_restrict_path" name="restrict_path" type="checkbox" value="true">
+                  {if ($params?restrict_path) then attribute checked { 'true' } else ()}
+                </input>,
+                <label for="search_restrict_path">restrict to { $svnurl => control-util:get-canonical-path() }</label>
+              )
+              else ()
+            }
+            {
+              if ($svnurl) then <input type="hidden" name="svnurl" value="{$svnurl}"/> else ()
+            }
+             <input type="submit" value="Search styles"/>
+          </div>
+        </div>
+      </form>
+      <details class="search-hints">
+        <summary>Search hints</summary>
+        <h4>Caution</h4>
+        <p>Unspecified searches (that is, from the top of the content hierarchy or without “name contains” terms)
+        may take very long and may lead to a timeout. In this case please try to navigate to a content subtree first,
+        give at least some style name substrings or limit the search to a single style type.</p>
+        <h4>Name contains</h4>
+        <p>You can enter space-separated tokens such as <code>text split</code>. Then all styles
+        of the selected style type will be output whose name contains both <code>text</code> and
+        <code>split</code>. The search is case insensitive, so for the given search, <code>p_text~box2~SPLIT</code>
+        might be a result</p>
+        <h4>Group by</h4>
+        <p>Group by <code>style-hierarchy</code> groups all occurring styles by their InDesign
+        style path component. Tilde additions will be ignored for grouping purposes. 
+        When you arrive at the end of this style hierarchy, you can navigate the content
+        hierarchy of the works where the given style occurs.</p>
+      </details>
+    </details>
+    { $results?cssa }
   </div>
 };
