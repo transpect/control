@@ -380,6 +380,7 @@ div.xmlsrc {
   font-weight: normal;
   font-size: 90%;
   scrollbar-width: auto;
+  padding-bottom: 0.5em;
 }
 div.textlist {
   max-height:300px;
