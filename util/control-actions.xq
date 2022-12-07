@@ -48,16 +48,15 @@ declare
   %rest:query-param("svnurl", "{$svnurl}")
 function control-actions:download-as-zip( $svnurl as xs:string ) {
   for $name    in tokenize($svnurl, '/')[last()]
-  let $temp    := file:temp-dir() || file:dir-separator()  || random:uuid() || file:dir-separator(),
+  let $temp    := file:temp-dir() || random:uuid() || file:dir-separator(),
       $checkoutdir := $temp || $name,
       $zip-name := $name || '.zip',
       $zip-path := $temp || $zip-name
-  return (
+  return (admin:write-log($zip-path),
           if( svn:checkout($svnurl, $control:svnauth, $checkoutdir, 'HEAD', 'infinity')/local-name() ne 'errors' )
           then (zip:zip-file(
                          <file xmlns="http://expath.org/ns/zip" href="{$zip-path}">
-                          {for $file in file:list($checkoutdir)[not(starts-with(., '.svn'))]
-                           return <entry src="{$checkoutdir || file:dir-separator() || $file}"/>
+                          {control-util:get-file-list($checkoutdir)
                            }
                          </file>
                          ),

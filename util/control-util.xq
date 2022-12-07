@@ -531,3 +531,16 @@ declare function control-util:parse-authorization($header as xs:string?) as map(
                          => tokenize(':')
   return map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
 };
+
+declare function control-util:get-file-list($path as xs:string) as element(*) {
+  let $children := file:list($path),
+      $ignored-folders := ('.svn')
+  return  <dir xmlns="http://expath.org/ns/zip" src="{$path}" name="{tokenize(replace($path,'/$',''),'/')[last()]}">
+            {(
+              for $d in $children[matches(.,'/$')]
+              return control-util:get-file-list(concat($path,'/',$d)),
+              for $f in $children[not(matches(.,'/$'))]
+              return <entry xmlns="http://expath.org/ns/zip" name="{$f}" src="{concat($path,'/',$f)}"/>
+             )}
+          </dir>
+};
