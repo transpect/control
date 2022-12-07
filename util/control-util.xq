@@ -544,3 +544,54 @@ declare function control-util:get-file-list($path as xs:string) as element(*) {
              )}
           </dir>
 };
+
+declare function control-util:get-existing-users-from-authz() {
+  let $fst-level :=  for $E in tokenize(file:read-text($control:svnauthfile),'\[')[normalize-space()]
+                     let $tokens := tokenize($E,'\]'),
+                         $name := $tokens[1],
+                         $content := $tokens[2]
+                     return if ($name = 'groups')
+                            then element groups {control-util:get-authz-entry($name,$content)}
+                            else element entry {attribute name {$name},control-util:get-authz-entry($name,$content)}
+return $fst-level
+};
+
+declare function control-util:get-authz-entry($name, $content) {
+  let $entries := if ($name eq 'groups')
+                      then for $group in tokenize($content,$control:nl)[normalize-space()]
+                           let $groupname := tokenize($group,'=')[normalize-space()][1],
+                               $usernames := tokenize($group,'=')[normalize-space()][2],
+                               $result := element {$groupname} {for $u in tokenize($usernames,',')[normalize-space()] return element user {element name {$u}}}
+                           return $result
+                      else for $group-rel in tokenize($content,$control:nl)[normalize-space()]
+                           let $groupname := replace(replace(tokenize($group-rel,'=')[normalize-space()][1],'\*','_all'),'@',''),
+                               $right := normalize-space(tokenize($group-rel,'=')[normalize-space()][2]),
+                               $result := element {$groupname} {$right}
+                           return $result
+  return $entries
+};
+
+(: Takes the existing users, groups and user-group-rels from the authz file and copies them into the mgmt-file :)
+declare function control-util:override-mgmt(){
+let $authz := control-util:get-existing-users(),
+    $groups := element authz-groups {for $g in $authz/self::groups/*/local-name()
+                                     return element group {element name {$g}} },
+    $users := element authz-users {$authz//*:user},
+    $new-users-list := $users//*:user/*:name/text(),
+    $rels := element user-group-rels {for $g in $authz/self::groups/*
+                                      let $groupname := local-name($g)
+                                      return for $u in $g/*
+                                             let $name := $u/name/text()
+                                             return element rel {element group {$groupname},
+                                                    element user {$name}}},
+     $updated-mgmt := copy $a := $control:mgmtdoc
+                      modify (delete node $a//*:rel[*:group][*:user][not(*:group = 'admin' and *:user = $new-users-list)],
+                              delete node $a//*:users/*:user[not(*:name/text() = 'admin')],
+                              delete node $a//*:groups/*:group[not(*:name/text() = 'admin')],
+                              insert node $users/*:user into $a//*:users,
+                              insert node $groups/*:group into $a//*:groups,
+                              insert node $rels/*:rel into $a//*:rels
+                             )
+                      return $a
+return ($control:mgmtdoc, $updated-mgmt)
+};
