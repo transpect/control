@@ -573,7 +573,7 @@ declare function control-util:get-authz-entry($name, $content) {
 
 (: Takes the existing users, groups and user-group-rels from the authz file and copies them into the mgmt-file :)
 declare function control-util:override-mgmt(){
-let $authz := control-util:get-existing-users(),
+let $authz := control-util:get-existing-users-from-authz(),
     $groups := element authz-groups {for $g in $authz/self::groups/*/local-name()
                                      return element group {element name {$g}} },
     $users := element authz-users {$authz//*:user},
