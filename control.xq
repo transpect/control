@@ -251,7 +251,7 @@ return
     </head>
     <body>
       {control:get-message($control:msg, $control:msgtype),
-       control-widgets:get-page-header( ),
+       control-widgets:get-page-header(),
        if (control-util:is-admin(map:get($auth,'username')))
        then (<div class="adminmgmt-wrapper"> {
               control-widgets:create-new-user($svnurl),
@@ -370,15 +370,14 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     
     $groups := request:parameter("groups"),
     $selected-user := request:parameter("users"),
-    
-    $file := $control:mgmtdoc,
+    $current-authz := control-util:get-current-authz(),
     
     $added-rel := for $group in $groups 
                    return element rel {
                             element user {$selected-user},
                             element group {$group}
                           },
-    $updated-access := $file update {delete node //control:rels//control:rel
+    $updated-access := $current-authz update {delete node //control:rels//control:rel
                                           [control:group]
                                           [control:user = $selected-user]}
                                        update {insert nodes $added-rel into //control:rels},

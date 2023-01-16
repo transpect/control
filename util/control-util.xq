@@ -545,7 +545,7 @@ declare function control-util:get-file-list($path as xs:string) as element(*) {
           </dir>
 };
 
-declare function control-util:get-existing-users-from-authz() {
+declare function control-util:get-existing-auth() {
   let $fst-level :=  for $E in tokenize(file:read-text($control:svnauthfile),'\[')[normalize-space()]
                      let $tokens := tokenize($E,'\]'),
                          $name := $tokens[1],
@@ -571,13 +571,21 @@ declare function control-util:get-authz-entry($name, $content) {
   return $entries
 };
 
-(: Takes the existing users, groups and user-group-rels from the authz file and copies them into the mgmt-file :)
-declare function control-util:override-mgmt(){
-let $authz := control-util:get-existing-users(),
+(: Takes the existing users, groups and user-group-rels from the authz file and copies them into the mgmt-file Q: When to trigger this? Always, when about to save something to it:)
+declare function control-util:get-current-authz(){
+let $authz := control-util:get-existing-auth(),
     $groups := element authz-groups {for $g in $authz/self::groups/*/local-name()
                                      return element group {element name {$g}} },
     $users := element authz-users {$authz//*:user},
-    $new-users-list := $users//*:user/*:name/text(),
+    $filtered-users := copy $us := $users
+                       modify (
+                       for $u in $us//*:user
+                         let $name := $u/*:name
+                         return if ($u/preceding::*:user[*:name = $name]) 
+                                then delete node $u else ()
+                   )
+                   return $us,
+    $new-users-list := $filtered-users//*:user/*:name/text(),
     $rels := element user-group-rels {for $g in $authz/self::groups/*
                                       let $groupname := local-name($g)
                                       return for $u in $g/*
@@ -585,13 +593,20 @@ let $authz := control-util:get-existing-users(),
                                              return element rel {element group {$groupname},
                                                     element user {$name}}},
      $updated-mgmt := copy $a := $control:mgmtdoc
-                      modify (delete node $a//*:rel[*:group][*:user][not(*:group = 'admin' and *:user = $new-users-list)],
+                      modify (delete node $a//*:rel[*:group][*:user][not(*:group = 'admin')],
                               delete node $a//*:users/*:user[not(*:name/text() = 'admin')],
                               delete node $a//*:groups/*:group[not(*:name/text() = 'admin')],
-                              insert node $users/*:user into $a//*:users,
+                              insert node $filtered-users/*:user[not(*:name = $a//*:users[$a//*:rel[*:user][*:group = 'admin']]/*:name)] into $a//*:users,
                               insert node $groups/*:group into $a//*:groups,
                               insert node $rels/*:rel into $a//*:rels
                              )
-                      return $a
-return ($control:mgmtdoc, $updated-mgmt)
+                      return $a,
+      $authz-backup := let $backup-path := concat(file:parent(db:system()//webpath),'/authz-backup'),
+                           $backup-directory := file:create-dir($backup-path),
+                           $read-old-authz := file:read-text($control:svnauthfile),
+                           $timestamp := concat(current-date(),current-time()),
+                           $write-file := if ($read-old-authz) 
+                                          then file:write-text(string-join(($backup-path,concat($timestamp,'backup.authz')),file:dir-separator()),$read-old-authz)
+                       return $write-file
+  return $updated-mgmt
 };
