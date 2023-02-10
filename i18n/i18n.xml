@@ -28,6 +28,18 @@
     <locale lang="de">Upload</locale>
     <locale lang="en">Upload</locale>
   </entry>
+  <entry name="add">
+    <locale lang="de">Hinzufügen</locale>
+    <locale lang="en">Add</locale>
+  </entry>
+  <entry name="remove">
+    <locale lang="de">Entfernen</locale>
+    <locale lang="en">Remove</locale>
+  </entry>
+  <entry name="delete">
+    <locale lang="de">Löschen</locale>
+    <locale lang="en">Delete</locale>
+  </entry>
   <entry name="download">
     <locale lang="de">Download</locale>
     <locale lang="en">Download</locale>
@@ -228,10 +240,6 @@
     <locale lang="de">Konfiguration</locale>
     <locale lang="en">Configuration</locale>
   </entry>
-  <entry name="delete">
-    <locale lang="de">Löschen</locale>
-    <locale lang="en">Delete</locale>
-  </entry>
   <entry name="deleted">
     <locale lang="de">Gelöscht</locale>
     <locale lang="en">Deleted</locale>
@@ -276,13 +284,21 @@
     <locale lang="de">Nutzer angelegt</locale>
     <locale lang="en">User Created</locale>
   </entry>
+  <entry name="user-updated">
+    <locale lang="de">Bearbeitung gespeichert</locale>
+    <locale lang="en">Change Saved</locale>
+  </entry>
   <entry name="user-deleted">
     <locale lang="de">Nutzer gelöscht</locale>
     <locale lang="en">User Deleted</locale>
   </entry>
-  <entry name="customizeuser">
+  <entry name="customizeuser-groups">
     <locale lang="de">Nutzer verwalten</locale>
     <locale lang="en">Configure users</locale>
+  </entry>
+  <entry name="customizeuser-defaultsvnurl">
+    <locale lang="de">Standard svnurl bearbeiten</locale>
+    <locale lang="en">Customize Default svnurl</locale>
   </entry>
   <entry name="deleteuser">
     <locale lang="de">Nutzer löschen</locale>
@@ -348,4 +364,17 @@
     <locale lang="de">Speichern</locale>
     <locale lang="en">Save Changes</locale>
   </entry>
+  <entry name="error-last-user">
+    <locale lang="de">Nutzer kann nicht gelöscht werden, weil dieser Nutzer der letzte einer Gruppe ist.</locale>
+    <locale lang="en">Can't delete user, they are the last in a group.</locale>
+  </entry>
+  <entry name="error-user-exists">
+    <locale lang="de">Nutzer kann nicht erstellt werden, weil dieser Nutzer schon existiert.</locale>
+    <locale lang="en">Can't create User: User already exists.</locale>
+  </entry>
+  <entry name="error-last-group-of-user">
+    <locale lang="de">Gruppe kann nicht gelöscht werden, weil einer der Nutzer nur noch Teil dieser einen Gruppe ist.</locale>
+    <locale lang="en">Can't delete group, it is the last group of a user in that group.</locale>
+  </entry>
+  
 </i18n>

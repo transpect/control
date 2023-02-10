@@ -89,14 +89,35 @@ function setUserGroupSelection(username, selectId){
     parser = new DOMParser();
     xmlDoc = parser.parseFromString(result,"text/xml");
     items = xmlDoc.getElementsByTagName("group");
+    console.log(items);
     for (let sel of groupoptions) {
       sel.selected = false;
     }
     for (let item of items) {
-      document.querySelector("#" + selectId + " option[value='" + item.innerHTML + "']").selected = true;
+      document.querySelector("#" + selectId + " option[value='" + item.attributes["name"].value + "']").selected = true;
     }
   })
 }
+
+function setGroupUserSelection(groupname, selectId){
+  fetch("group/getusers?groupname=" + groupname)
+  .then(response => {return response.body})
+  .then(stream => {return new Response(stream, { headers: { "Content-Type": "text/html" } }).text()})
+  .then(result => {
+    useroptions = document.querySelectorAll("#" + selectId + " option");
+    parser = new DOMParser();
+    xmlDoc = parser.parseFromString(result,"text/xml");
+    items = xmlDoc.getElementsByTagName("user");
+    console.log(items);
+    for (let sel of useroptions) {
+      sel.selected = false;
+    }
+    for (let item of items) {
+      document.querySelector("#" + selectId + " option[value='" + item.attributes["name"].value + "']").selected = true;
+    }
+  })
+}
+
 function setGroupSelection(groupname, inputId){
   fetch("group/getglob?groupname=" + groupname)
   .then(response => {return response.body})
@@ -205,23 +226,21 @@ window.onload = function() {
   for (let xmpl of fullTextExamples){
     addEventToExample(xmpl, 'search')
   }
-
-if (userselect !== null) {
-    userselect.addEventListener("change", event => {
-      setUserGroupSelection(userselect
-        .selectedOptions[0].value, "groups")
+//TODO:  add all possible multiselects
+  
+  if (customize_user_groupselect !== null && customize_user_userselect !== null) {
+    customize_user_userselect.addEventListener("change", event => {
+      setUserGroupSelection(customize_user_userselect.selectedOptions[0].value, "customize_user_groupselect")
     });
-    setUserGroupSelection(userselect
-      .selectedOptions[0].value, "groups")
+    setUserGroupSelection(customize_user_userselect.selectedOptions[0].value, "customize_user_groupselect")
   }
-  if (groupselect !== null) {
-    groupselect.addEventListener("change", event => {
-      setGroupSelection(groupselect
-        .selectedOptions[0].value, "grouprepo")
+  if (customize_group_userselect!== null && customize_group_groupselect !== null) {
+    customize_group_groupselect.addEventListener("change", event => {
+      setGroupUserSelection(customize_group_groupselect.selectedOptions[0].value, "customize_group_userselect")
     });
-    setGroupSelection(groupselect
-      .selectedOptions[0].value, "grouprepo")
+    setGroupUserSelection(customize_group_groupselect.selectedOptions[0].value, "customize_group_userselect")
   }
+  
   document.body.addEventListener("click", function(event) {
     var closestA = event.target.closest('div.infobox');
     var infobox = document.getElementById('infobox')

@@ -137,28 +137,35 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
                                                        $access){
   let $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
       $selected-filepath := replace(replace(replace(string-join(($svnurl,$file),'/'),'/$',''),svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,''),'^/',''),
-      $admin-group := $access//control:groups/control:group[control:name = 'admin'],
+      $admin-group := $access//control:groups/control:group[xs:string(@name) = $control:admingroupname],
       $explicit-permissions := for $group in $access//control:groups/control:group except $admin-group
-                               let $p := $access//control:rels/control:rel[control:file = $selected-filepath]
-                                                                          [control:repo = $selected-repo]
-                                                                          [control:permission]
-                                                                          [control:group = $group/control:name]
-                               return if ($p) 
-                                      then element permission { element g {$group/control:name/text()},
-                                                                element p {$p/control:permission/text()},
-                                                                element i {false()}},
+                               let $p-expl := $control:access//*:entry[xs:string(@name) = concat('/', $selected-repo, '/', $file)]/*:group[xs:string(@name) = $group],
+                                   $p := if ($p-expl/text() = 'rw')
+                                         then 'write' 
+                                         else if ($p-expl/text() = 'r') 
+                                              then 'read' 
+                                              else 'none'
+                               return if ($p-expl)
+                                      then element permission { element g {$group/xs:string(@name)},
+                                                                element p {$p},
+                                                                element i {false()}
+                                                              },
       $implicit-permissions := for $group in $access//control:groups/control:group except $admin-group
-                               let $writeable-repos := $access//control:rels/control:rel[control:group = $group]
-                                                                                        [control:repo]
-                                                                                        [not(control:file)],
-                                   $p := if (control-util:or(for $r in $writeable-repos return matches($selected-repo,$r/control:repo)))
+                               let $p-root-def := $control:access//*:entry[xs:string(@name) = '/']/_all/text(),
+                                   $p-root-group := $control:access//*:entry[xs:string(@name) = '/']/*:group[@name = $group/@name]/text(),
+                                   $p-repo-group := $control:access//*:entry[xs:string(@name) = concat('/',$selected-repo)]/*:group[@name = $group/@name]/text(),
+                                   $p-comb := ($p-root-def,$p-root-group,$p-repo-group)[last()],
+                                   $p := if ($p-comb = 'rw')
                                          then 'write'
                                          else 'read'
-                               return element permission { element g {$group/control:name/text()},
+                               return element permission { attribute p-root-def {$p-root-def},
+                                                           attribute p-root-group {$p-root-group},
+                                                           attribute p-repo-group {$p-repo-group},  
+                                                           element g {$group/xs:string(@name)},
                                                            element p {$p},
                                                            element i {true()}}
   return for $group in $access//control:groups/control:group
-         return ($explicit-permissions[g = $group/control:name], $implicit-permissions[g = $group/control:name])[1]
+         return ($explicit-permissions[g = $group/xs:string(@name)],$implicit-permissions[g = $group/xs:string(@name)])[1]
          
 };
 
@@ -293,15 +300,123 @@ declare function control-util:get-permission-for-group($group as xs:string, $rep
   return $selected-permission
 };
 
-declare function control-util:add-user-to-mgmt($username as xs:string, $defaultsvnurl as xs:string?){
-  let $file := $control:mgmtdoc
-  return if (not($file//control:users/control:user[control:name = $username]))
-         then file:write("basex/webapp/control/"||$control:mgmtfile,
-           if ($defaultsvnurl)
-           then $file update {insert node element user {element name {$username}} into .//*:users}
-                      update {insert node element rel  {element user {$username},
-                                                        element defaultsvnurl {$defaultsvnurl}} into .//*:rels}
-           else $file update insert node element user {element name {$username}} into .//*:users)
+declare function control-util:add-user-to-mgmt($username as xs:string, $defaultsvnurl as xs:string?, $groups as xs:string+){
+  let $authz := control-util:get-current-authz(),
+      $userelement := element user {attribute name {$username}},
+      $userdata :=    element user {attribute name {$username},
+                                    element defaultsvnurl {$defaultsvnurl}},
+      $updated-authz := 
+        copy $a := $authz
+        modify (for $g in $groups
+                return (insert node $userelement into $a//control:group[xs:string(@name) = $g]),
+                        insert node $userdata into $a//control:userdata)
+        return $a
+  return $updated-authz
+};
+declare function control-util:update-user-groups-in-mgmt($username as xs:string, $groups as xs:string+){
+  let $authz := control-util:get-current-authz(),
+      $userelement := element user {attribute name {$username}},
+      $updated-authz := 
+        copy $a := $authz
+        modify (for $g in $a//*:groups/*:group
+                let $is_in_group := xs:boolean($groups = $g/xs:string(@name))
+                return (
+                  delete node $g/*:user[xs:string(@name) = $username],
+                  if ($is_in_group) then insert node $userelement into $g))
+        return $a
+  return ($updated-authz,admin:write-log(concat('Updated User: ',$username,' part of groups: ',string-join($groups,', '))))
+};
+declare function control-util:update-user-defaultsvnurl-in-mgmt($username as xs:string, $defaultsvnurl as xs:string?){
+  let $authz := control-util:get-current-authz(),
+      $defaultsvnurlelement := element defaultsvnurl {$defaultsvnurl},
+      $userdata := element user {attribute name {$username},$defaultsvnurlelement},
+      $updated-authz := 
+        copy $a := $authz
+        modify (if ($a//*:userdata/*:user[xs:string(@name) = $username]) 
+                then (delete node $a//*:userdata/*:user[xs:string(@name) = $username]/*:defaultsvnurl,
+                      insert node $defaultsvnurlelement into $a//*:userdata/*:user[xs:string(@name) = $username])
+                else insert node $userdata into $a//*:userdata)
+        return $a
+  return ($updated-authz,admin:write-log(concat('Updated User: ',$username,' defaultsvnurl: ',$defaultsvnurl)))
+};
+
+declare function control-util:add-group-to-mgmt($groupname as xs:string,$newgroupusers as xs:string+){
+  let $authz := control-util:get-current-authz()
+  return if (not($authz//control:groups/control:group[control:name/text() = $groupname]))
+         then (admin:write-log(concat('Added Group: ',$groupname,' with users: ',string-join($newgroupusers,', '))),
+               $authz update {insert node element group {attribute name {$groupname}, 
+                          for $u in $newgroupusers return element user {attribute name {$u}}} into .//control:groups})
+};
+
+declare function control-util:update-users-in-group-mgmt($groupname as xs:string,$groupusers as xs:string+){
+  let $authz := control-util:get-current-authz()
+  return if ($authz//*:groups/*:group[xs:string(@name) = $groupname])
+         then (admin:write-log(concat('Updated Group: ',$groupname,' with users: ',string-join($groupusers,', '))),
+               $authz update {(delete node .//*:groups/*:group[xs:string(@name) = $groupname]/*:user, 
+                              for $u in $groupusers return insert node element user {attribute name {$u}} into .//*:groups/*:group[xs:string(@name) = $groupname])})
+         else $authz
+};
+
+declare function control-util:add-user-to-group-mgmt($groupname as xs:string,$username as xs:string){
+  let $authz := control-util:get-current-authz()
+  return if ($authz//*:groups/*:group[xs:string(@name) = $groupname])
+         then (admin:write-log(concat('Updated Group: ',$groupname,'.Added user: ',$username)),
+               $authz update insert node element user {attribute name {$username}} into .//*:groups/*:group[xs:string(@name) = $groupname])
+         else $authz
+};
+
+declare function control-util:remove-user-from-group-mgmt($groupname as xs:string,$username as xs:string){
+  let $authz := control-util:get-current-authz()
+  return if ($authz//*:groups/*:group[xs:string(@name) = $groupname])
+         then (admin:write-log(concat('Updated Group: ',$groupname,'.Removed user: ',$username)),
+               $authz update delete node .//*:groups/*:group[xs:string(@name) = $groupname]/*:user[xs:string(@name) = $username])
+         else $authz
+};
+
+declare function control-util:set-permission-for-file-mgmt($svnurl as xs:string, $repo as xs:string, $file as xs:string, $perm as xs:string, $groupname as xs:string){
+  let $authz := control-util:get-current-authz(),
+      $entry-name := concat('/',$repo,'/',$file),
+      $entry := element entry {
+                  attribute name {$entry-name},
+                  element group {
+                    attribute name {$groupname},
+                    $perm
+                  }
+                }
+  return (admin:write-log(concat('Updated Permissions: ',$file,' at path ',$svnurl,' for group ', $groupname, ': Set Permissions to ', $perm,'.')),
+          copy $a := $authz
+          modify (delete node $a//*:entry[xs:string(@name) = $entry-name],
+                  insert node $entry into $a//self::*:access)
+          return $a)
+};
+
+declare function control-util:delete-user-from-mgmt($username as xs:string){
+  let $authz := control-util:get-current-authz()
+  return (admin:write-log(concat('Deleted User: ',$username)),
+          copy $a := $authz
+          modify (for $g in $a//*:groups/*:group
+                          return delete node $g/*:user[xs:string(@name) = $username],
+                          delete node ($a//*:userdata/*:user[xs:string(@name) = $username]))
+          return $a)
+};
+
+declare function control-util:delete-group-from-mgmt($groupname as xs:string){
+  let $authz := control-util:get-current-authz()
+  return (admin:write-log(concat('Deleted Group: ',$groupname)),
+          copy $a := $authz
+          modify ( delete node ($a//*:groups/*:group[xs:string(@name) = $groupname]))
+          return $a)
+};
+
+declare function control-util:add-users-to-group-mgmt($groupname as xs:string,$groupusers as xs:string+){
+  let $authz := control-util:get-current-authz()
+  return if ($authz//control:groups/control:group[control:name/text() = $groupname])
+         then (admin:write-log(concat('Added Users ',string-join($groupusers,','), ' to Group: ',$groupname)),
+               $authz update {for $u in $groupusers
+                              let $uelement := $control:mgmtdoc//control:users/control:user[control:name/text() = $u]
+                              return insert node element rel {element user {$u},
+                                                              element group {$groupname}}
+                                     into .//control:rels})
 };
 
 declare function control-util:get-permission-for-user($user as xs:string, $repo as xs:string, $access) as xs:string?{
@@ -313,11 +428,14 @@ declare function control-util:get-permission-for-user($user as xs:string, $repo 
   return $permission
 };
 
-declare function control-util:get-message-url($msg as xs:string, $msgtype as xs:string, $first as xs:boolean, $localize as xs:boolean)
-{
+declare function control-util:get-message-url($msg as xs:string, $msgtype as xs:string, $first as xs:boolean, $localize as xs:boolean){
   let $message := if ($first) then '?msg=' else  '&amp;msg=',
       $messagetype := '&amp;msgtype=' || $msgtype
   return $message || encode-for-uri(if ($localize) then control-i18n:localize($msg, $control:locale) else $msg) || $messagetype
+};
+
+declare function control-util:get-message-url($result as element(*), $first as xs:boolean){
+  control-util:get-message-url($result/xs:string(@msg), $result/xs:string(@msgtype), $first, true())
 };
 (:
  : get mimetype for file extension
@@ -332,9 +450,7 @@ else                                      'text-plain'
  : is user admin
  :)
 declare function control-util:is-admin( $username as xs:string) as xs:boolean {
-let $user := $control:access//*:users/*:user[*:name=$username],
-    $grouprels := $control:access//*:rels/*:rel[*:user][*:user=$user/*:name]
- return "admin" = $grouprels/*:group
+exists($control:mgmtdoc//control:access/control:groups/control:group[xs:string(@name) = $control:admingroupname]/control:user[@name = $username])
 };
 (:
  : get read/write for username and repo
@@ -355,7 +471,7 @@ declare function control-util:normalize-repo-url( $url as xs:string ) as xs:stri
 };
 
 declare function control-util:get-defaultsvnurl-from-user($username as xs:string) as xs:string?{
-  $control:access//control:rels/control:rel[control:user = $username][control:defaultsvnurl]/control:defaultsvnurl/text()
+  $control:access//control:userdata/control:user[xs:string(@name) = $username]/control:defaultsvnurl/text()
 };
 
 declare function control-util:get-current-svnurl($username as xs:string, $svnurl as xs:string?) as xs:string {
@@ -510,11 +626,10 @@ declare function control-util:get-converter-function-url($name as xs:string, $ty
 
 declare function control-util:writegroups($access) as xs:string {
     string-join(('[groups]',
-    for $group in $access//control:groups/control:group (:groups:)
-    where $access//control:rels/control:rel[control:user][control:group=$group/control:name]
-    return concat($group/control:name,' = ',string-join(
-      for $rel in $access//control:rels/control:rel[control:user][control:group = $group/control:name] (:user:)
-      return $rel/*:user,', ')
+    for $group in $access//*:groups/*:group[not(xs:string(@name) = $control:admingroupname)] (:groups:)
+    return concat($group/xs:string(@name),' = ',string-join(
+      for $u in $group/*:user
+      return $u/xs:string(@name),', ')
     )),$control:nl)
 };
 
@@ -559,54 +674,51 @@ return $fst-level
 declare function control-util:get-authz-entry($name, $content) {
   let $entries := if ($name eq 'groups')
                       then for $group in tokenize($content,$control:nl)[normalize-space()]
-                           let $groupname := tokenize($group,'=')[normalize-space()][1],
+                           let $groupname := normalize-space(tokenize($group,'=')[normalize-space()][1]),
                                $usernames := tokenize($group,'=')[normalize-space()][2],
-                               $result := element {$groupname} {for $u in tokenize($usernames,',')[normalize-space()] return element user {element name {$u}}}
+                               $result := element group {attribute name {$groupname},for $u in tokenize($usernames,',')[normalize-space()] return element user {attribute name {normalize-space($u)}}}
                            return $result
                       else for $group-rel in tokenize($content,$control:nl)[normalize-space()]
-                           let $groupname := replace(replace(tokenize($group-rel,'=')[normalize-space()][1],'\*','_all'),'@',''),
+                           let $groupname := normalize-space(replace(replace(tokenize($group-rel,'=')[normalize-space()][1],'\*','_all'),'@','')),
                                $right := normalize-space(tokenize($group-rel,'=')[normalize-space()][2]),
-                               $result := element {$groupname} {$right}
+                               $result := element group {attribute name {$groupname}, $right}
                            return $result
   return $entries
 };
 
-(: Takes the existing users, groups and user-group-rels from the authz file and copies them into the mgmt-file Q: When to trigger this? Always, when about to save something to it:)
+
 declare function control-util:get-current-authz(){
 let $authz := control-util:get-existing-auth(),
-    $groups := element authz-groups {for $g in $authz/self::groups/*/local-name()
-                                     return element group {element name {$g}} },
-    $users := element authz-users {$authz//*:user},
-    $filtered-users := copy $us := $users
-                       modify (
-                       for $u in $us//*:user
-                         let $name := $u/*:name
-                         return if ($u/preceding::*:user[*:name = $name]) 
-                                then delete node $u else ()
-                   )
-                   return $us,
-    $new-users-list := $filtered-users//*:user/*:name/text(),
-    $rels := element user-group-rels {for $g in $authz/self::groups/*
-                                      let $groupname := local-name($g)
-                                      return for $u in $g/*
-                                             let $name := $u/name/text()
-                                             return element rel {element group {$groupname},
-                                                    element user {$name}}},
-     $updated-mgmt := copy $a := $control:mgmtdoc
-                      modify (delete node $a//*:rel[*:group][*:user][not(*:group = 'admin')],
-                              delete node $a//*:users/*:user[not(*:name/text() = 'admin')],
-                              delete node $a//*:groups/*:group[not(*:name/text() = 'admin')],
-                              insert node $filtered-users/*:user[not(*:name = $a//*:users[$a//*:rel[*:user][*:group = 'admin']]/*:name)] into $a//*:users,
-                              insert node $groups/*:group into $a//*:groups,
-                              insert node $rels/*:rel into $a//*:rels
-                             )
-                      return $a,
-      $authz-backup := let $backup-path := concat(file:parent(db:system()//webpath),'/authz-backup'),
-                           $backup-directory := file:create-dir($backup-path),
-                           $read-old-authz := file:read-text($control:svnauthfile),
-                           $timestamp := concat(current-date(),current-time()),
-                           $write-file := if ($read-old-authz) 
-                                          then file:write-text(string-join(($backup-path,concat($timestamp,'backup.authz')),file:dir-separator()),$read-old-authz)
-                       return $write-file
+    $mgmt := $control:mgmtdoc,
+    $admin-group := $mgmt//control:groups/control:group[xs:string(@name) = $control:admingroupname],
+    $updated-mgmt := copy $m := $mgmt
+                     modify (
+                       for $dg in $m//control:groups/control:group[not(xs:string(@name) = $control:admingroupname)]
+                       return delete node $dg,
+                       
+                       for $ag in $authz//self::*:groups/*:group
+                       return insert node $ag into $m//*:groups,
+                       
+                       for $e in $authz//self::*:entry
+                       let $name := $e/@name
+                       return delete node $m//*:entry[@name = $name],
+                       
+                       insert node $authz/self::*:entry into $m//*:access
+                     )
+                     return $m
   return $updated-mgmt
 };
+declare function control-util:get-error($msg as xs:string){
+  element result {attribute msg {$msg},
+                  attribute msgtype {'error'}} 
+  };
+declare function control-util:get-info($msg as xs:string){
+  element result {attribute msg {$msg},
+                  attribute msgtype {'info'}} 
+  };
+declare function control-util:get-back-to-config($svnurl as xs:string, $result as element(*)){
+  $control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result,false()) 
+  };
+declare function control-util:get-back-to-access($svnurl as xs:string, $file as xs:string,  $result as element(*)){
+  $control:siteurl || '/access?svnurl='|| $svnurl ||'&amp;action=access&amp;file=' || $file || control-util:get-message-url($result,false()) 
+  };
