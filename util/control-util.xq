@@ -139,7 +139,7 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
       $selected-filepath := replace(replace(replace(string-join(($svnurl,$file),'/'),'/$',''),svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,''),'^/',''),
       $admin-group := $access//control:groups/control:group[xs:string(@name) = $control:admingroupname],
       $explicit-permissions := for $group in $access//control:groups/control:group except $admin-group
-                               let $p-expl := $control:access//*:entry[xs:string(@name) = concat('/', $selected-repo, '/', $file)]/*:group[xs:string(@name) = $group],
+                               let $p-expl := $control:access//*:entry[xs:string(@name) = concat('/', $selected-repo, '/', $file)]/*:group[@name = $group/@name],
                                    $p := if ($p-expl/text() = 'rw')
                                          then 'write' 
                                          else if ($p-expl/text() = 'r') 
@@ -313,6 +313,18 @@ declare function control-util:add-user-to-mgmt($username as xs:string, $defaults
         return $a
   return $updated-authz
 };
+declare function control-util:add-conversion-to-mgmt($started-conversion as element(*),$svnurl as xs:string,$file as xs:string,$type as xs:string){
+  let $authz := control-util:get-current-authz(),
+      $updated-authz := 
+        copy $a := $authz
+        modify (delete node $a//control:conversion
+                                  [control:file = $file]
+                                  [control:svnurl = $svnurl]
+                                  [control:type = $type],
+                insert node $started-conversion into $a//control:conversions)
+        return $a
+  return $updated-authz
+};
 declare function control-util:update-user-groups-in-mgmt($username as xs:string, $groups as xs:string+){
   let $authz := control-util:get-current-authz(),
       $userelement := element user {attribute name {$username}},
@@ -387,6 +399,16 @@ declare function control-util:set-permission-for-file-mgmt($svnurl as xs:string,
           copy $a := $authz
           modify (delete node $a//*:entry[xs:string(@name) = $entry-name],
                   insert node $entry into $a//self::*:access)
+          return $a)
+};
+
+declare function control-util:remove-permission-for-file-mgmt($svnurl as xs:string, $repo as xs:string, $file as xs:string, $groupname as xs:string){
+  let $authz := control-util:get-current-authz(),
+      $entry-name := concat('/',$repo,'/',$file)
+  return (admin:write-log(concat('Updated Permissions: ',$file,' at path ',$svnurl,' for group ', $groupname, ': Remove Permission Entry.')),
+          copy $a := $authz
+          modify (delete node $a//*:entry[xs:string(@name) = $entry-name]
+                  )
           return $a)
 };
 
@@ -519,7 +541,6 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
       $remove-folder := proc:execute('rm', ('-r',$filepath)),
       $prepare-file  := proc:execute('mkdir', ($filepath, '-p')),
       $checkout      := proc:execute('svn',('co', $svnurl, $filepath, '--username',$control:svnusername,'--password',$control:svnpassword)),
-      $upload-call   := ('-F', 'type='||$type, '-F','input_file=@'||$filepath||'/'||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'upload')),
       $upload        := proc:execute('curl',('-F', 'type='||$type, '-F','input_file=@'||$filepath||file:dir-separator()||$file, '-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'upload'))),
       $upload_res    := json:parse($upload/output),
       $status        := proc:execute('curl',('-u', $control:svnusername||':'||$control:svnpassword,control-util:get-converter-function-url($convertername,'status')||'?input_file='||$file||'&amp;type='||$type)),
@@ -554,7 +575,8 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
  : start new conversion and save it
  :)
 declare function control-util:start-new-conversion($svnurl as xs:string, $file as xs:string, $type as xs:string) {
-  let $conv := control-util:post-file-to-converter($svnurl, $file, control-util:get-converter-for-type($type)/@name, $type)
+  let $conv := control-util:post-file-to-converter($svnurl, $file, control-util:get-converter-for-type($type)/@name, $type),
+      $admin := admin:write-log(concat('Conversion started:', $file,' with converter: ', $type))
   return $conv
 };
 
@@ -593,11 +615,13 @@ declare function control-util:update-conversion($id as xs:string){
                            $formatted-files}
         )
         return $old,
-      $file := $control:mgmtdoc,
-      $updated-access := $file update {delete node //control:conversion[control:id = $id]}
-                               update {insert node $updated-conversion into .//control:conversions},
-      $updated-file := file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access)
-  return $updated-file
+      $updated-access := copy $c := control-util:get-current-authz()
+                         modify (
+                          delete node $c//control:conversion[control:id = $id],
+                          insert node $updated-conversion into $c//self::control:conversions
+                         )
+                         return $c
+  return control:overwrite-authz-with-mgmt($updated-access,'update conversion')
 };
 
 declare function control-util:get-converter-for-type($type as xs:string) as element(control:converter){
@@ -716,6 +740,31 @@ declare function control-util:get-info($msg as xs:string){
   element result {attribute msg {$msg},
                   attribute msgtype {'info'}} 
   };
+  
+declare function control-util:get-target-short(){
+  let $target-path := request:path(),
+      $short := control-util:get-random-string(4),
+      $result := element shortlink {
+                   attribute id {$short},
+                   attribute target {$target-path}
+        }
+  return $result
+};
+
+declare function control-util:get-short-target($id as xs:string){
+  control-util:get-current-authz()//*:shorts/*:short[xs:string(@id) = $id]
+};
+declare function control-util:get-random-string($length as xs:integer) as xs:string{
+let $possletters := 'abcdefghijkmnpqrstuvxyz1234567890'
+return 
+  string-join(
+    for $i in 1 to $length
+    return 
+      let $r := random:integer(string-length($possletters) - 1),
+          $s := substring($possletters,$r,1)
+      return $s)
+};
+
 declare function control-util:get-back-to-config($svnurl as xs:string, $result as element(*)){
   $control:siteurl || '/config?svnurl='|| $svnurl || control-util:get-message-url($result,false()) 
   };

@@ -181,6 +181,17 @@ function addEventToDetail(detail) {
     });
 }
 
+function blurbackground() {
+  const adminbackground = document.getElementById("adminmgmt-wrapper");
+  const convertbackground = document.getElementById("conversion-widget");
+  if (adminbackground) {
+    adminbackground.classList.add("blurred")
+  }
+  if (convertbackground) {
+    convertbackground.classList.add("blurred")
+  }
+}
+
 function addEventToXpath(elt) {
   elt.setAttribute('title', 'click to copy');
   elt.addEventListener("click", event => {
@@ -222,23 +233,13 @@ window.onload = function() {
   for (let xmpl of xpathExamples){
     addEventToExample(xmpl, 'xpathsearch')
   }
+  
+  if (window.location.toString().match('msg=')){
+    blurbackground();
+  }
 
   for (let xmpl of fullTextExamples){
     addEventToExample(xmpl, 'search')
-  }
-//TODO:  add all possible multiselects
-  
-  if (customize_user_groupselect !== null && customize_user_userselect !== null) {
-    customize_user_userselect.addEventListener("change", event => {
-      setUserGroupSelection(customize_user_userselect.selectedOptions[0].value, "customize_user_groupselect")
-    });
-    setUserGroupSelection(customize_user_userselect.selectedOptions[0].value, "customize_user_groupselect")
-  }
-  if (customize_group_userselect!== null && customize_group_groupselect !== null) {
-    customize_group_groupselect.addEventListener("change", event => {
-      setGroupUserSelection(customize_group_groupselect.selectedOptions[0].value, "customize_group_userselect")
-    });
-    setGroupUserSelection(customize_group_groupselect.selectedOptions[0].value, "customize_group_userselect")
   }
   
   document.body.addEventListener("click", function(event) {

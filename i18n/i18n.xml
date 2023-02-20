@@ -336,6 +336,10 @@
     <locale lang="de">Nutzer auswählen</locale>
     <locale lang="en">Select user</locale>
   </entry>
+  <entry name="user\group">
+    <locale lang="de">Nutzer \ Gruppe</locale>
+    <locale lang="en">User \ Group</locale>
+  </entry>
   <entry name="groupname">
     <locale lang="de">Name der Gruppe</locale>
     <locale lang="en">Group name</locale>
@@ -347,6 +351,10 @@
   <entry name="permission">
     <locale lang="de">Zugriffsrechte</locale>
     <locale lang="en">Permissions</locale>
+  </entry>
+  <entry name="permission-updated">
+    <locale lang="de">Zugriffsrecht angepasst</locale>
+    <locale lang="en">Permissions updated</locale>
   </entry>
   <entry name="selectusergroup">
     <locale lang="de">Gruppenzugehörigkeit</locale>

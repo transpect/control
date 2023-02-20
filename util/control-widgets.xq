@@ -33,7 +33,7 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
                          ,''),
       $conversion := control-util:get-running-conversions($svnurl, $file, $type)[1]
   return
-    <div class="conversion-widget">
+    <div id="conversion-widget">
       <div class="adminmgmt">
         <h2> {control-i18n:localize('convert-title', $control:locale ) || ' ' || $filepath }</h2>
         <div id="streamed-data" class="hidden">
@@ -789,7 +789,7 @@ declare function control-widgets:get-access-table($svnurl as xs:string){
     <h2>User Management</h2>
     <div class="table">
       <div class="table-row">
-        <div class="table-cell">User</div>
+        <div class="table-cell">{control-i18n:localize('user\group', $control:locale)}</div>
         <div class="table-cell">{$control:admingroupname}</div>
       { for $g in $control:access//control:groups/control:group[not(xs:string(@name) = $control:admingroupname)]
         return 

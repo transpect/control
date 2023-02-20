@@ -115,40 +115,55 @@ header a {
 /* 
  * messages
  */
-#message,
-#message-background {
-  top: 30%;
+#message-wrapper{
+  top: 25%;
+  left:25%;
   position: absolute;
-  margin: 1rem 10%;
-  padding: 0.5rem 1rem 1rem 1rem;
-  width: 45%;
+  display: flex;
+  flex-direction:column;
+  justify-content: space-between;
+  padding: 1em;
+  min-height:100px;
+  max-height: 50vh;
+  min-width: 200px;
+  max-width: 50vw;
+  z-index: 1;
+  opacity: 0.9;
+  background-color: #ffffff;
+  border: 1px solid #ccc;
 }
-#message-background.error {
+#message-wrapper.error {
   background-color: #ffb6c1
 }
-#message-background.warning {
+#message-wrapper.warning {
   background-color: #fafad2
 }
-#message-background.info {
+#message-wrapper.info {
   background-color: lightgreen
 }
+
 #message {
   z-index: 2;
   text-align: center;
   font-weight: 400
 }
-#message button {
-  margin-left: 1rem
+#messagebtns{
+  display:flex;
+  flex-direction:row-reverse;
 }
-#message-background {
-  z-index: 1;
-  opacity: 0.9;
-  background-color: #ffffff;
-  border: 1px solid #ccc;
-  height: 3rem
+#messagebtn {
+  margin-left: 1rem;
+  background: #ccc;
+  border: black 1px solid;
+  padding-left: 1em;
+  padding-right: 1em;
+  text-decoration:none;
 }
-#message-background * {
-  visibility: hidden
+#messagebtn:hover {
+  background: white;
+}
+.blurred {
+  filter: blur(4px);
 }
 /* 
  * responsive tables

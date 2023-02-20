@@ -25,7 +25,7 @@ declare variable $control:repos           := $control:config/control:repos;
 declare variable $control:mgmtfile        := 'control.xml';
 declare variable $control:mgmtdoc         := doc('control.xml');
 declare variable $control:access          := control-util:get-current-authz()//control:access;
-declare variable $control:conversions     := $control:mgmtdoc//control:conversions;
+declare variable $control:conversions     := control-util:get-current-authz()//control:conversions;
 declare variable $control:indexfile       := 'index.xml';
 declare variable $control:index           := doc($control:indexfile)/root;
 declare variable $control:svnurlhierarchy := $control:config/control:svnurlhierarchy;
@@ -172,16 +172,14 @@ function control:get-svninfo($svnurl as xs:string?, $file as xs:string?) as elem
 declare function control:get-message( $message as xs:string?, $messagetype as xs:string?) as element(div )?{
   if( $message )
   then
-    <div id="message-wrapper">
+    <div id="message-wrapper" class="{$messagetype}">
       <div id="message">
-        <p>{control-util:decode-uri( $message )}
-          <button class="btn">
-          <a href="{control-util:get-url-without-msg()}">OK</a>
-            <img class="small-icon" src="{$control:path || '/static/icons/open-iconic/svg/check.svg'}" alt="ok"/>
-          </button>
-        </p>
+        <p>{control-util:decode-uri( $message )}</p>
       </div>
-      <div id="message-background" class="{$messagetype}">
+      <div id="messagebtns">
+        <a id="messagebtn" href="{control-util:get-url-without-msg()}">
+          OK<img class="small-icon" src="{$control:path || '/static/icons/open-iconic/svg/check.svg'}" alt="ok"/>
+        </a>
       </div>
     </div>
   else()
@@ -257,7 +255,7 @@ return
       {control:get-message($control:msg, $control:msgtype),
        control-widgets:get-page-header(),
        if (control-util:is-admin($username))
-       then (<div class="adminmgmt-wrapper"> {
+       then (<div id="adminmgmt-wrapper"> {
               control-widgets:get-pw-change($svnurl),
               control-widgets:get-defaultsvnurl-change($svnurl, $username),
               control-widgets:get-access-table($svnurl),
@@ -424,10 +422,10 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
        then control-util:get-error('not-admin'),
        
        if ( count(for $u in $group/*:user/xs:string(@name)
-                                      return 
-                                        if (exists($control:access//*:group//*:group[not(@name = $groupname)]/*:user[@name = $u/@name])) 
-                                        then ()
-                                        else <last/>) gt 0) (:group of user:) 
+                  return 
+                    if (exists($control:access//*:group//*:group[not(@name = $groupname)]/*:user[@name = $u/@name])) 
+                    then ()
+                    else <last/>) gt 0) (:group of user:) 
        then  control-util:get-error('error-last-group-of-user')
       ),
     $result :=
@@ -459,11 +457,6 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     $selected-group := request:parameter("groups"),
     $selected-permission := request:parameter("access"),
     $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
-    $selected-filepath := replace(
-                                string-join(
-                                  ($svnurl,$file)
-                                  ,'/')
-                                ,svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value ||'/',''),
     $errors :=
       (if (not(control-util:is-admin($username)))
        then control-util:get-error('not-admin')
@@ -502,6 +495,14 @@ function control:convert($svnurl as xs:string, $file as xs:string, $type as xs:s
 (:
  : start conversion result
  :)
+ declare function control:start-conversion-bg($started-conversion as element(*),$svnurl,$file,$type) {
+  let $fileupdate := control:overwrite-authz-with-mgmt(control-util:add-conversion-to-mgmt($started-conversion,$svnurl,$file,$type),'start-conversion-bg')
+  return ($fileupdate)
+};
+ 
+(:
+ : start conversion result
+ :)
 declare
 %rest:path("/control/convert/start")
 %rest:query-param("svnurl", "{$svnurl}")
@@ -513,7 +514,6 @@ function control:startconversion($svnurl as xs:string, $file as xs:string, $type
 let $auth := control-util:parse-authorization(request:header("Authorization")),
     $username := map:get($auth, 'username'),
     $selected-group := request:parameter("groups"),
-    $selected-permission := request:parameter("access"),
     $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
     $selected-filepath := replace(
                                 string-join(
@@ -521,20 +521,15 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
                                   ,'/')
                                 ,svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value ||'/',''),
     $started-conversion := control-util:start-new-conversion($svnurl, $file, $type),
-    $control-file := $control:mgmtdoc,
-    $updated-access := $control-file update {delete node //control:conversion
-                                                             [control:file = $file]
-                                                             [control:svnurl = $svnurl]
-                                                             [control:type = $type]}
-                                     update {insert node $started-conversion into .//control:conversions},
+    
+     $errors :=
+      (if (not(control-util:is-admin($username)))
+       then control-util:get-error('not-admin')
+      ),
     $result :=
-      if ($started-conversion/*:status/text() eq 'uploaded')
-      then (element result {attribute msg {'started'},
-                            attribute msgtype {'info'}},
-            file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
-            control:overwrite-authz-with-mgmt($updated-access,'start-conversion'))
-      else element result {attribute msg {string-join($started-conversion//text(),',')},
-                           attribute msgtype {'error'}}
+      if ($errors) then $errors[1]
+      else (control-util:get-info('started'),
+            control:start-conversion-bg($started-conversion,$svnurl,$file,$type))
 return
   web:redirect($control:siteurl || '/convert?svnurl='|| $svnurl || '&amp;file=' || $file || '&amp;type=' || $type || control-util:get-message-url($result/xs:string(@msg),$result/xs:string(@msgtype),false(), false()))
 };
@@ -563,6 +558,13 @@ return
   web:redirect(control-util:get-back-to-config($svnurl, $result))
 };
 
+(:
+ : remove permission 
+ :)
+declare function control:remove-permission-bg($svnurl as xs:string, $repo as xs:string, $file as xs:string, $groupname as xs:string) {
+  let $fileupdate := control:overwrite-authz-with-mgmt(control-util:remove-permission-for-file-mgmt($svnurl, $repo, $file, $groupname),'set-perm-bg')
+  return ($fileupdate)
+};
 declare
 %rest:path("/control/group/removepermission")
 %rest:query-param("svnurl", "{$svnurl}")
@@ -575,22 +577,17 @@ function control:removepermission($svnurl as xs:string, $file as xs:string, $gro
 let $auth := control-util:parse-authorization(request:header("Authorization")),
     $username := map:get($auth, 'username'),
     $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
-    $selected-filepath := replace(replace(replace(string-join(($svnurl,$file),'/'),'/$',''),svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,''),'^/',''),
-    $control-file := $control:mgmtdoc,
-    $updated-access := $control-file update {delete node //control:rels/control:rel
-                                      [control:repo = $selected-repo]
-                                      [control:file = $selected-filepath]
-                                      [control:group = $group]},
+    
+    $errors :=
+      (if (not(control-util:is-admin($username)))
+       then control-util:get-error('not-admin')
+       ),
     $result :=
-      if (control-util:is-admin($username))
-      then (element result {attribute msg {'deleted'},
-                            attribute msgtype {'info'}},
-            file:write("basex/webapp/control/"||$control:mgmtfile, $updated-access),
-            control:overwrite-authz-with-mgmt($updated-access,'remove-permission'))
-      else element result {attribute msg {'not-admin'},
-                           attribute msgtype {'error'}}
+      if ($errors) then $errors[1]
+      else (control-util:get-info('permission-updated'),
+            control:remove-permission-bg($svnurl, $selected-repo, $file, $group))
 return
-  web:redirect($control:siteurl || '/access?svnurl='|| $svnurl || control-util:get-message-url($result/xs:string(@msg),$result/xs:string(@msgtype),false(), true()))
+  web:redirect(control-util:get-back-to-access($svnurl, $file, $result))
 };
 declare
 %rest:path("/control/convert/cancel")
@@ -725,21 +722,18 @@ return
 };
 
 declare function control:update-users-in-group-bg($groupname as xs:string?, $groupusers as xs:string+) {
-let $callres := element result { element error {"Users added to Group."}, element code {0}},
-    $fileupdate := control:overwrite-authz-with-mgmt(control-util:update-users-in-group-mgmt($groupname,$groupusers),'update-users-in-group-bg')
-return $callres
+let $fileupdate := control:overwrite-authz-with-mgmt(control-util:update-users-in-group-mgmt($groupname,$groupusers),'update-users-in-group-bg')
+return $fileupdate
 };
 
 declare function control:add-user-to-group-bg($groupname as xs:string, $username as xs:string) {
-let $callres := element result { element error {"User added to Group."}, element code {0}},
-    $fileupdate := control:overwrite-authz-with-mgmt(control-util:add-user-to-group-mgmt($groupname,$username),'add-user-to-group-bg')
-return $callres
+let $fileupdate := control:overwrite-authz-with-mgmt(control-util:add-user-to-group-mgmt($groupname,$username),'add-user-to-group-bg')
+return $fileupdate
 };
 
 declare function control:remove-user-from-group-bg($groupname as xs:string, $username as xs:string) {
-let $callres := element result { element error {"Removed User from Group."}, element code {0}},
-    $fileupdate := control:overwrite-authz-with-mgmt(control-util:remove-user-from-group-mgmt($groupname,$username),'remove-user-from-group-bg')
-return $callres
+let $fileupdate := control:overwrite-authz-with-mgmt(control-util:remove-user-from-group-mgmt($groupname,$username),'remove-user-from-group-bg')
+return $fileupdate
 };
 
 (:
@@ -788,7 +782,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       ),
     $result :=
       if ($errors) then $errors[1]
-      else (control-util:get-info('group-updated'),
+      else (control-util:get-info('updated'),
             control:add-user-to-group-bg($selected-group,$addeduser))
 return
   web:redirect(control-util:get-back-to-config($svnurl, $result))
@@ -813,7 +807,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       ),
     $result :=
       if ($errors) then $errors[1]
-      else (control-util:get-info('group-updated'),
+      else (control-util:get-info('updated'),
             control:remove-user-from-group-bg($selected-group,$removeduser))
 return
   web:redirect(control-util:get-back-to-config($svnurl, $result))
@@ -888,6 +882,14 @@ declare function control:mgmttoauthz($access) {
                 concat('@',$g/xs:string(@name),' = ', $perm,$control:nl),'@_all','*')
       )
     ))
+};
+
+
+declare
+%rest:path("/ctl/{$id}")
+function control:forward-short-link($id){
+  let $auth := control-util:parse-authorization(request:header("Authorization"))
+  return web:redirect(control-util:get-short-target($id)/xs:string(@target))
 };
 
 declare
