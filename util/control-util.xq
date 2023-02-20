@@ -308,7 +308,7 @@ declare function control-util:add-user-to-mgmt($username as xs:string, $defaults
       $updated-authz := 
         copy $a := $authz
         modify (for $g in $groups
-                return (insert node $userelement into $a//control:group[xs:string(@name) = $g]),
+                return (insert node $userelement into $a//control:groups/control:group[xs:string(@name) = $g]),
                         insert node $userdata into $a//control:userdata)
         return $a
   return $updated-authz
