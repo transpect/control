@@ -107,7 +107,7 @@ return
           </li>
         </ol>
         <ol class="username">
-          <li class="nav-tab"><a href="{$control:siteurl ||  '/user'}">{$username}</a></li>
+          <li class="nav-tab"><a href="{$control:siteurl ||  '/user?svnurl=' || $control:svnurl}">{$username}</a></li>
         </ol>
       </nav>
     </div>

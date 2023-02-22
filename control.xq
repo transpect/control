@@ -229,7 +229,8 @@ return
       {control:get-message($control:msg, $control:msgtype),
        control-widgets:get-page-header( ),
        control-widgets:get-pw-change($svnurl),
-       control-widgets:get-defaultsvnurl-change($svnurl, $username)}
+       control-widgets:get-defaultsvnurl-change($svnurl, $username),
+       control-widgets:create-btn($svnurl, 'back', true())}
     </body>
   </html>
 };
@@ -654,7 +655,7 @@ return
 declare function control:create-user-bg($newusername as xs:string, $newpassword as xs:string, $defaultsvnurl as xs:string?, $groups as xs:string+) {
   let $callres := proc:execute('htpasswd', ('-b', $control:htpasswd, $newusername, $newpassword)), (:add to htpasswd:)
       $fileupdate := control:overwrite-authz-with-mgmt(control-util:add-user-to-mgmt($newusername, $defaultsvnurl, $groups),'create-user-bg')
-  return ()
+  return ($callres,$fileupdate)
 };
 (:
  : create new user
@@ -681,7 +682,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     $result :=
       if ($errors) then $errors[1]
       else (control-util:get-info('user-created'),
-            control:create-user-bg($newusername, $newpassword, $defaultsvnurl, $groups))
+            if (control:create-user-bg($newusername, $newpassword, $defaultsvnurl, $groups)) then () else ())
 return
   web:redirect(control-util:get-back-to-config($svnurl, $result))
 };
