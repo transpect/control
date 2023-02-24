@@ -472,7 +472,9 @@ else                                      'text-plain'
  : is user admin
  :)
 declare function control-util:is-admin( $username as xs:string) as xs:boolean {
-exists($control:mgmtdoc//control:access/control:groups/control:group[xs:string(@name) = $control:admingroupname]/control:user[@name = $username])
+  if($control:authtype eq 'none') 
+  then true() 
+  else exists($control:mgmtdoc//control:access/control:groups/control:group[xs:string(@name) = $control:admingroupname]/control:user[@name = $username])
 };
 (:
  : get read/write for username and repo
@@ -662,13 +664,15 @@ declare function control-util:function-lookup ( $role as xs:string ) as function
     ! function-lookup(xs:QName(@name), @arity)
 };
 
-declare function control-util:parse-authorization($header as xs:string?) as map(xs:string, xs:string)? {
-  for $h in $header
-  let $credentials := $h => substring(6)
-                         => xs:base64Binary()
-                         => bin:decode-string()
-                         => tokenize(':')
-  return map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
+declare function control-util:parse-authorization($header as xs:string?) as map(xs:string, xs:string) {
+  if($control:authtype eq 'basic')
+  then for $h in $header
+       let $credentials := $h => substring(6)
+                              => xs:base64Binary()
+                              => bin:decode-string()
+                              => tokenize(':')
+      return map{'username':$credentials[1],'cert-path':'', 'password': $credentials[2]}
+  else map{'username':'control-noauth-user','cert-path':'', 'password': ''}
 };
 
 declare function control-util:get-file-list($path as xs:string) as element(*) {
@@ -712,7 +716,9 @@ declare function control-util:get-authz-entry($name, $content) {
 
 
 declare function control-util:get-current-authz(){
-let $authz := control-util:get-existing-auth(),
+let $authz := if($control:authtype eq 'basic') 
+              then control-util:get-existing-auth()
+              else (),
     $mgmt := $control:mgmtdoc,
     $admin-group := $mgmt//control:groups/control:group[xs:string(@name) = $control:admingroupname],
     $updated-mgmt := copy $m := $mgmt

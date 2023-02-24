@@ -79,13 +79,9 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
  : get the fancy page head
  :)
 declare function control-widgets:get-page-header() as element(header) {
-let $credentials := request:header("Authorization")
-                    => substring(6)
-                    => xs:base64Binary()
-                    => bin:decode-string()
-                    => tokenize(':'),
-    $username := $credentials[1]
-return
+  let $auth := control-util:parse-authorization(request:header("Authorization")),
+      $username := map:get($auth,'username')
+  return
   <header class="page-header">
     <div class="header-wrapper">
       <div id="logo">
