@@ -849,7 +849,8 @@ declare function control-widgets:get-delete-btn-user( $svnurl as xs:string, $use
       <input type="hidden" name="user" value="{$username}"/>
       {element input {
         attribute type {'submit'},
-        if ($is_last_in_group) then attribute disabled{'true'},
+        if ($is_last_in_group) then (attribute disabled{'true'},
+                attribute title{xs:string(control-i18n:localize('error-last-user', $control:locale))}),
           attribute value {control-i18n:localize('delete', $control:locale)}
         }
       }
@@ -879,7 +880,9 @@ declare function control-widgets:get-remove-user-from-group-btn( $svnurl as xs:s
        <input type="hidden" name="group" value="{$group}"/>
        {element input {
           attribute type {'submit'},
-          if ($is_last_in_group or $is_last_group) then attribute disabled{'true'},
+          if ($is_last_in_group or $is_last_group) 
+          then (attribute disabled{'true'},
+                attribute title{xs:string(control-i18n:localize('error-last-user', $control:locale))}),
           attribute value {control-i18n:localize('remove', $control:locale)}
         }
        }
@@ -900,8 +903,10 @@ declare function control-widgets:get-delete-btn-group( $svnurl as xs:string, $gr
       <input type="hidden" name="group" value="{$groupname}"/>
       {element input {
         attribute type {'submit'},
-        if ($is_last_group_of_user) then attribute disabled{'true'},
-          attribute value {xs:string(control-i18n:localize('delete', $control:locale))}
+        if ($is_last_group_of_user) 
+        then (attribute disabled{'true'},
+              attribute title{xs:string(control-i18n:localize('error-last-group-of-user', $control:locale))}),
+        attribute value {xs:string(control-i18n:localize('delete', $control:locale))}
         }
       }
     </form>
