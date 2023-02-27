@@ -44,7 +44,7 @@ declare variable $control:action          := request:parameter('action');
 declare variable $control:file            := request:parameter('file');
 declare variable $control:dest-svnurl     := request:parameter('dest-svnurl');
 declare variable $control:authtype        := $control:config/control:authtype;
-declare variable $control:search          := $control:config/control:search;
+declare variable $control:search          := xs:boolean($control:config/control:search);
 declare variable $control:svnauthfile     := $control:config/control:authz-file;
 declare variable $control:htpasswd-script := "basex/webapp/control/scripts/htpasswd-wrapper.sh"; 
 declare variable $control:htpasswd-group  := $control:config/control:htpasswd-group;
@@ -94,9 +94,10 @@ declare function control:main( $svnurl as xs:string?, $auth as map(*)) as elemen
          if(normalize-space( $used-svnurl ))
          then control-widgets:get-dir-list( $used-svnurl, $control:path, control-util:is-local-repo($used-svnurl), $auth)
          else 'URL parameter empty!',
-         $search-widget-function( $used-svnurl, $control:path, $auth, 
+         if ($control:search) then $search-widget-function( $used-svnurl, $control:path, $auth, 
                                   map:merge(request:parameter-names() ! map:entry(., request:parameter(.))),
-                                  () )  
+                                  () )
+                              else ()
       }</main>
       {control-widgets:get-page-footer(),
        control-widgets:create-infobox()}
