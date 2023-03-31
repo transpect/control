@@ -270,6 +270,7 @@ return
               (:control-widgets:customize-groups($svnurl),:)
               (:control-widgets:remove-groups($svnurl),:)
               control-widgets:rebuild-index($svnurl, 'root'),
+              control-widgets:manage-all-conversions(),
               control-widgets:create-btn($svnurl, 'back', true())
              }</div>,
              <div>{'session-id: '||session:id()}</div>)

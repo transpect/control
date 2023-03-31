@@ -164,6 +164,10 @@
     <locale lang="de">Konvertierung starten</locale>
     <locale lang="en">Start Conversion</locale>
   </entry>
+  <entry name="conversions">
+    <locale lang="de">Konvertierungen</locale>
+    <locale lang="en">Conversions</locale>
+  </entry>
   <entry name="restart_conversion">
     <locale lang="de">Konvertierung neustarten</locale>
     <locale lang="en">Restart Conversion</locale>
@@ -171,6 +175,10 @@
   <entry name="copy">
     <locale lang="de">Kopieren</locale>
     <locale lang="en">Copy</locale>
+  </entry>
+  <entry name="open">
+    <locale lang="de">Öffnen</locale>
+    <locale lang="en">Open</locale>
   </entry>
   <entry name="access">
     <locale lang="de">Zugriffsrechte</locale>

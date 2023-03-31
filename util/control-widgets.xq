@@ -20,7 +20,7 @@ declare function control-widgets:get-page-footer( ) as element(footer) {
   </footer>
 };
 (:
- :
+ : Manage conversions for a specific file.
  :)
 declare function control-widgets:manage-conversions($svnurl as xs:string, $file as xs:string, $type as xs:string){
   let $repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
@@ -72,6 +72,46 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
         </form>
       </div>
       {control-widgets:create-btn($svnurl, 'back', true())}
+    </div>
+};
+(:
+ : Manage all converisons.
+ :)
+declare function control-widgets:manage-all-conversions(){
+  let $conversions := $control:conversions
+  return
+    <div id="conversion-widget">
+      <div class="adminmgmt">
+        <h2> {control-i18n:localize('conversions', $control:locale ) }</h2>
+        <div id="streamed-data" class="hidden">
+          {for $c in $conversions/control:conversion
+           return control-util:update-conversion($c/control:id),
+           $conversions}
+        </div>
+      </div>
+      {if ($conversions/control:conversion)
+       then
+        (<div class="adminmgmt">
+          <h2>{control-i18n:localize('conversions', $control:locale )}</h2>
+          <div class="table">
+            <div class="table-row">
+              <div class="table-cell">{control-i18n:localize('status', $control:locale )}</div>
+              <div class="table-cell">{control-i18n:localize('delete', $control:locale )}</div>
+              <div class="table-cell">{control-i18n:localize('open', $control:locale )}</div>
+            </div>
+             {for $c in $conversions/control:conversion
+              return
+                <div class="table-row">
+                  <div class="table-cell">{$c/control:status}</div>
+                  <div class="table-cell">{ element a {
+                                                attribute class {"delete"},
+                                                attribute href {$control:siteurl||"/convert/cancel?svnurl="||$c/control:svnurl||"&amp;file="||$c/control:file||"&amp;type="||$c/control:type},
+                                                text {control-i18n:localize('delete', $control:locale )}}}</div>
+                  <div class="table-cell">{ element a {attribute href {$control:siteurl||"/convert?svnurl="||$c/control:svnurl||"&amp;file="||$c/control:file||"&amp;type="||$c/control:type},
+                                                       text {"Zur Konvertierung"}}}</div>
+                </div>}
+          </div>
+        </div>)}
     </div>
 };
 
@@ -913,10 +953,10 @@ declare function control-widgets:get-delete-btn-group( $svnurl as xs:string, $gr
 };
 
 (:
-  returns the default search form. This function can be overridden in the configuration, in config/functions:
-  <function role="search-form-widget" name="my-customization:search-form" arity="5"/>
-  To do: modularize the individual search forms so that they can be assembled differently.
-:)
+ : returns the default search form. This function can be overridden in the configuration, in config/functions:
+ : <function role="search-form-widget" name="my-customization:search-form" arity="5"/>
+ : To do: modularize the individual search forms so that they can be assembled differently.
+ :)
 declare function control-widgets:search-input ( $svnurl as xs:string?, $control-dir as xs:string, 
                                                 $auth as map(xs:string, xs:string), $params as map(*)?,
                                                 $results as map(xs:string, item()*)? ) {
