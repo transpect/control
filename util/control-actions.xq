@@ -54,17 +54,13 @@ function control-actions:download-as-zip( $svnurl as xs:string ) {
       $zip-path := $temp || $zip-name
   return (admin:write-log($zip-path),
           if( svn:checkout($svnurl, $control:svnauth, $checkoutdir, 'HEAD', 'infinity')/local-name() ne 'errors' )
-          then (zip:zip-file(
-                         <file xmlns="http://expath.org/ns/zip" href="{$zip-path}">
-                          {control-util:get-file-list($checkoutdir)
-                           }
-                         </file>
-                         ),
-                         web:response-header(map { 'media-type': web:content-type( $zip-path )},
-                                             map { 'Content-Disposition': concat('attachement;filename=', $zip-name)}
-                                             ),
-                         file:read-binary($zip-path)
-                )
+          then (file:write-binary($zip-path,archive:create-from($checkoutdir,())),
+                web:response-header(map { 'media-type': web:content-type( $zip-path )},
+                                    map { 'Content-Disposition': concat('attachement;filename=', $zip-name)}
+                                   ),
+                admin:write-log(concat('create-from: ',$checkoutdir, " ", $zip-path)),
+                file:read-binary($zip-path)
+               )
           else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
          )
 };

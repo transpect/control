@@ -138,8 +138,15 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
   let $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
       $selected-filepath := replace(replace(replace(string-join(($svnurl,$file),'/'),'/$',''),svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,''),'^/',''),
       $admin-group := $access//control:groups/control:group[xs:string(@name) = $control:admingroupname],
+      
+      $repopath := control-util:get-repo-path($svnurl,$file),
+      $repo := map:get($repopath,'repo'),
+      $path := map:get($repopath,'path'),
+      
+      $entryname := concat($repo,':/',replace($path,'^/','')),
+      
       $explicit-permissions := for $group in $access//control:groups/control:group except $admin-group
-                               let $p-expl := $control:access//*:entry[xs:string(@name) = concat('/', $selected-repo, '/', $file)]/*:group[@name = $group/@name],
+                               let $p-expl := $control:access//*:entry[$entryname]/*:group[@name = $group/@name],
                                    $p := if ($p-expl/text() = 'rw')
                                          then 'write' 
                                          else if ($p-expl/text() = 'r') 
@@ -167,6 +174,20 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
   return for $group in $access//control:groups/control:group
          return ($explicit-permissions[g = $group/xs:string(@name)],$implicit-permissions[g = $group/xs:string(@name)])[1]
          
+};
+
+declare function control-util:get-repo-path($svnurl as xs:string, $file as xs:string) as map(*){
+    
+  let $corresponding-index-item := $control:index//*[@virtual-path = control-util:get-local-path(string-join(($svnurl,$file),'/'))],
+      $item-type := $corresponding-index-item/local-name(),
+      $svnpath := $corresponding-index-item/control-util:get-canonical-path(xs:string(@svnpath)),
+    
+      $info := svn:info($svnpath, $control:svnauth),
+      $repo := tokenize($info/*:param[@name = "root-url"]/@value,'/')[last()],
+      $pre-path := $info/*:param[@name = "path"]/xs:string(@value),
+      $path := if (string-length($pre-path) gt 0) then $pre-path else '/'
+    
+  return map:merge(map:entry('repo',$repo),map:entry('path',$path))
 };
 
 declare function control-util:or($bools as xs:boolean*) as xs:boolean{
@@ -373,7 +394,7 @@ declare function control-util:add-user-to-group-mgmt($groupname as xs:string,$us
   let $authz := control-util:get-current-authz()
   return if ($authz//*:groups/*:group[xs:string(@name) = $groupname])
          then (admin:write-log(concat('Updated Group: ',$groupname,'.Added user: ',$username)),
-               $authz update insert node element user {attribute name {$username}} into .//*:groups/*:group[xs:string(@name) = $groupname])
+               $authz update {insert node element user {attribute name {$username}} into .//*:groups/*:group[xs:string(@name) = $groupname]})
          else $authz
 };
 
@@ -381,13 +402,18 @@ declare function control-util:remove-user-from-group-mgmt($groupname as xs:strin
   let $authz := control-util:get-current-authz()
   return if ($authz//*:groups/*:group[xs:string(@name) = $groupname])
          then (admin:write-log(concat('Updated Group: ',$groupname,'.Removed user: ',$username)),
-               $authz update delete node .//*:groups/*:group[xs:string(@name) = $groupname]/*:user[xs:string(@name) = $username])
+               $authz update {delete node .//*:groups/*:group[xs:string(@name) = $groupname]/*:user[xs:string(@name) = $username]})
          else $authz
 };
 
-declare function control-util:set-permission-for-file-mgmt($svnurl as xs:string, $repo as xs:string, $file as xs:string, $perm as xs:string, $groupname as xs:string){
+declare function control-util:set-permission-for-file-mgmt($svnurl as xs:string, $file as xs:string, $perm as xs:string, $groupname as xs:string){
   let $authz := control-util:get-current-authz(),
-      $entry-name := concat('/',$repo,'/',$file),
+      
+      $repopath := control-util:get-repo-path($svnurl,$file),
+      $repo := map:get($repopath,'repo'),
+      $path := map:get($repopath,'path'),
+      
+      $entry-name := concat($repo, ':','/',replace($path,'^/','')),
       $entry := element entry {
                   attribute name {$entry-name},
                   element group {
@@ -402,9 +428,14 @@ declare function control-util:set-permission-for-file-mgmt($svnurl as xs:string,
           return $a)
 };
 
-declare function control-util:remove-permission-for-file-mgmt($svnurl as xs:string, $repo as xs:string, $file as xs:string, $groupname as xs:string){
+declare function control-util:remove-permission-for-file-mgmt($svnurl as xs:string, $file as xs:string, $groupname as xs:string){
   let $authz := control-util:get-current-authz(),
-      $entry-name := concat('/',$repo,'/',$file)
+  
+      $repopath := control-util:get-repo-path($svnurl,$file),
+      $repo := map:get($repopath,'repo'),
+      $path := map:get($repopath,'path'),
+      
+      $entry-name := concat($repo,':/',replace($path,'^/',''))
   return (admin:write-log(concat('Updated Permissions: ',$file,' at path ',$svnurl,' for group ', $groupname, ': Remove Permission Entry.')),
           copy $a := $authz
           modify (delete node $a//*:entry[xs:string(@name) = $entry-name]
@@ -675,10 +706,10 @@ declare function control-util:parse-authorization($header as xs:string?) as map(
   else map{'username':'control-noauth-user','cert-path':'', 'password': ''}
 };
 
-declare function control-util:get-file-list($path as xs:string) as element(*) {
+(:declare function control-util:get-file-list($path as xs:string) as element(*) {
   let $children := file:list($path),
       $ignored-folders := ('.svn')
-  return  <dir xmlns="http://expath.org/ns/zip" src="{$path}" name="{tokenize(replace($path,'/$',''),'/')[last()]}">
+  return  <entry xmlns="http://expath.org/ns/zip" src="{$path}" name="{tokenize(replace($path,'/$',''),'/')[last()]}">
             {(
               for $d in $children[matches(.,'/$')]
               return control-util:get-file-list(concat($path,'/',$d)),
@@ -686,7 +717,7 @@ declare function control-util:get-file-list($path as xs:string) as element(*) {
               return <entry xmlns="http://expath.org/ns/zip" name="{$f}" src="{concat($path,'/',$f)}"/>
              )}
           </dir>
-};
+};:)
 
 declare function control-util:get-existing-auth() {
   let $fst-level :=  for $E in tokenize(file:read-text($control:svnauthfile),'\[')[normalize-space()]

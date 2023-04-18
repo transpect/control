@@ -77,7 +77,7 @@ declare function control-widgets:manage-conversions($svnurl as xs:string, $file 
 (:
  : Manage all converisons.
  :)
-declare function control-widgets:manage-all-conversions(){
+declare function control-widgets:manage-all-conversions($svnurl as xs:string){
   let $conversions := $control:conversions
   return
     <div id="conversion-widget">
@@ -141,6 +141,7 @@ declare function control-widgets:get-page-header() as element(header) {
               <a href="{$control:siteurl ||  '/config?svnurl=' || $control:svnurl}">{control-i18n:localize('configuration', $control:locale)}</a>
           }
           </li>
+          <li class="nav-tab"><a href="{$control:siteurl ||  '/conversions?svnurl=' || $control:svnurl}">{control-i18n:localize('conversions', $control:locale)}</a></li>
         </ol>
         <ol class="username">
           <li class="nav-tab"><a href="{$control:siteurl ||  '/user?svnurl=' || $control:svnurl}">{$username}</a></li>
@@ -167,8 +168,8 @@ declare function control-widgets:get-svnhome-button( $svnurl as xs:string, $cont
 declare function control-widgets:get-back-to-svndir-button( $svnurl as xs:string, $control-dir as xs:string ) as element(div){
   <div class="back">
     <a href="{$control:siteurl || '?svnurl=' || $svnurl}">
-      <button class="back action btn">
-        <img class="small-icon" src="{$control-dir || '/static/icons/open-iconic/svg/chevron-left.svg'}" alt="back"/>
+      <button class="back action btn" title="back">
+        <b>&#x2190;</b> 
       </button>
     </a>
   </div>
@@ -216,6 +217,9 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
           </li>,
           <li>
            <a class="btn" href="#" onclick="{'showInfoForm(''' || $svnurl || ''', ''' || $file || ''', ''' || $control:path || ''')' }">{control-i18n:localize('showInfo', $control:locale)}</a>
+          </li>,
+          <li>
+            <a class="btn" href="{$control:path || '/access?svnurl=' || $svnurl || '&amp;action=access&amp;file=' || $file/@mount }">{control-i18n:localize('access', $control:locale)}</a>
           </li>,
           <li>
            <a class="btn" href="#" onclick="{'createChangeMountForm(''' || $svnurl || ''', ''' || $file/@mount || ''', ''' || $file/@url || ''', ''' || $control:path || ''')' }">{control-i18n:localize('change-mountpoint', $control:locale)}</a>
@@ -375,14 +379,17 @@ declare function control-widgets:create-infobox(){
  : returns controls to modify access to directory
 :)
 declare function control-widgets:file-access( $svnurl as xs:string, $file as xs:string ) as element(div) {
-  let $repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
-      $root := svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,
+  let $corresponding-index-item := $control:index//*[@virtual-path = control-util:get-local-path(string-join(($svnurl,$file),'/'))],
+      $item-type := $corresponding-index-item/local-name(),
+      $svnpath := $corresponding-index-item/control-util:get-canonical-path(xs:string(@svnpath)),
+      
+      $root := svn:info($svnpath, $control:svnauth)/*:param[@name = 'root-url']/@value,
       $filepath := replace(
                      replace(
                        string-join(
-                         ($svnurl,$file),'/'),'/$','')
-                         ,$root
-                         ,'')
+                         ($svnpath,$file),'/')
+                     ,'/$','')
+                   ,$root,'')
       
   return
     <div class="access-widget">

@@ -270,7 +270,7 @@ return
               (:control-widgets:customize-groups($svnurl),:)
               (:control-widgets:remove-groups($svnurl),:)
               control-widgets:rebuild-index($svnurl, 'root'),
-              control-widgets:manage-all-conversions(),
+              control-widgets:manage-all-conversions($svnurl),
               control-widgets:create-btn($svnurl, 'back', true())
              }</div>,
              <div>{'session-id: '||session:id()}</div>)
@@ -441,8 +441,8 @@ return
 (:
  : set permissions 
  :)
-declare function control:set-perm-bg($svnurl as xs:string, $repo as xs:string, $file as xs:string, $perm as xs:string, $groupname as xs:string) {
-  let $fileupdate := control:overwrite-authz-with-mgmt(control-util:set-permission-for-file-mgmt($svnurl, $repo, $file, $perm, $groupname),'set-perm-bg')
+declare function control:set-perm-bg($svnurl as xs:string, $file as xs:string, $perm as xs:string, $groupname as xs:string) {
+  let $fileupdate := control:overwrite-authz-with-mgmt(control-util:set-permission-for-file-mgmt($svnurl, $file, $perm, $groupname),'set-perm-bg')
   return ($fileupdate)
 };
 (:
@@ -459,7 +459,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     $username := map:get($auth, 'username'),
     $selected-group := request:parameter("groups"),
     $selected-permission := request:parameter("access"),
-    $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
+    
     $errors :=
       (if (not(control-util:is-admin($username)))
        then control-util:get-error('not-admin')
@@ -467,7 +467,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     $result :=
       if ($errors) then $errors[1]
       else (control-util:get-info('updated'),
-              control:set-perm-bg($svnurl, $selected-repo, $file, $selected-permission, $selected-group))
+              control:set-perm-bg($svnurl, $file, $selected-permission, $selected-group))
 return
   web:redirect(control-util:get-back-to-access($svnurl, $file, $result))
 };
@@ -491,6 +491,27 @@ function control:convert($svnurl as xs:string, $file as xs:string, $type as xs:s
       {control:get-message($control:msg, $control:msgtype),
        control-widgets:get-page-header(),
        control-widgets:manage-conversions($svnurl, $file, $type)}
+    </body>
+  </html>
+};
+
+(:
+ : Conversion mgmt page
+ :)
+declare
+%rest:path("/control/conversions")
+%rest:query-param("svnurl", "{$svnurl}")
+%output:method('html')
+%output:version('5.0')
+function control:conversions($svnurl as xs:string) as element(html) {
+  <html>
+    <head>
+      {control-widgets:get-html-head($svnurl)}
+    </head>
+    <body>
+      {control:get-message($control:msg, $control:msgtype),
+       control-widgets:get-page-header(),
+       control-widgets:manage-all-conversions($svnurl)}
     </body>
   </html>
 };
@@ -564,8 +585,8 @@ return
 (:
  : remove permission 
  :)
-declare function control:remove-permission-bg($svnurl as xs:string, $repo as xs:string, $file as xs:string, $groupname as xs:string) {
-  let $fileupdate := control:overwrite-authz-with-mgmt(control-util:remove-permission-for-file-mgmt($svnurl, $repo, $file, $groupname),'set-perm-bg')
+declare function control:remove-permission-bg($svnurl as xs:string, $file as xs:string, $groupname as xs:string) {
+  let $fileupdate := control:overwrite-authz-with-mgmt(control-util:remove-permission-for-file-mgmt($svnurl, $file, $groupname),'set-perm-bg')
   return ($fileupdate)
 };
 declare
@@ -579,7 +600,6 @@ function control:removepermission($svnurl as xs:string, $file as xs:string, $gro
 
 let $auth := control-util:parse-authorization(request:header("Authorization")),
     $username := map:get($auth, 'username'),
-    $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
     
     $errors :=
       (if (not(control-util:is-admin($username)))
@@ -588,7 +608,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
     $result :=
       if ($errors) then $errors[1]
       else (control-util:get-info('permission-updated'),
-            control:remove-permission-bg($svnurl, $selected-repo, $file, $group))
+            control:remove-permission-bg($svnurl, $file, $group))
 return
   web:redirect(control-util:get-back-to-access($svnurl, $file, $result))
 };
