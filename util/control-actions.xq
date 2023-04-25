@@ -181,8 +181,8 @@ declare
 function control-actions:delete( $svnurl as xs:string, $file as xs:string ) {
 let 
     $auth := control-util:parse-authorization(request:header("Authorization")),
-    $resu := svn:delete(control-util:get-canonical-path($svnurl), $control:svnauth, $file, true(), 'deleted via control')
-return if ($resu[//*:param[@name = 'delete']])
+    $resu as element() := svn:delete(control-util:get-canonical-path($svnurl), $control:svnauth, $file, true(), 'deleted via control')
+return if ($resu[descendant::*:param[@name = 'delete']])
        then web:redirect($control:siteurl || '?svnurl=' || $svnurl)
        else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('deletion-error', $control:locale )) || '?msgtype=error' )
 };

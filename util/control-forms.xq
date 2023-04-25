@@ -91,11 +91,11 @@ function control-forms:new-file( $svnurl as xs:string ) {
         </div>
       </main>
       {control-widgets:get-page-footer()}
-      <!--<script src="{$control:path || '/../static/js/control.js'}" type="text/javascript"></script>-->
         <script>
           Dropzone.options.dropzone = 
             {{ maxFilesize: {xs:string($control:max-upload-size)}, 
                dictDefaultMessage:"{control-i18n:localize('drop-files', $control:locale )}",
+               disablePreviews:"true",
                params:{{svnurl:"{$svnurl}"}}
             }};
       </script>

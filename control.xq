@@ -928,3 +928,33 @@ function control:testipopesti($svnurl as xs:string) {
 <e>{$svnurl ! control-util:get-local-path(.) ! (db:attribute('INDEX', ., 'svnpath'))[1]/../@virtual-path}</e>
 </doc>
 };
+
+declare
+%rest:path("/ctl/index")
+%output:method('html')
+function control:get-index() {
+let $index := $control:index,
+    $updated-index-pre := control-util:get-size($index,0),
+    $updated-index := control-util:get-coord($updated-index-pre,0),
+    $slices as map(*):= control-util:get-all-slices($updated-index),
+    $compl-size := sum($updated-index/*/@size)
+return 
+  <html>
+  <div class="hidden">{$updated-index}</div>
+    <table>
+      { for $counter in (0 to xs:integer($compl-size))
+        let $slice := map:get($slices,$counter)
+        return
+          <tr>
+          { for $e in $slice
+            return 
+              <td rowspan="{$e/xs:integer(@size)}">
+                {xs:string($e/@name)}
+                <div class="hidden">
+                {$e}</div>
+              </td>}
+          </tr>
+      }
+    </table>
+  </html>
+};

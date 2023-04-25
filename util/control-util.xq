@@ -144,9 +144,16 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
       $path := map:get($repopath,'path'),
       
       $entryname := concat($repo,':/',replace($path,'^/','')),
+      $virtual-position := $control:index//*[@svnpath = control-util:get-local-path($svnurl)],
+      $parents := $virtual-position/ancestor-or-self::*,
       
+      
+      $parent-permissions := for $d in $parents
+                             let $parent-perm := control-util:get-permissions-for-file($d/control-util:get-canonical-path(@svnpath),$d/@name,$access)
+                             return $parent-perm,
+                             
       $explicit-permissions := for $group in $access//control:groups/control:group except $admin-group
-                               let $p-expl := $control:access//*:entry[$entryname]/*:group[@name = $group/@name],
+                               let $p-expl := $control:access//*:entry[@name = $entryname]/*:group[@name = $group/@name],
                                    $p := if ($p-expl/text() = 'rw')
                                          then 'write' 
                                          else if ($p-expl/text() = 'r') 
@@ -175,6 +182,8 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
          return ($explicit-permissions[g = $group/xs:string(@name)],$implicit-permissions[g = $group/xs:string(@name)])[1]
          
 };
+
+
 
 declare function control-util:get-repo-path($svnurl as xs:string, $file as xs:string) as map(*){
     
@@ -808,3 +817,42 @@ declare function control-util:get-back-to-config($svnurl as xs:string, $result a
 declare function control-util:get-back-to-access($svnurl as xs:string, $file as xs:string,  $result as element(*)){
   $control:siteurl || '/access?svnurl='|| $svnurl ||'&amp;action=access&amp;file=' || $file || control-util:get-message-url($result,false()) 
   };
+declare function control-util:get-size($index,$parent-depth as xs:integer){
+  let $is-external := false()(:$index/local-name() eq 'external':),
+      $current-depth as xs:integer := $parent-depth + 1,
+      $children := if ($is-external) then () else for $c in $index/* return control-util:get-size($c,$current-depth),
+      $current-size as xs:integer := if (exists($children/xs:integer(@size))and not($is-external)) 
+                                     then (sum($children/xs:integer(@size))) else 1,
+      $added-attr := copy $a := $index
+                     modify (
+                       insert node (attribute size {$current-size}) into $a,
+                       insert node (attribute depth {$current-depth}) into $a,
+                       delete node $a/*,
+                       for $c in $children return insert node ($c) into $a
+                       )
+                    return $a
+      return $added-attr
+};
+declare function control-util:get-coord($index,$current-x as xs:integer){
+  let $is-external := false()(:$index/local-name() eq 'external':),
+      $children := if ($is-external) then () else for $c in $index/* return control-util:get-coord($c,sum($c/preceding-sibling::*/xs:integer(@size)) + $current-x),
+      $current-size as xs:integer := if (exists($children/xs:integer(@size))and not($is-external)) 
+                                     then (sum($children/xs:integer(@size))) else 1,
+      $added-attr := copy $a := $index
+                     modify (
+                       insert node (attribute coord {$current-x}) into $a,
+                       delete node $a/*,
+                       for $c in $children return insert node ($c) into $a
+                       )
+                    return $a
+      return $added-attr
+};
+
+declare function control-util:get-all-slices($index) as map(*){
+  let $complete-size := sum($index/*/xs:integer(@size)),
+      $slices := map:merge((
+                   for $i in (0 to $complete-size)
+                   return map:entry(xs:integer($i),$index//*[@coord = $i])
+                ))
+  return $slices
+};

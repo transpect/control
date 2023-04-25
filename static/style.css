@@ -560,7 +560,8 @@ body.xmlsrc {
 }
 .directory-actions{
   display: flex;
-  width: 250px;
+  justify-content:end;
+  width: 300px;
 }
 .breadcrumb {
     line-height:2em;
