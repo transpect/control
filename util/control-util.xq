@@ -666,7 +666,7 @@ declare function control-util:update-conversion($id as xs:string){
   return control:overwrite-authz-with-mgmt($updated-access,'update conversion')
 };
 
-declare function control-util:get-converter-for-type($type as xs:string) as element(control:converter){
+declare function control-util:get-converter-for-type($type as xs:string) as element(control:converter)*{
   $control:converters/control:converter[descendant::control:type[@type = $type]]
 };
 
