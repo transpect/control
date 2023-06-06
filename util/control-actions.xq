@@ -61,7 +61,7 @@ function control-actions:download-as-zip( $svnurl as xs:string ) {
                 admin:write-log(concat('create-from: ',$checkoutdir, " ", $zip-path)),
                 file:read-binary($zip-path)
                )
-          else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
+          else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '&amp;msgtype=error' )
          )
 };
 
@@ -229,7 +229,35 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
        )
        return $e,
     $propvalue := control-util:parsed-external-to-string($updated-externals),
-    $res := svn:propset($checkoutdir, $control:svnauth, 'svn:externals', xs:string($propvalue)),
+    $res := svn:propset($checkoutdir, $control:svnauth, 'svn:externals', xs:string($propvalue),'HEAD'),
+    $resco := svn:commit($auth, $checkoutdir, 'updated externals prop') 
+return web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri($resco) || '?msgtype=info' )
+};
+
+(:
+ : removed a external mount
+ :)
+declare
+  %rest:GET
+  %rest:path("/control/external/remove") 
+  %rest:query-param("svnurl", "{$svnurl}")
+  %rest:query-param("mount", "{$mount}")
+  %output:method('html')
+function control-actions:remove-external( $svnurl as xs:string, $mount as xs:string ) {
+let $auth := control-util:parse-authorization(request:header("Authorization")),
+    $propget := svn:propget($svnurl, $control:svnauth, 'svn:externals', 'HEAD'),
+    $temp    := file:temp-dir() || file:dir-separator()  || random:uuid() || file:dir-separator(),
+    $checkoutdir := $temp || 'Propset',
+    $checkout := svn:checkout($svnurl, $control:svnauth, $checkoutdir, 'HEAD', '1'),
+    $parsed := element externals {control-util:parse-externals-property($propget)},
+    $updated-externals :=  
+       copy $e := $parsed
+       modify (
+         delete node $e/external[@mount eq $mount] 
+       )
+       return $e,
+    $propvalue := control-util:parsed-external-to-string($updated-externals),
+    $res := svn:propset($checkoutdir, $control:svnauth, 'svn:externals', xs:string($propvalue),'HEAD'),
     $resco := svn:commit($auth, $checkoutdir, 'updated externals prop') 
 return web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri($resco) || '?msgtype=info' )
 };
