@@ -164,6 +164,10 @@
     <locale lang="de">Konvertierung starten</locale>
     <locale lang="en">Start Conversion</locale>
   </entry>
+  <entry name="convertnewfile">
+    <locale lang="de">Neue Datei konvertieren</locale>
+    <locale lang="en">Convert New File</locale>
+  </entry>
   <entry name="conversions">
     <locale lang="de">Konvertierungen</locale>
     <locale lang="en">Conversions</locale>

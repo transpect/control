@@ -141,6 +141,7 @@ declare function control-widgets:get-page-header() as element(header) {
               <a href="{$control:siteurl ||  '/config?svnurl=' || $control:svnurl}">{control-i18n:localize('configuration', $control:locale)}</a>
           }
           </li>
+          <li class="nav-tab"><a href="{$control:converters/control:converter[1]/control:direct}" target="_blank">{control-i18n:localize('convertnewfile', $control:locale)}</a></li>
         </ol>
         <ol class="username">
           <li class="nav-tab"><a href="{$control:siteurl ||  '/user?svnurl=' || $control:svnurl}">{$username}</a></li>
