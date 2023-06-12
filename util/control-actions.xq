@@ -20,8 +20,8 @@ declare
 function control-actions:upload($file, $svnurl) {
   for $name    in map:keys($file)
   let $content := $file($name)
-  let $path    := file:temp-dir() || $name
-  let $checkoutdir := ( file:temp-dir() || random:uuid() || file:dir-separator() )
+  let $path    := $control:tmp-path || file:dir-separator() || $name
+  let $checkoutdir := ( $control:tmp-path || file:dir-separator() || random:uuid() || file:dir-separator() )
   let $commitpath := ( $checkoutdir || $name )
   let $revision := 'HEAD'
   let $depth := 'empty'
@@ -48,7 +48,7 @@ declare
   %rest:query-param("svnurl", "{$svnurl}")
 function control-actions:download-as-zip( $svnurl as xs:string ) {
   for $name    in tokenize($svnurl, '/')[last()]
-  let $temp    := file:temp-dir() || random:uuid() || file:dir-separator(),
+  let $temp    := $control:tmp-path || file:dir-separator() || random:uuid() || file:dir-separator(),
       $checkoutdir := $temp || $name,
       $zip-name := $name || '.zip',
       $zip-path := $temp || $zip-name
@@ -74,7 +74,7 @@ declare
   %rest:query-param("svnurl", "{$svnurl}")
   %rest:query-param("file", "{$file}")
 function control-actions:download-single-file( $svnurl as xs:string, $file as xs:string ) {
-  let $temp    := file:temp-dir() || file:dir-separator()  || random:uuid() || file:dir-separator(),
+  let $temp    := $control:tmp-path || file:dir-separator()  || random:uuid() || file:dir-separator(),
       $checkoutdir := $temp || 'file'
   return (
           if( svn:checkout($svnurl, $control:svnauth, $checkoutdir, 'HEAD', 'infinity')/local-name() ne 'errors' )
@@ -98,7 +98,7 @@ declare
   %rest:query-param("file", "{$file}")
   %rest:query-param("type", "{$type}")
 function control-actions:download-result-file( $result_file as xs:string,$svnurl as xs:string, $type as xs:string, $file as xs:string ) {
-  let $temp    := file:temp-dir() || file:dir-separator()  || random:uuid(),
+  let $temp    := $control:tmp-path || file:dir-separator()  || random:uuid(),
       $checkoutdir := $temp,
       $create-dir := file:create-dir($checkoutdir),
       $converter := control-util:get-converter-for-type($type),
@@ -219,7 +219,7 @@ declare
 function control-actions:change-mountpoint( $svnurl as xs:string, $url as xs:string, $name as xs:string ) {
 let $auth := control-util:parse-authorization(request:header("Authorization")),
     $propget := svn:propget($svnurl, $control:svnauth, 'svn:externals', 'HEAD'),
-    $temp    := file:temp-dir() || file:dir-separator()  || random:uuid() || file:dir-separator(),
+    $temp    := $control:tmp-path || file:dir-separator() || random:uuid() || file:dir-separator(),
     $checkoutdir := $temp || 'Propset',
     $checkout := svn:checkout($svnurl, $control:svnauth, $checkoutdir, 'HEAD', '1'),
     $parsed := element externals {control-util:parse-externals-property($propget)},
@@ -249,7 +249,7 @@ declare
 function control-actions:remove-external( $svnurl as xs:string, $mount as xs:string ) {
 let $auth := control-util:parse-authorization(request:header("Authorization")),
     $propget := svn:propget($svnurl, $control:svnauth, 'svn:externals', 'HEAD'),
-    $temp    := file:temp-dir() || file:dir-separator()  || random:uuid() || file:dir-separator(),
+    $temp    := $control:tmp-path || file:dir-separator()  || random:uuid() || file:dir-separator(),
     $checkoutdir := $temp || 'Propset',
     $checkout := svn:checkout($svnurl, $control:svnauth, $checkoutdir, 'HEAD', '1'),
     $parsed := element externals {control-util:parse-externals-property($propget)},

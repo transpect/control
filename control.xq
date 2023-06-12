@@ -50,6 +50,7 @@ declare variable $control:htpasswd-script := "basex/webapp/control/scripts/htpas
 declare variable $control:htpasswd-group  := $control:config/control:htpasswd-group;
 declare variable $control:htpasswd-file   := $control:config/control:htpasswd-file;
 declare variable $control:converters      := $control:config/control:converters;
+declare variable $control:tmp-path         := $control:config/control:tmp-path;
 declare variable $control:default-permission
                                           := "r";
 declare variable $control:nl              := "
