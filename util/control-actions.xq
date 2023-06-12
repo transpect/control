@@ -59,7 +59,8 @@ function control-actions:download-as-zip( $svnurl as xs:string ) {
                                     map { 'Content-Disposition': concat('attachement;filename=', $zip-name)}
                                    ),
                 admin:write-log(concat('create-from: ',$checkoutdir, " ", $zip-path)),
-                file:read-binary($zip-path)
+                file:read-binary($zip-path),
+                file:delete($temp, true())
                )
           else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '&amp;msgtype=error' )
          )
@@ -80,7 +81,8 @@ function control-actions:download-single-file( $svnurl as xs:string, $file as xs
           then (web:response-header(map { 'media-type': web:content-type( $checkoutdir  || file:dir-separator() || $file )},
                                     map { 'Content-Disposition': concat('attachement; filename=', $file)}
                                    ),
-                 file:read-binary($checkoutdir  || file:dir-separator() || $file)
+                 file:read-binary($checkoutdir  || file:dir-separator() || $file),
+                 file:delete($temp, true())
                 )
           else web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msgtype=error' )
          )
@@ -230,7 +232,8 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
        return $e,
     $propvalue := control-util:parsed-external-to-string($updated-externals),
     $res := svn:propset($checkoutdir, $control:svnauth, 'svn:externals', xs:string($propvalue),'HEAD'),
-    $resco := svn:commit($auth, $checkoutdir, 'updated externals prop') 
+    $resco := svn:commit($auth, $checkoutdir, 'updated externals prop'),
+    $deldir := file:delete($temp, true())
 return web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri($resco) || '?msgtype=info' )
 };
 
@@ -258,6 +261,7 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
        return $e,
     $propvalue := control-util:parsed-external-to-string($updated-externals),
     $res := svn:propset($checkoutdir, $control:svnauth, 'svn:externals', xs:string($propvalue),'HEAD'),
-    $resco := svn:commit($auth, $checkoutdir, 'updated externals prop') 
+    $resco := svn:commit($auth, $checkoutdir, 'updated externals prop'),
+    $deldir := file:delete($temp, true())
 return web:redirect($control:siteurl || '?svnurl=' || $svnurl || '?msg=' || encode-for-uri($resco) || '?msgtype=info' )
 };
