@@ -564,23 +564,26 @@ return
  :)
 declare
 %rest:path("/control/config/rebuildindex")
+%rest:form-param("svnurl", "{$form-svnurl}")
+%rest:form-param("name", "{$form-name}")
 %rest:query-param("svnurl", "{$svnurl}")
 %rest:query-param("name", "{$name}")
 %output:method('html')
 %output:version('5.0')
-function control:rebuildindex($svnurl as xs:string, $name as xs:string) {
-
+function control:rebuildindex($svnurl as xs:string*, $name as xs:string*, $form-svnurl as xs:string*, $form-name as xs:string*) {
 let $auth := control-util:parse-authorization(request:header("Authorization")),
     $username := map:get($auth, 'username'),
+    $used-svnurl := ($form-svnurl, $svnurl)[1],
+    $used-name := ($form-name, $name)[1],
     $result :=
       if (control-util:is-admin($username))
       then (element result {attribute msg {'index-build'},
-                            attribute msgtype {'info'}},
-            control-util:create-path-index($control:svnurlhierarchy, $name, $name, $control:svnurlhierarchy,''))
+                            attribute msgtype {'info'},
+            control-util:create-path-index($control:svnurlhierarchy, $used-name, $used-name, $control:svnurlhierarchy,'')})
       else element result {attribute msg {'not-admin'},
                            attribute msgtype {'error'}}
 return
-  web:redirect(control-util:get-back-to-config($svnurl, $result))
+  web:redirect(control-util:get-back-to-config($used-svnurl, $result))
 };
 
 (:

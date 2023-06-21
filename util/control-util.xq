@@ -136,7 +136,9 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
                                                        $file as xs:string,
                                                        $access){
   let $selected-repo := tokenize(svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,'/')[last()],
-      $selected-filepath := replace(replace(replace(string-join(($svnurl,$file),'/'),'/$',''),svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,''),'^/',''),
+      $selected-filepath-pre := replace(string-join(($svnurl,$file),'/'),'/$',''),
+      $svn-info-root-url := svn:info($svnurl, $control:svnauth)/*:param[@name = 'root-url']/@value,
+      $selected-filepath := replace(replace($selected-filepath-pre,$svn-info-root-url,''),'^/',''),
       $admin-group := $access//control:groups/control:group[xs:string(@name) = $control:admingroupname],
       
       $repopath := control-util:get-repo-path($svnurl,$file),
@@ -145,13 +147,16 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
       
       $entryname := concat($repo,':/',replace($path,'^/','')),
       $virtual-position := $control:index//*[@svnpath = control-util:get-local-path($svnurl)],
-      $parents := $virtual-position/ancestor-or-self::*,
+      $parent := $virtual-position/ancestor-or-self::*[not(self::root)][last()],
+      $parent-permissions := for $p in $parent
+                             let $p-svnurl := string-join(tokenize($p/@svnpath,'/')[not(position() eq last())],'/'),
+                                 $parent-perm := control-util:get-permissions-for-file(control-util:get-canonical-path($p-svnurl),$p/@name,$access)
+                             return copy $c := <test>{$parent-perm}</test>
+                                    modify for $i in $c//i[text() eq"explicit"]
+                                           return replace node $i with element i{"parent"}
+                                    return $c/*
+                             ,
       
-      
-      $parent-permissions := for $d in $parents
-                             let $parent-perm := control-util:get-permissions-for-file($d/control-util:get-canonical-path(@svnpath),$d/@name,$access)
-                             return $parent-perm,
-                             
       $explicit-permissions := for $group in $access//control:groups/control:group except $admin-group
                                let $p-expl := $control:access//*:entry[@name = $entryname]/*:group[@name = $group/@name],
                                    $p := if ($p-expl/text() = 'rw')
@@ -162,7 +167,7 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
                                return if ($p-expl)
                                       then element permission { element g {$group/xs:string(@name)},
                                                                 element p {$p},
-                                                                element i {false()}
+                                                                element i {"explicit"}
                                                               },
       $implicit-permissions := for $group in $access//control:groups/control:group except $admin-group
                                let $p-root-def := $control:access//*:entry[xs:string(@name) = '/']/_all/text(),
@@ -177,13 +182,10 @@ declare function control-util:get-permissions-for-file($svnurl as xs:string,
                                                            attribute p-repo-group {$p-repo-group},  
                                                            element g {$group/xs:string(@name)},
                                                            element p {$p},
-                                                           element i {true()}}
+                                                           element i {"implicit"}}
   return for $group in $access//control:groups/control:group
-         return ($explicit-permissions[g = $group/xs:string(@name)],$implicit-permissions[g = $group/xs:string(@name)])[1]
-         
+         return ($explicit-permissions[g = $group/xs:string(@name)],$parent-permissions[g = $group/xs:string(@name)],$implicit-permissions[g = $group/xs:string(@name)])[1]
 };
-
-
 
 declare function control-util:get-repo-path($svnurl as xs:string, $file as xs:string) as map(*){
     

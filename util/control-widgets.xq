@@ -179,6 +179,8 @@ declare function control-widgets:rebuild-index($svnurl as xs:string, $name as xs
   <div class="adminmgmt">
     <h2>{control-i18n:localize('rebuildindex', $control:locale)}</h2>
     <form action="{$control:siteurl}/config/rebuildindex?svnurl={$svnurl}&amp;name={$name}">
+      <input type="hidden" value="{$svnurl}" name="svnurl" />
+      <input type="hidden" value="{$name}" name="name" />
       <input type="submit" value="{control-i18n:localize('rebuildindexbtn', $control:locale)}" />
     </form>
   </div>
@@ -385,9 +387,7 @@ declare function control-widgets:file-access( $svnurl as xs:string, $file as xs:
       
       $root := svn:info($svnpath, $control:svnauth)/*:param[@name = 'root-url']/@value,
       $filepath := replace(
-                     replace(
-                       string-join(
-                         ($svnpath,$file),'/')
+                     replace($svnpath
                      ,'/$','')
                    ,$root,'')
       
@@ -412,12 +412,12 @@ declare function control-widgets:file-access( $svnurl as xs:string, $file as xs:
            return <div class="table-row">
                     <div class="table-cell">{$access/g}</div>
                     <div class="table-cell">{$access/p/text()}</div>
-                    {if ($access/i = true())
-                    then
-                      <div class="table-cell">implicit</div>
-                    else
-                     (<div class="table-cell">explicit</div>,
+                    {switch ($access/i)
+                      case "implicit" return <div class="table-cell">implicit</div>
+                      case "explicit" return (<div class="table-cell">explicit</div>,
                       <div class="table-cell"><a class="delete" href="{$control:siteurl}/group/removepermission?svnurl={$svnurl}&amp;file={$file}&amp;group={$access/*:g/text()}">&#x1f5d1;</a></div>)
+                      case "parent" return <div class="table-cell">from parent</div>
+                      default return ()
                     }
                   </div>}
         </div>
