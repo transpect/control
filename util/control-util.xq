@@ -541,11 +541,13 @@ declare function control-util:get-defaultsvnurl-from-user($username as xs:string
 };
 
 declare function control-util:get-current-svnurl($username as xs:string, $svnurl as xs:string?) as xs:string {
-  ($svnurl,
-    session:get('svnurl'),
-    control-util:get-defaultsvnurl-from-user($username),
-    $control:default-svnurl,
-    $control:svnurlhierarchy)[. != ''][1]
+  let $used-svnurl := ($svnurl,
+                        session:get('svnurl'),
+                        control-util:get-defaultsvnurl-from-user($username),
+                        $control:default-svnurl,
+                        $control:svnurlhierarchy)[. != ''][1],
+      $cleaned-svnurl := replace($used-svnurl,'([^?]+)(\?.*)+',"$1")
+  return $cleaned-svnurl
 };
 
 declare function control-util:get-checkout-dir($svnusername as xs:string, $svnurl as xs:string, $svnpassword as xs:string) as xs:string {
