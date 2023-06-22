@@ -626,9 +626,11 @@ declare function control-util:start-new-conversion($svnurl as xs:string, $file a
   return $conv
 };
 
-declare function control-util:get-converters-for-file($file as xs:string) as xs:string* {
-     let $ext := replace($file,'.*\.([^\.]+)','$1')
-  return $control:converters//control:type[matches(@name,concat('^',$ext))]/@type
+declare function control-util:get-converters-for-file($file as xs:string) as element(*)* {
+     let $ext := replace($file,'.*\.([^\.]+)','$1'),
+         $converter-by-ext := $control:converters//control:type[matches(@name,concat('^',$ext))],
+         $converter-by-name := $control:converters//control:type[matches(@name,$file)]
+  return ($converter-by-ext, $converter-by-name)
 };
 
 declare function control-util:add-conversion($conv as element(conversion)) {

@@ -140,6 +140,10 @@
     <locale lang="de">Info anzeigen</locale>
     <locale lang="en">Show info</locale>
   </entry>
+  <entry name="update-epub-converter">
+    <locale lang="de">Epub Konverter aktualisieren</locale>
+    <locale lang="en">Update Epub Converter</locale>
+  </entry>
   <entry name="convert-title">
     <locale lang="de">Konvertieren</locale>
     <locale lang="en">Convert</locale>
@@ -147,6 +151,10 @@
   <entry name="convert_to_epub">
     <locale lang="de">nach epub konvertieren</locale>
     <locale lang="en">Convert To Epub</locale>
+  </entry>
+  <entry name="convert_to_docx">
+    <locale lang="de">nach docx konvertieren</locale>
+    <locale lang="en">Convert To Docx</locale>
   </entry>
   <entry name="convert_to_html">
     <locale lang="de">nach html konvertieren</locale>

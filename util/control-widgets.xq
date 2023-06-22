@@ -254,10 +254,9 @@ declare function control-widgets:get-file-action-dropdown( $svnurl as xs:string,
               <a class="btn" href="{$control:path || '/download-file?svnurl=' || $svnurl || '&amp;file=' || $file/@name}">{control-i18n:localize('download', $control:locale)}</a>
             </li>,
           for $c in control-util:get-converters-for-file($file/@name)
-          let $type := $control:converters//control:type[@type = $c]
           return 
             <li>
-              <a class="btn" href="{$control:path || '/convert?svnurl=' || $svnurl || '&amp;file=' || $file/@name || '&amp;type=' || $c}">{control-i18n:localize(xs:string($type/@text), $control:locale)}</a>
+              <a class="btn" href="{$control:path || '/convert?svnurl=' || $svnurl || '&amp;file=' || $file/@name || '&amp;type=' || $c/@type}">{control-i18n:localize(xs:string($c/@text), $control:locale)}</a>
             </li>
           )
         )
