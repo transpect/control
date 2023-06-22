@@ -116,8 +116,8 @@ declare
 %output:version('5.0')
 function control:get-svnlog($svnurl as xs:string?, $file as xs:string?) as element() {
   let $auth := control-util:parse-authorization(request:header("Authorization")),
-      $svnlog := if ($file) then svn:log( control-util:virtual-path-to-svnurl($svnurl || '/' || $file),$auth,0,0,0)
-                            else svn:log( control-util:virtual-path-to-svnurl($svnurl),$auth,0,0,0),
+      $used-svnurl := control-util:get-canonical-path(control-util:virtual-path-to-svnurl(concat($svnurl,'/', $file))),
+      $svnlog := svn:log($used-svnurl,$auth,1,0,0),
       $monospace-width := 75
   return <pre class="monospace">
   {for $le in $svnlog/*:logEntry
@@ -133,7 +133,7 @@ function control:get-svnlog($svnurl as xs:string?, $file as xs:string?) as eleme
                              return (<a href="{$control:siteurl || '?svnurl=' || $svnurl 
                                             || string-join(tokenize(xs:string($file/@name),'/')[not(matches(.,'\....+$'))],'/')}">
                                              {control-util:get-short-string(xs:string($file/@type || ' ' || $file/@name), $monospace-width)}
-                                     </a>)),<br/>,
+                                     </a>,<br/>)),<br/>,
                      '--------------------------------',<br/>)
    }
   </pre>
