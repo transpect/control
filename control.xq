@@ -495,6 +495,48 @@ function control:convert($svnurl as xs:string, $file as xs:string, $type as xs:s
     </body>
   </html>
 };
+(:
+ : Davomat Wrapper
+ :)
+declare
+%rest:path("/control/davomat")
+%rest:query-param("svnurl", "{$svnurl}")
+%rest:query-param("type", "{$type}")
+%output:method('html')
+%output:version('5.0')
+function control:convert($svnurl as xs:string, $type as xs:string) as element(html) {
+  <html>
+    <head>
+      {control-widgets:get-html-head($svnurl)}
+    </head>
+    <body>
+      {control:get-message($control:msg, $control:msgtype),
+       control-widgets:get-page-header(),
+       <div class="davomat-form">
+       { let $base := $control:converters/control:converter[descendant::control:type[xs:string(@type) eq $type]]/control:direct/text(),
+             $target := concat($base,'/',$type),
+             $request := element http:request {
+                               attribute method {"get"},
+                               attribute href {$target}
+                          },
+             $res := http:send-request($request,$target,()),
+             $form := copy $f := $res//*:form
+                      modify (replace node $f/@action with attribute action {resolve-uri($res//*:form/xs:string(@action),$base)},
+                              for $i in $f//*:input
+                              let $del := $i/@name eq "upload_type"
+                              return if ($del) then delete node $i/parent::*/parent::*)
+                      return $f,
+             $scripts := for $s in $res//*:script
+                         let $src := resolve-uri($s/@src,$base)
+                         return if ($s/@src) then copy $c := $s
+                                modify replace node $c/@src with attribute src {$src}
+                                return $c else $s
+         return (<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>,$form,$scripts)}
+       </div>
+       }
+    </body>
+  </html>
+};
 
 (:
  : Conversion mgmt page

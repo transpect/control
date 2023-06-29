@@ -239,12 +239,23 @@ th{
   display: block;
   width: 10rem
 }
+.dropdown.menu{
+  display: inline-block;
+}
+.davomat-form{
+  width: 100%;
+  margin: 50px;
+}
+.dropdown.menu summary{
+  width:auto;
+}
 .dropdown-wrapper {
   position: absolute;
   box-shadow: 10px 10px 25px rgba(0,0,0,0.5);
 }
 .dropdown-wrapper ul {
   margin: 0;
+  background-color: rgb(237, 237, 237);
 }
 .dropdown summary,
 .dropdown li a.btn {
@@ -255,6 +266,7 @@ th{
 }
 .dropdown li a.btn {
   line-height: 1.4em;
+  color: #333;
 }
 .dropdown summary:hover,
 .dropdown li a.btn:hover {

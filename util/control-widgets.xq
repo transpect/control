@@ -141,7 +141,25 @@ declare function control-widgets:get-page-header() as element(header) {
               <a href="{$control:siteurl ||  '/config?svnurl=' || $control:svnurl}">{control-i18n:localize('configuration', $control:locale)}</a>
           }
           </li>
-          <li class="nav-tab"><a href="{$control:converters/control:converter[1]/control:direct}" target="_blank">{control-i18n:localize('convertnewfile', $control:locale)}</a></li>
+          {if (exists($control:converters)) then 
+          <details class="menu dropdown autocollapse">
+            <summary>{control-i18n:localize('convertnewfile', $control:locale)}<span class="spacer"/>▼</summary>
+            <div class="dropdown-wrapper">
+              <ul>{
+                  let $types-pre := $control:converters/control:converter/control:types/control:type,
+                      $types := 
+                        copy $t := <t>{$types-pre}</t>
+                        modify for $c in $t/*
+                               let $has-prev := $c/preceding-sibling::control:type[@type eq $c/@type]
+                               return if ($has-prev) then delete node $c else insert node attribute link {$control:converters/control:converter[//control:type[@type eq $c/@type]]/control:direct/text()} into $c
+                        return $t
+                  return 
+                    for $c in $types/*
+                    return <li><a class="btn" target="_blank" href="{concat($c/@link,'/',$c/@type)}">{xs:string($c/@type)}</a></li>
+              }
+              </ul>
+            </div>
+          </details> else ()}
         </ol>
         <ol class="username">
           <li class="nav-tab"><a href="{$control:siteurl ||  '/user?svnurl=' || $control:svnurl}">{$username}</a></li>
