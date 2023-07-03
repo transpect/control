@@ -504,7 +504,7 @@ declare
 %rest:query-param("type", "{$type}")
 %output:method('html')
 %output:version('5.0')
-function control:convert($svnurl as xs:string, $type as xs:string) as element(html) {
+function control:davomat($svnurl as xs:string, $type as xs:string) as element(html) {
   <html>
     <head>
       {control-widgets:get-html-head($svnurl)}
@@ -520,18 +520,36 @@ function control:convert($svnurl as xs:string, $type as xs:string) as element(ht
                                attribute href {$target}
                           },
              $res := http:send-request($request,$target,()),
+             $session-header := xs:string($res/http:header[@name eq "set-cookie"]/@value),
+             $session := replace($session-header,'^([^=]*)=([^=]+);\s([^=]*)=([^=]+)$','$2'),
+             $session-name := replace($session-header,'^([^=]*)=([^=]+);\s([^=]*)=([^=]+)$','$1'),
+             $targeturi := resolve-uri($res//*:form/xs:string(@action),$base),
              $form := copy $f := $res//*:form
-                      modify (replace node $f/@action with attribute action {resolve-uri($res//*:form/xs:string(@action),$base)},
+                      modify (replace node $f/@action with attribute action {$targeturi},
                               for $i in $f//*:input
-                              let $del := $i/@name eq "upload_type"
-                              return if ($del) then delete node $i/parent::*/parent::*)
+                              let $del := ($i/@name eq "upload_type")
+                              return if ($del) then delete node $i/parent::*/parent::*,
+                              (:replace node $f//*:input[@type eq 'file'] 
+                                      with element input {attribute type {'file'},
+                                                          attribute name {'doc'}
+                                                 },:)
+                              insert node element input {attribute type {'hidden'},
+                                                         attribute name {'cookie'},
+                                                         attribute value {$session}
+                                                        } into $f,
+                              insert node element input {attribute type {'hidden'},
+                                                         attribute name {'target'},
+                                                         attribute value {resolve-uri($res//*:form/xs:string(@action),$base)}
+                                                        } into $f
+                             )
                       return $f,
              $scripts := for $s in $res//*:script
                          let $src := resolve-uri($s/@src,$base)
                          return if ($s/@src) then copy $c := $s
                                 modify replace node $c/@src with attribute src {$src}
                                 return $c else $s
-         return (<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>,$form,$scripts)}
+         return (<script>{concat('document.cookie = "',$session-name,'=',$session,'"')}</script>,
+                 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>,$form,$scripts)}
        </div>
        }
     </body>
