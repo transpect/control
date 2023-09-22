@@ -19,26 +19,35 @@ declare
   %rest:form-param("svnurl", "{$svnurl}")
 function control-actions:upload($file, $svnurl) {
   for $name    in map:keys($file)
-  let $content := $file($name)
-  let $path    := $control:tmp-path || file:dir-separator() || $name
-  let $checkoutdir := ( $control:tmp-path || file:dir-separator() || random:uuid() || file:dir-separator() )
-  let $commitpath := ( $checkoutdir || $name )
-  let $revision := 'HEAD'
-  let $depth := 'empty'
-    return (
-            file:write-binary($path, $content),
-            if( svn:checkout($svnurl, $control:svnauth, $checkoutdir, $revision, $depth)/local-name() ne 'errors' )
-            then (file:move($path, $checkoutdir), 
-                  if(svn:add($checkoutdir, $control:svnauth, $name, false()))
-                  then if( svn:commit($control:svnauth, $checkoutdir, $name || ' added by ' || $control:svnusername )/local-name() ne 'errors' )
-                       then (file:delete($checkoutdir, true()),
-                             web:redirect('/control?svnurl=' || $svnurl )
-                             )
-                       else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-commit-error', $control:locale )) || '?msgtype=error' )
-                  else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-add-error', $control:locale )) || '?msgtype=error' )                  
-                  )
-            else web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
-           )
+  let $content := $file($name),
+      $path    := $control:tmp-path || file:dir-separator() || $name,
+      $checkoutdir := ( $control:tmp-path || file:dir-separator() || random:uuid() || file:dir-separator() ),
+      $commitpath := ( $checkoutdir || $name ),
+      $revision := 'HEAD',
+      $depth := '1'
+  return (
+    file:write-binary($path, $content),
+    let $checkout :=svn:checkout($svnurl, $control:svnauth, $checkoutdir, $revision, $depth)
+    return 
+      if ($checkout/local-name() eq 'errors') then web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-checkout-error', $control:locale )) || '?msgtype=error' )
+      else (
+        let $toadd := not(file:exists($checkoutdir || file:dir-separator() || $name)),
+            $add := if ($toadd) 
+                    then (file:move($path, $checkoutdir), svn:add($checkoutdir, $control:svnauth, $name, false()))
+                    else file:move($path, $checkoutdir)
+        return 
+          if ($add /local-name() eq 'errors') then web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-add-error', $control:locale )) || '?msgtype=error' )
+          else (
+            let $commit := svn:commit($control:svnauth, $checkoutdir, $name || ' added by ' || $control:svnusername )
+            return 
+              if ($commit/local-name() eq 'errors') then web:redirect('/control?svnurl=' || $svnurl || '?msg=' || encode-for-uri(control-i18n:localize('svn-commit-error', $control:locale )) || '?msgtype=error' )
+              else (
+                file:delete($checkoutdir, true())(:,
+                web:redirect('/control?svnurl=' || $svnurl ):)
+              )
+          )
+      )
+  )
 };
 (:
  : download as zip
