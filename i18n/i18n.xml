@@ -4,6 +4,22 @@
     <locale lang="de">Aktionen</locale>
     <locale lang="en">Actions</locale>
   </entry>
+  <entry name="author">
+    <locale lang="de">Autor</locale>
+    <locale lang="en">Author</locale>
+  </entry>
+  <entry name="date">
+    <locale lang="de">Datum</locale>
+    <locale lang="en">Date</locale>
+  </entry>
+  <entry name="revision">
+    <locale lang="de">Revision</locale>
+    <locale lang="en">Revision</locale>
+  </entry>
+  <entry name="size">
+    <locale lang="de">Größe</locale>
+    <locale lang="en">Size</locale>
+  </entry>
   <entry name="create-dir">
     <locale lang="de">Verzeichnis erstellen</locale>
     <locale lang="en">Create directory</locale>

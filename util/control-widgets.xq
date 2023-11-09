@@ -562,7 +562,7 @@ declare function control-widgets:list-dir-entries( $svnurl as xs:string, $contro
         </a>
       </div>
       <div class="name table-cell">
-        <a href="{ if ($files/local-name() eq 'file') then $control:path || '/download-file?svnurl=' || $svnurl || '&amp;file=' || $files/@name else $href}" id="direntry-{xs:string( $files/(@name | @mount) )}">{xs:string( $files/(@name | @mount) )}</a></div>
+        <a draggable="true" ondragstart="{concat('drag(event,"',$svnurl,'","',$files/@name,'")')}" href="{ if ($files/local-name() eq 'file') then $control:path || '/download-file?svnurl=' || $svnurl || '&amp;file=' || $files/@name else $href}" id="direntry-{xs:string( $files/(@name | @mount) )}">{xs:string( $files/(@name | @mount) )}</a></div>
       <div class="author table-cell">{xs:string( $files/@author )}</div>
       <div class="date table-cell">{xs:string( $files/@date )}</div>
       <div class="revision table-cell">{xs:string( $files/@revision )}</div>
@@ -603,11 +603,11 @@ declare function control-widgets:get-dir-parent( $svnurl as xs:string, $control-
           else
           <div class="name parentdir table-cell"></div>
       }
-      <div class="author table-cell"/>
-      <div class="date table-cell"/>
-      <div class="revision table-cell"/>
-      <div class="size table-cell"/>
-      <div class="actions table-cell"/>
+      <div class="author table-cell">{control-i18n:localize('author',$control:locale)}</div>
+      <div class="date table-cell">{control-i18n:localize('date',$control:locale)}</div>
+      <div class="revision table-cell">{control-i18n:localize('revision',$control:locale)}</div>
+      <div class="size table-cell">{control-i18n:localize('size',$control:locale)}</div>
+      <div class="actions table-cell"></div>
     </div>
 };
 declare function control-widgets:create-dir-form( $svnurl as xs:string, $control-dir as xs:string ) {
