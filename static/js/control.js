@@ -31,6 +31,19 @@ function createRenameForm(svnurl, file, controlPath) {
     formWrapper.innerHTML = form;
 }
 
+function drag(event,svnurl,file){
+  console.log('drag');
+  console.log(event);
+  console.log(svnurl);
+  console.log(file);
+  event.dataTransfer.setData({"svnurl": svnurl, "file": file}, event.target.id);
+}
+
+function drop(event){
+  console.log('drag');
+  console.log(event);
+}
+
 function createChangeMountForm(svnurl, mount, url, controlPath) {
   const id = 'direntry-' + mount
   const form = '<div id="rename-form-wrapper">'
@@ -63,6 +76,12 @@ function closebox(){
 
 function showLogForm(svnurl, file, controlPath) {
   fetch('control/getsvnlog?svnurl=' + svnurl + '&file=' + file, {credentials: 'include'})
+    .then(response => response.text())
+    .then(data => fillInfoBox(data));
+}
+
+function showConvertForm(svnurl, file, controlPath) {
+  fetch('control/getconvert?svnurl=' + svnurl + '&file=' + file, {credentials: 'include'})
     .then(response => response.text())
     .then(data => fillInfoBox(data));
 }

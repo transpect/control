@@ -595,7 +595,7 @@ declare function control-util:post-file-to-converter($svnurl as xs:string, $file
         <conversion>
           <input>{string-join(($svnurl, $file, $convertername, $type),'||')}</input>
           <id>{random:uuid()}</id>
-          <type>{$upload_res/json/conversion__type/text()}</type>
+          <type>{$type}</type>
           <file>{$file}</file>
           <svnurl>{$svnurl}</svnurl>
           <status>{if ($upload_res/json/status/text()) then $upload_res/json/status/text() else 'failed'}</status>

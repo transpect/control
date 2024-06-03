@@ -138,6 +138,7 @@ function control:get-svnlog($svnurl as xs:string?, $file as xs:string?) as eleme
    }
   </pre>
 };
+
 (:
  : Get SVN info for svnurl
  :)
@@ -548,13 +549,25 @@ function control:davomat($svnurl as xs:string, $type as xs:string) as element(ht
                          return if ($s/@src) then copy $c := $s
                                 modify replace node $c/@src with attribute src {$src}
                                 return $c else $s
-         return (<script>{concat('document.cookie = "',$session-name,'=',$session,'"')}</script>,
-                 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>,$form,$scripts)}
+         return (<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>,$form,$scripts)}
        </div>
        }
     </body>
   </html>
 };
+
+(:
+ : Get convert widget
+ :)
+declare
+%rest:path('/control/getconvert')
+%rest:query-param("type", "{$type}")
+%output:method('html')
+%output:version('5.0')
+function control:getconvertform($type as xs:string){
+  <empty></empty>
+};
+
 
 (:
  : Conversion mgmt page
@@ -991,6 +1004,14 @@ function control:testipopesti($svnurl as xs:string) {
 <e>{$svnurl ! control-util:get-virtual-path(.)}</e>
 <e>{$svnurl ! control-util:get-local-path(.) ! (db:attribute('INDEX', ., 'svnpath'))[1]/../@virtual-path}</e>
 </doc>
+};
+
+declare function control:get-davomat-token($user,$type,$file){
+let $salt := string-join(for $i in (1 to 12)return random:integer(10)),
+    $hour := hours-from-dateTime(current-dateTime()) + 2,
+    $hashed := xs:string(xs:hexBinary(hash:md5(string-join(($salt,$hour,$user,$type,$file),'_')))),
+    $token := concat($salt,lower-case($hashed))
+return $token
 };
 
 declare
