@@ -42,10 +42,11 @@ declare function control-util:clark-to-prefix($xpath as xs:string, $nsmap as map
 declare function control-util:path-parent-dir( $path as xs:string ) as xs:string? {
 let $local-path := control-util:get-local-path($path),
     $parent-path := ($control:index//*[@svnpath eq $local-path]
-          /parent::*/@svnpath)[1]
+          /parent::*/@svnpath)[1],
+    $shorter-path := string-join(tokenize($path,'/')[position() ne last()],'/')
 return if ($parent-path)
        then control-util:get-canonical-path($parent-path)
-       else ''
+       else $shorter-path
 };
 (:
  : decode escaped characters within an URI 
