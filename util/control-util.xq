@@ -6,8 +6,6 @@ import module namespace control-i18n = 'http://transpect.io/control/util/control
 declare namespace control-widgets = 'http://transpect.io/control/util/control-widgets';
 declare namespace control-custom = 'http://transpect.io/control/control-customization';
 
-declare namespace c = 'http://www.w3.org/ns/xproc-step';
-
 declare variable $control-util:namespace-map as map(xs:string, xs:string) 
   := map {'': '',
           'css': 'http://www.w3.org/1996/css',
@@ -560,7 +558,7 @@ declare function control-util:get-checkout-dir($svnusername as xs:string, $svnur
 
 declare function control-util:parse-externals-property($prop as element(*)) as element(external)* {
   for $line in 
-    ($prop/self::c:param-set[c:param[@name='property'][@value='svn:externals']]/c:param[@name='value']/@value
+    ($prop/self::*:param-set[*:param[@name='property'][@value='svn:externals']]/*:param[@name='value']/@value
      => tokenize('[&#xa;&#xd;]+'))[normalize-space()]
   return <external> {
     let $tokens as xs:string+ := $line => tokenize('\s+'),
