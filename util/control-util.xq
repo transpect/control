@@ -536,7 +536,7 @@ declare function control-util:normalize-repo-url( $url as xs:string ) as xs:stri
 };
 
 declare function control-util:get-defaultsvnurl-from-user($username as xs:string) as xs:string?{
-  $control:access//control:userdata/control:user[xs:string(@name) = $username]/control:defaultsvnurl/text()
+  control-util:get-current-authz()//control:userdata/control:user[xs:string(@name) = $username]/control:defaultsvnurl/text()
 };
 
 declare function control-util:get-current-svnurl($username as xs:string, $svnurl as xs:string?) as xs:string {

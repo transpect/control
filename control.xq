@@ -360,13 +360,10 @@ function control:setdefaultsvnurl($svnurl) {
 let $auth := control-util:parse-authorization(request:header("Authorization")),
     $username := map:get($auth, 'username'),
     $defaultsvnurl := request:parameter("defaultsvnurl"),
-    $result :=
-      if (control-util:is-admin($username))
-      then (element result {attribute msg {'user-updated'},
-                            attribute msgtype {'info'}},
-            control:user-setdefaultsvnurl-bg($username, $defaultsvnurl))
-      else element result {attribute msg {'not-admin'},
-                           attribute msgtype {'error'}}
+    $result := (
+      element result {attribute msg {'user-updated'},
+                      attribute msgtype {'info'}},
+      control:user-setdefaultsvnurl-bg($username, $defaultsvnurl))
 return
   web:redirect(control-util:get-back-to-config($svnurl, $result))
 };
