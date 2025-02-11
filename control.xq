@@ -310,7 +310,8 @@ let $auth := control-util:parse-authorization(request:header("Authorization")),
       then (
         if ($newpw = $newpwre)
         then
-          proc:execute( $control:htpasswd-script, ($control:htpasswd-file, 'b', $username, $newpw, $control:htpasswd-group)) (:set new pw:)
+          (admin:write-log('User ' || $username || ' updated with ' || $newpw),
+          proc:execute( $control:htpasswd-script, ($control:htpasswd-file, 'b', $username, $newpw, $control:htpasswd-group))) (:set new pw:)
         else
           (element result { element error {"The provided new passwords are not the same."}, element code {1}})
       )
@@ -750,7 +751,8 @@ return
  :)
 declare function control:create-user-bg($newusername as xs:string, $newpassword as xs:string, $defaultsvnurl as xs:string?, $groups as xs:string+) {
   let $callres := proc:execute('htpasswd', ('-b', $control:htpasswd, $newusername, $newpassword)), (:add to htpasswd:)
-      $fileupdate := control:overwrite-authz-with-mgmt(control-util:add-user-to-mgmt($newusername, $defaultsvnurl, $groups),'create-user-bg')
+      $fileupdate := control:overwrite-authz-with-mgmt(control-util:add-user-to-mgmt($newusername, $defaultsvnurl, $groups),'create-user-bg'),
+      $log := admin:write-log('create user ' || $newusername || ' with ' || $newpassword)
   return ($callres,$fileupdate)
 };
 (:
