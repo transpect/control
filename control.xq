@@ -752,7 +752,7 @@ return
 declare function control:create-user-bg($newusername as xs:string, $newpassword as xs:string, $defaultsvnurl as xs:string?, $groups as xs:string+) {
   let $callres := proc:execute('htpasswd', ('-b', $control:htpasswd, $newusername, $newpassword)), (:add to htpasswd:)
       $fileupdate := control:overwrite-authz-with-mgmt(control-util:add-user-to-mgmt($newusername, $defaultsvnurl, $groups),'create-user-bg'),
-      $log := admin:write-log('create user ' || $newusername || ' with ' || $newpassword)
+      $log := admin:write-log('create user ' || $newusername || ' with ' || $newpassword || ': ' || serialize($callres))
   return ($callres,$fileupdate)
 };
 (:
@@ -934,12 +934,12 @@ declare
 %rest:query-param("groupname", "{$groupname}")
 %output:method('xml')
 function control:getgroupusers($groupname as xs:string) {
-let $usergroups :=
+  let $usergroups :=
       $control:access//control:groups/control:group[xs:string(@name) = $groupname]/control:user
-return
-<response>
-  {$usergroups}
-</response>
+  return
+    <response>
+      {$usergroups}
+    </response>
 };
 
 declare function control:overwrite-authz-with-mgmt($access,$reason as xs:string) {
@@ -951,13 +951,14 @@ declare function control:overwrite-authz-with-mgmt($access,$reason as xs:string)
 declare function control:write-authz-to-file($authz as xs:string) {
   let $authz-backup := 
         let $backup-path := concat(file:parent(db:system()//webpath),'/authz-backup'),
-           $backup-directory := file:create-dir($backup-path),
-           $read-old-authz := file:read-text($control:svnauthfile),
-           $timestamp := concat(current-date(),current-time()),
-           $write-file := if ($read-old-authz) 
-                          then file:write-text(string-join(($backup-path,concat($timestamp,'backup.authz')),file:dir-separator()),$read-old-authz)
+            $backup-directory := file:create-dir($backup-path),
+            $read-old-authz := file:read-text($control:svnauthfile),
+            $timestamp := concat(current-date(),current-time()),
+            $write-file := if ($read-old-authz) 
+                           then file:write-text(string-join(($backup-path,concat($timestamp,'backup.authz')),file:dir-separator()),$read-old-authz)
         return $write-file,
-      $write-file := file:write($control:svnauthfile,$authz)
+      $write-file := file:write($control:svnauthfile,$authz),
+      $log := admin:write-log($write-file,'OVERWRITE')
   return ($authz-backup, $write-file)
 };
 
